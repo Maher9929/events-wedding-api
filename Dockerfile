@@ -1,13 +1,14 @@
-# Étape 1: Build
+
+# Etape 1: Build
 FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-# Copier les fichiers de dépendances
+# Copier les fichiers de dependances
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm ci --only=production
+# Installer les dependances
+RUN npm ci
 
 # Copier le code source
 COPY . .
@@ -15,31 +16,30 @@ COPY . .
 # Builder l'application
 RUN npm run build
 
-# Étape 2: Production
+# Etape 2: Production
 FROM node:18-alpine AS production
 
 WORKDIR /app
 
-# Copier les node_modules de l'étape build
+# Copier les node_modules de l'etape build
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copier le code buildé
+# Copier le code builde
 COPY --from=builder /app/dist ./dist
 
 # Copier les fichiers de configuration
 COPY package*.json ./
-COPY .env.production ./.env
 
 # Exposer le port
 EXPOSE 3000
 
-# Créer un utilisateur non-root
+# Creer un utilisateur non-root
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nestjs -u 1001
 
-# Changer le propriétaire des fichiers
+# Changer le proprietaire des fichiers
 RUN chown -R nestjs:nodejs /app
 USER nestjs
 
-# Commande de démarrage
+# Commande de demarrage
 CMD ["node", "dist/main"]
