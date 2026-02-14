@@ -1,0 +1,42 @@
+# Dependencies
+node_modules
+npm-debug.log
+
+# Build outputs
+dist
+
+# Environment files
+.env
+.env.local
+.env.development
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Logs
+logs
+*.log
+
+# Test coverage
+coverage
+
+# Documentation
+README.md
+*.md
+
+# Scripts
+*.ps1
+test-*.ps1
+demo-*.ps1
+
+# Todo files
+todo.md
