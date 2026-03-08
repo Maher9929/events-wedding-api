@@ -1,0 +1,279 @@
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { apiService } from '../services/api';
+import type { Event } from '../services/api';
+import { toastService } from '../services/toast.service';
+
+const statusMap: Record<string, { label: string; cls: string }> = {
+    planning: { label: 'جاري التخطيط', cls: 'bg-blue-100 text-blue-700' },
+    confirmed: { label: 'مؤكد', cls: 'bg-green-100 text-green-700' },
+    in_progress: { label: 'قيد التنفيذ', cls: 'bg-yellow-100 text-yellow-700' },
+    completed: { label: 'مكتمل', cls: 'bg-purple-100 text-purple-700' },
+    cancelled: { label: 'ملغي', cls: 'bg-red-100 text-red-700' },
+};
+
+const eventTypeMap: Record<string, string> = {
+    wedding: 'حفل زفاف', birthday: 'عيد ميلاد',
+    party: 'حفلة / خطوبة', corporate: 'فعالية شركة', conference: 'مؤتمر', other: 'أخرى',
+};
+
+const EventsListPage = () => {
+    const navigate = useNavigate();
+    const [events, setEvents] = useState<Event[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filterType, setFilterType] = useState('all');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [total, setTotal] = useState(0);
+    const [page, setPage] = useState(0);
+    const PAGE_SIZE = 10;
+
+    useEffect(() => { setPage(0); }, [filterStatus, filterType, sortOrder]);
+
+    useEffect(() => {
+        fetchEvents();
+    }, [filterStatus, filterType, sortOrder, page]); // eslint-disable-line
+
+    const fetchEvents = async () => {
+        setLoading(true);
+        try {
+            const p = new URLSearchParams();
+            if (filterStatus && filterStatus !== 'all') p.set('status', filterStatus);
+            if (filterType && filterType !== 'all') p.set('event_type', filterType);
+            p.set('sort_order', sortOrder);
+            p.set('limit', String(PAGE_SIZE));
+            p.set('offset', String(page * PAGE_SIZE));
+            const res: any = await apiService.get<any>(`/events/my-events?${p.toString()}`);
+            const list = Array.isArray(res) ? res : res?.data || [];
+            setEvents(list);
+            setTotal((res as any)?.total ?? list.length);
+        } catch {
+            toastService.error('فشل تحميل الفعاليات');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('هل أنت متأكد من حذف هذه الفعالية؟')) return;
+        try {
+            await apiService.delete(`/events/${id}`);
+            setEvents(prev => prev.filter(e => e.id !== id));
+            toastService.success('تم حذف الفعالية');
+        } catch {
+            toastService.error('فشل حذف الفعالية');
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-bglight font-tajawal pb-24" dir="rtl">
+            {/* Header */}
+            <header className="bg-white sticky top-0 z-50 shadow-sm px-5 py-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center">
+                            <i className="fa-solid fa-arrow-right text-gray-700"></i>
+                        </button>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-900">فعالياتي</h1>
+                                <p className="text-xs text-gray-500">{total} فعالية</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setSortOrder(o => o === 'asc' ? 'desc' : 'asc')}
+                                    className="h-9 px-3 rounded-xl bg-bglight text-gray-600 text-xs font-bold flex items-center gap-1 hover:bg-gray-200 transition-colors"
+                                >
+                                    <i className={`fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} text-xs`}></i>
+                                    {sortOrder === 'asc' ? 'الأقرب' : 'الأبعد'}
+                                </button>
+                                <Link
+                                    to="/client/events/new"
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-purple text-white text-sm font-bold shadow-md"
+                                >
+                                    <i className="fa-solid fa-plus"></i>
+                                    جديدة
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* Filters */}
+            <div className="px-5 py-3 flex gap-2 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+                <button onClick={() => setFilterType('all')} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterType === 'all' ? 'bg-primary text-white' : 'bg-white text-gray-600 shadow-sm'}`}>الكل</button>
+                {Object.entries(eventTypeMap).map(([k, v]) => (
+                    <button key={k} onClick={() => setFilterType(filterType === k ? 'all' : k)} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterType === k ? 'bg-primary text-white' : 'bg-white text-gray-600 shadow-sm'}`}>{v}</button>
+                ))}
+            </div>
+            <div className="px-5 pb-2 flex gap-2 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+                {(['all', 'planning', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const).map(s => (
+                    <button key={s} onClick={() => setFilterStatus(s)} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterStatus === s ? 'bg-gray-700 text-white' : 'bg-white text-gray-600 shadow-sm'}`}>
+                        {s === 'all' ? 'كل الحالات' : statusMap[s]?.label || s}
+                    </button>
+                ))}
+            </div>
+
+            <main className="px-5 py-5">
+                {loading ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white rounded-2xl p-5 shadow-sm animate-pulse">
+                                <div className="h-5 bg-gray-200 rounded w-2/3 mb-3"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        ))}
+                    </div>
+                ) : events.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center mb-4">
+                            <i className="fa-solid fa-calendar-days text-primary text-3xl"></i>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">لا توجد فعاليات بعد</h3>
+                        <p className="text-sm text-gray-500 mb-6">ابدأ بإنشاء فعاليتك الأولى الآن</p>
+                        <Link
+                            to="/client/events/create"
+                            className="px-8 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg"
+                        >
+                            إنشاء فعالية جديدة
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {events
+                            .map(event => {
+                                const st = statusMap[event.status] || { label: event.status, cls: 'bg-gray-100 text-gray-700' };
+                                const daysLeft = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                                return (
+                                    <div key={event.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                                        <Link to={`/client/events/${event.id}`} className="block p-5">
+                                            <div className="flex items-start justify-between gap-3 mb-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className="font-bold text-gray-900 text-base truncate">{event.title}</h3>
+                                                    <p className="text-xs text-gray-500 mt-0.5">
+                                                        {eventTypeMap[event.event_type] || event.event_type}
+                                                    </p>
+                                                </div>
+                                                <span className={`text-xs px-2 py-1 rounded-lg font-bold flex-shrink-0 ${st.cls}`}>
+                                                    {st.label}
+                                                </span>
+                                            </div>
+
+                                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                                                <span className="flex items-center gap-1">
+                                                    <i className="fa-solid fa-calendar text-primary"></i>
+                                                    {new Date(event.event_date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                </span>
+                                                {event.guest_count && (
+                                                    <span className="flex items-center gap-1">
+                                                        <i className="fa-solid fa-users text-primary"></i>
+                                                        {event.guest_count} ضيف
+                                                    </span>
+                                                )}
+                                                {event.budget && (
+                                                    <span className="flex items-center gap-1">
+                                                        <i className="fa-solid fa-wallet text-primary"></i>
+                                                        {event.budget.toLocaleString()} ر.ق
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {/* Budget + Tasks stats */}
+                                            {(() => {
+                                                const budgets: any[] = (event as any).event_budgets || [];
+                                                const tasks: any[] = (event as any).event_tasks || [];
+                                                const spent = budgets.reduce((s: number, b: any) => s + (b.amount || 0), 0);
+                                                const completedTasks = tasks.filter((t: any) => t.is_completed).length;
+                                                if (budgets.length === 0 && tasks.length === 0) return null;
+                                                return (
+                                                    <div className="mt-3 flex items-center gap-3 text-xs">
+                                                        {budgets.length > 0 && (
+                                                            <span className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-lg font-bold">
+                                                                <i className="fa-solid fa-coins text-[10px]"></i>
+                                                                {spent.toLocaleString()} ر.ق مصروف
+                                                            </span>
+                                                        )}
+                                                        {tasks.length > 0 && (
+                                                            <span className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-lg font-bold">
+                                                                <i className="fa-solid fa-check-square text-[10px]"></i>
+                                                                {completedTasks}/{tasks.length} مهام
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
+
+                                            {daysLeft > 0 && daysLeft <= 30 && (
+                                                <div className="mt-3 flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2">
+                                                    <i className="fa-solid fa-clock text-amber-500 text-xs"></i>
+                                                    <span className="text-xs font-bold text-amber-700">
+                                                        {daysLeft} يوم متبقي
+                                                    </span>
+                                                </div>
+                                            )}
+                                            {daysLeft <= 0 && event.status !== 'completed' && event.status !== 'cancelled' && (
+                                                <div className="mt-3 flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2">
+                                                    <i className="fa-solid fa-exclamation-circle text-red-500 text-xs"></i>
+                                                    <span className="text-xs font-bold text-red-700">انتهى التاريخ</span>
+                                                </div>
+                                            )}
+                                        </Link>
+
+                                        <div className="flex border-t border-gray-100">
+                                            <Link
+                                                to={`/client/events/${event.id}`}
+                                                className="flex-1 py-3 text-center text-sm font-bold text-primary hover:bg-purple-50 transition-colors"
+                                            >
+                                                <i className="fa-solid fa-eye ms-1"></i>
+                                                إدارة
+                                            </Link>
+                                            <div className="w-px bg-gray-100"></div>
+                                            <Link
+                                                to="/services"
+                                                className="flex-1 py-3 text-center text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+                                            >
+                                                <i className="fa-solid fa-plus ms-1"></i>
+                                                إضافة خدمة
+                                            </Link>
+                                            <div className="w-px bg-gray-100"></div>
+                                            <button
+                                                onClick={() => handleDelete(event.id)}
+                                                className="flex-1 py-3 text-center text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                                            >
+                                                <i className="fa-solid fa-trash ms-1"></i>
+                                                حذف
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {total > PAGE_SIZE && (
+                    <div className="flex items-center justify-center gap-3 pt-4 pb-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                        >
+                            <i className="fa-solid fa-chevron-right text-sm"></i>
+                        </button>
+                        <span className="text-sm font-bold text-gray-700">{page + 1} / {Math.ceil(total / PAGE_SIZE)}</span>
+                        <button
+                            onClick={() => setPage(p => p + 1)}
+                            disabled={(page + 1) * PAGE_SIZE >= total}
+                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
+                        >
+                            <i className="fa-solid fa-chevron-left text-sm"></i>
+                        </button>
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+export default EventsListPage;

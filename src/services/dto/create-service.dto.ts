@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsNumber, IsEnum, IsArray, IsObject, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsEnum,
+  IsArray,
+  IsObject,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class CreateServiceDto {
   @IsString()
@@ -72,6 +81,10 @@ export class CreateServiceDto {
   @IsString()
   @IsOptional()
   video_url?: string;
+
+  @IsString()
+  @IsOptional()
+  cancellation_policy?: string;
 
   @IsObject()
   @IsOptional()

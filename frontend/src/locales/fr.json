@@ -1,0 +1,196 @@
+{
+    "common": {
+        "dashboard": "Tableau de Bord",
+        "categories": "Catégories",
+        "events": "Événements",
+        "services": "Services",
+        "notifications": "Notifications",
+        "messages": "Messages",
+        "profile": "Profil",
+        "search": "Que cherchez-vous pour votre événement ?",
+        "loading": "Chargement...",
+        "no_results": "Aucun résultat trouvé",
+        "back": "Retour",
+        "all": "Tous",
+        "about": "À propos",
+        "verified": "Vérifié",
+        "share": "Partager",
+        "optional": "Optionnel",
+        "user": "Utilisateur",
+        "show_less": "Afficher moins",
+        "sending": "Envoi en cours",
+        "back_to_services": "Retour aux services",
+        "link_copied": "Lien copié dans le presse-papier",
+        "footer": {
+            "terms": "Termes et Conditions",
+            "privacy": "Politique de Confidentialité",
+            "about": "À Propos"
+        },
+        "retry": "Réessayer",
+        "periods": {
+            "week": "Cette Semaine",
+            "month": "Ce Mois",
+            "year": "Cette Année",
+            "last_7_days": "7 derniers jours"
+        }
+    },
+    "home": {
+        "hero": {
+            "title": "Préparez votre événement parfait",
+            "subtitle": "Les meilleurs services pour vos mariages et fêtes"
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "Bon retour parmi nous",
+            "subtitle": "Entrez vos identifiants pour accéder à votre compte",
+            "email": "Email",
+            "password": "Mot de passe",
+            "submit": "Se connecter",
+            "success": "Connexion réussie !",
+            "error": "Identifiants incorrects",
+            "no_account": "Vous n'avez pas de compte ?",
+            "signup_link": "Créer un compte"
+        },
+        "signup": {
+            "title": "Créer un compte",
+            "subtitle": "Entrez vos détails pour commencer",
+            "full_name": "Nom complet",
+            "client": "Client",
+            "provider": "Prestataire",
+            "submit": "S'inscrire",
+            "already_have_account": "Déjà un compte ?",
+            "login_link": "Se connecter",
+            "success": "Compte créé avec succès !",
+            "error": "Une erreur est survenue lors de l'inscription"
+        }
+    },
+    "service": {
+        "details": {
+            "title": "Détails du service",
+            "book_now": "Réserver maintenant",
+            "contact": "Contacter",
+            "share": "Partager",
+            "reviews": "Avis",
+            "no_reviews": "Pas encore d'avis",
+            "add_review": "Ajouter votre avis",
+            "review_placeholder": "Écrivez votre commentaire...",
+            "submit_review": "Envoyer l'avis",
+            "price_from": "À partir de",
+            "duration": "Durée",
+            "duration_unit": "min",
+            "about_provider": "À propos du prestataire",
+            "provider": "Prestataire",
+            "error_loading": "Erreur lors du chargement des détails du service",
+            "added_fav": "Ajouté aux favoris",
+            "removed_fav": "Retiré des favoris",
+            "error_field": "Erreur lors de la mise à jour des favoris",
+            "contact_msg": "Bonjour, je voudrais me renseigner sur le service",
+            "conv_created": "Conversation créée",
+            "conv_error": "Erreur lors de la création de la conversation",
+            "success_review": "Avis envoyé avec succès",
+            "error_review": "Erreur lors de l'envoi de l'avis"
+        },
+        "listing": {
+            "title": "Services Disponibles",
+            "subtitle": "Découvrez les meilleurs prestataires",
+            "search_placeholder": "Rechercher un service...",
+            "results_found": "services trouvés",
+            "no_services": "Aucun service trouvé",
+            "featured_title": "Services Vedettes",
+            "featured_subtitle": "Meilleurs prestataires",
+            "load_more": "Voir plus",
+            "tip_title": "Conseil",
+            "tip_desc": "Enregistrez vos favoris pour plus tard",
+            "filters": {
+                "title": "Filtrer les résultats",
+                "city": "Ville",
+                "price_range": "Gamme de prix",
+                "min_rating": "Note minimale",
+                "apply": "Appliquer",
+                "reset": "Réinitialiser",
+                "min_price": "Prix Min",
+                "max_price": "Prix Max"
+            },
+            "sort": {
+                "rating": "Mieux notés",
+                "popular": "Plus populaires",
+                "newest": "Nouveautés",
+                "price_asc": "Prix: Croissant",
+                "price_desc": "Prix: Décroissant"
+            }
+        }
+    },
+    "bookings": {
+        "status": {
+            "pending": "En attente",
+            "confirmed": "Confirmé",
+            "cancelled": "Annulé",
+            "completed": "Terminé"
+        },
+        "error_loading": "Erreur lors du chargement des réservations",
+        "confirm_cancel": "Êtes-vous sûr de vouloir annuler cette réservation ?",
+        "cancel_success": "Réservation annulée",
+        "cancel_error": "Erreur lors de l'annulation",
+        "count_label": "réservation(s)",
+        "search_placeholder": "Rechercher par nom de service...",
+        "sort": {
+            "oldest": "Plus ancien"
+        },
+        "no_bookings": "Aucune réservation",
+        "no_bookings_desc": "Commencez par réserver un service",
+        "explore_services": "Explorer les services",
+        "amount": "Montant",
+        "payment_status": "Statut du paiement",
+        "paid": "Payé",
+        "partially_paid": "Partiellement payé",
+        "unpaid": "Non payé",
+        "remaining": "Reste",
+        "details": "Détails",
+        "cancel": "Annuler",
+        "event_date": "Date de l'événement",
+        "notes": "Notes",
+        "notes_placeholder": "Toutes exigences particulières...",
+        "errors": {
+            "select_date": "Veuillez sélectionner une date"
+        }
+    },
+    "cities": {
+        "Doha": "Doha",
+        "Al Rayyan": "Al Rayyan",
+        "Al Wakrah": "Al Wakrah",
+        "Al Khor": "Al Khor",
+        "Al Shamal": "Madinat ash Shamal",
+        "Al Shahaniya": "Al Shahaniya",
+        "Umm Salal": "Umm Salal",
+        "Al Daayen": "Al Daayen"
+    },
+    "notifications": {
+        "unread": "Non lu",
+        "error_loading": "Échec du chargement des notifications",
+        "mark_all_success": "Tout a été marqué comme lu",
+        "mark_all_error": "Échec du marquage comme lu",
+        "confirm_delete_all": "Supprimer toutes les notifications lues ?",
+        "delete_success": "Notifications lues supprimées",
+        "delete_error": "Échec de la suppression des notifications",
+        "no_notifications": "Pas encore de notifications",
+        "no_notifications_desc": "Les notifications apparaîtront ici à leur arrivée",
+        "no_category_match": "Aucune notification dans cette catégorie",
+        "filters": {
+            "all": "Toutes",
+            "unread": "Non lues",
+            "booking": "Réservations",
+            "message": "Messages"
+        },
+        "time": {
+            "now": "À l'instant",
+            "mins_ago": "Il y a {{count}} min",
+            "hours_ago": "Il y a {{count}} h",
+            "days_ago": "Il y a {{count}} j"
+        },
+        "dates": {
+            "today": "Aujourd'hui",
+            "yesterday": "Hier"
+        }
+    }
+}

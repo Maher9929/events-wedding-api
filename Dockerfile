@@ -29,11 +29,12 @@ COPY --from=builder /app/dist ./dist
 
 # Copier les fichiers de configuration
 COPY package*.json ./
+COPY .env.production .env
 
 # Exposer le port
 EXPOSE 3000
 
-# Creer un utilisateur non-root
+# Créer un utilisateur non-root
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nestjs -u 1001
 
@@ -41,5 +42,13 @@ RUN adduser -S nestjs -u 1001
 RUN chown -R nestjs:nodejs /app
 USER nestjs
 
-# Commande de demarrage
+# Variables d'environnement par défaut
+ENV NODE_ENV=production
+ENV PORT=3000
+
+# Health check
+HEALTHCHECK --interval=30m --timeout=10s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Commande de démarrage
 CMD ["node", "dist/main"]

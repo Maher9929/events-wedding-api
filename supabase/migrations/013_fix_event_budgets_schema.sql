@@ -1,0 +1,25 @@
+-- Ensure event_budgets table has correct schema
+ALTER TABLE event_budgets
+ADD COLUMN IF NOT EXISTS category VARCHAR(255) NOT NULL DEFAULT 'Venue',
+ADD COLUMN IF NOT EXISTS item_name VARCHAR(255) NOT NULL,
+ADD COLUMN IF NOT EXISTS estimated_cost NUMERIC(12,2) NOT NULL DEFAULT 0,
+ADD COLUMN IF NOT EXISTS actual_cost NUMERIC(12,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS paid_amount NUMERIC(12,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+
+-- Ensure event_timeline_items table has correct schema
+ALTER TABLE event_timeline_items
+ADD COLUMN IF NOT EXISTS start_time TIME NOT NULL,
+ADD COLUMN IF NOT EXISTS end_time TIME,
+ADD COLUMN IF NOT EXISTS activity VARCHAR(255) NOT NULL,
+ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
+
+-- Ensure event_tasks table has correct schema
+ALTER TABLE event_tasks
+ADD COLUMN IF NOT EXISTS title VARCHAR(255) NOT NULL,
+ADD COLUMN IF NOT EXISTS description TEXT DEFAULT '',
+ADD COLUMN IF NOT EXISTS due_date DATE,
+ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'in_progress', 'completed')),
+ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(255) DEFAULT '',
+ADD COLUMN IF NOT EXISTS is_completed BOOLEAN DEFAULT FALSE;

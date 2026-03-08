@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsBoolean, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsBoolean,
+  Min,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class QueryEventDto {
   @IsString()
@@ -7,7 +15,13 @@ export class QueryEventDto {
 
   @IsEnum(['wedding', 'birthday', 'corporate', 'conference', 'party', 'other'])
   @IsOptional()
-  event_type?: 'wedding' | 'birthday' | 'corporate' | 'conference' | 'party' | 'other';
+  event_type?:
+    | 'wedding'
+    | 'birthday'
+    | 'corporate'
+    | 'conference'
+    | 'party'
+    | 'other';
 
   @IsString()
   @IsOptional()
@@ -31,6 +45,7 @@ export class QueryEventDto {
 
   @IsBoolean()
   @IsOptional()
+  @Type(() => Boolean)
   is_template?: boolean;
 
   @IsString()
@@ -44,21 +59,25 @@ export class QueryEventDto {
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Type(() => Number)
   min_budget?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Type(() => Number)
   max_budget?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Type(() => Number)
   limit?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
+  @Type(() => Number)
   offset?: number;
 
   @IsString()

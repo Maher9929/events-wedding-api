@@ -1,21 +1,25 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
   Delete,
   Query,
   HttpCode,
   HttpStatus,
   UseGuards,
-  Request
+  Request,
 } from '@nestjs/common';
 import { ProvidersService } from './providers.service';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
 import { QueryProviderDto } from './dto/query-provider.dto';
+import {
+  CreateAvailabilityDto,
+  UpdateAvailabilityDto,
+} from './dto/availability.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -23,7 +27,7 @@ import { UserRole } from '../users/dto/create-user.dto';
 
 @Controller('providers')
 export class ProvidersController {
-  constructor(private readonly providersService: ProvidersService) {}
+  constructor(private readonly providersService: ProvidersService) { }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,14 +43,16 @@ export class ProvidersController {
 
   @Get('top-rated')
   async findTopRated(@Query('limit') limit?: string) {
-    return await this.providersService.findTopRated(limit ? parseInt(limit) : 10);
+    return await this.providersService.findTopRated(
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Get('nearby')
   async findNearby(
     @Query('lat') latitude: string,
     @Query('lng') longitude: string,
-    @Query('radius') radius?: string
+    @Query('radius') radius?: string,
   ) {
     if (!latitude || !longitude) {
       throw new Error('Latitude and longitude are required');
@@ -54,15 +60,44 @@ export class ProvidersController {
     return await this.providersService.findNearby(
       parseFloat(latitude),
       parseFloat(longitude),
-      radius ? parseFloat(radius) : 50
+      radius ? parseFloat(radius) : 50,
     );
+  }
+
+  @Get('stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.PROVIDER)
+  async getStats(@Request() req, @Query('period') period?: string) {
+    if (req.user.role === UserRole.PROVIDER) {
+      // Return provider-specific stats if not admin
+      return await this.providersService.getProviderStats(req.user.id, period);
+    }
+    return await this.providersService.getStats();
+  }
+
+  @Get('performance')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROVIDER)
+  async getPerformance(@Request() req, @Query('period') period?: string) {
+    return await this.providersService.getProviderStats(req.user.id, period);
   }
 
   @Get('my-profile')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.PROVIDER)
   async findMyProfile(@Request() req) {
     return await this.providersService.findByUserId(req.user.id);
+  }
+
+  @Patch('my-profile')
+  @UseGuards(JwtAuthGuard)
+  async updateMyProfile(
+    @Request() req,
+    @Body() updateProviderDto: UpdateProviderDto,
+  ) {
+    return await this.providersService.updateByUserId(
+      req.user.id,
+      updateProviderDto,
+    );
   }
 
   @Get(':id')
@@ -70,15 +105,80 @@ export class ProvidersController {
     return await this.providersService.findOne(id);
   }
 
+  // --- Availabilities ---
+
+  @Get(':id/availabilities')
+  async getAvailabilities(
+    @Param('id') id: string,
+    @Query('start_date') startDate?: string,
+    @Query('end_date') endDate?: string,
+  ) {
+    return await this.providersService.getAvailabilities(
+      id,
+      startDate,
+      endDate,
+    );
+  }
+
+  @Post(':id/availabilities')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
+  async addAvailability(
+    @Param('id') id: string,
+    @Body() dto: CreateAvailabilityDto,
+    @Request() req,
+  ) {
+    return await this.providersService.addAvailability(req.user.id, id, dto);
+  }
+
+  @Patch(':id/availabilities/:availabilityId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
+  async updateAvailability(
+    @Param('id') id: string,
+    @Param('availabilityId') availabilityId: string,
+    @Body() dto: UpdateAvailabilityDto,
+    @Request() req,
+  ) {
+    return await this.providersService.updateAvailability(
+      req.user.id,
+      id,
+      availabilityId,
+      dto,
+    );
+  }
+
+  @Delete(':id/availabilities/:availabilityId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeAvailability(
+    @Param('id') id: string,
+    @Param('availabilityId') availabilityId: string,
+    @Request() req,
+  ) {
+    await this.providersService.removeAvailability(
+      req.user.id,
+      id,
+      availabilityId,
+    );
+  }
+
+  // --- End Availabilities ---
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   async update(
-    @Param('id') id: string, 
-    @Body() updateProviderDto: UpdateProviderDto, 
-    @Request() req
+    @Param('id') id: string,
+    @Body() updateProviderDto: UpdateProviderDto,
+    @Request() req,
   ) {
-    return await this.providersService.update(id, req.user.id, updateProviderDto);
+    return await this.providersService.update(
+      id,
+      req.user.id,
+      updateProviderDto,
+    );
   }
 
   @Patch(':id/verify')
@@ -86,7 +186,7 @@ export class ProvidersController {
   @Roles(UserRole.ADMIN)
   async updateVerification(
     @Param('id') id: string,
-    @Body('isVerified') isVerified: boolean
+    @Body('isVerified') isVerified: boolean,
   ) {
     return await this.providersService.updateVerification(id, isVerified);
   }
@@ -97,5 +197,56 @@ export class ProvidersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @Request() req) {
     await this.providersService.remove(id, req.user.id);
+  }
+
+  // --- KYC Document Endpoints ---
+
+  @Post('kyc')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROVIDER)
+  async submitKycDocument(
+    @Request() req,
+    @Body()
+    body: { document_type: string; file_url: string; original_name?: string },
+  ) {
+    return this.providersService.submitKycDocument(req.user.id, body);
+  }
+
+  @Get('kyc/my-documents')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.PROVIDER)
+  async getMyKycDocuments(@Request() req) {
+    return this.providersService.getMyKycDocuments(req.user.id);
+  }
+
+  @Get('kyc/pending')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getAllPendingKycDocuments() {
+    return this.providersService.getAllPendingKycDocuments();
+  }
+
+  @Get(':id/kyc')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async getProviderKycDocuments(@Param('id') id: string) {
+    return this.providersService.getProviderKycDocuments(id);
+  }
+
+  @Patch('kyc/:docId/review')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async reviewKycDocument(
+    @Param('docId') docId: string,
+    @Request() req,
+    @Body('status') status: 'approved' | 'rejected',
+    @Body('notes') notes?: string,
+  ) {
+    return this.providersService.reviewKycDocument(
+      docId,
+      req.user.id,
+      status,
+      notes,
+    );
   }
 }

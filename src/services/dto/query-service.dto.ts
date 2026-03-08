@@ -1,4 +1,12 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsEnum, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsEnum,
+  Min,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class QueryServiceDto {
   @IsString()
@@ -17,15 +25,29 @@ export class QueryServiceDto {
   @IsOptional()
   price_type?: 'fixed' | 'hourly' | 'package' | 'custom';
 
+  @Transform(({ value }) =>
+    value !== undefined ? parseFloat(value) : undefined,
+  )
   @IsNumber()
   @Min(0)
   @IsOptional()
   min_price?: number;
 
+  @Transform(({ value }) =>
+    value !== undefined ? parseFloat(value) : undefined,
+  )
   @IsNumber()
   @Min(0)
   @IsOptional()
   max_price?: number;
+
+  @Transform(({ value }) =>
+    value !== undefined ? parseFloat(value) : undefined,
+  )
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  min_rating?: number;
 
   @IsEnum(['onsite', 'online', 'both'])
   @IsOptional()
@@ -35,19 +57,27 @@ export class QueryServiceDto {
   @IsOptional()
   city?: string;
 
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : undefined,
+  )
   @IsBoolean()
   @IsOptional()
   is_active?: boolean;
 
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : undefined,
+  )
   @IsBoolean()
   @IsOptional()
   is_featured?: boolean;
 
+  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
   @IsNumber()
   @Min(0)
   @IsOptional()
   limit?: number;
 
+  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
   @IsNumber()
   @Min(0)
   @IsOptional()

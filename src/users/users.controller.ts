@@ -1,17 +1,23 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
   Delete,
   HttpCode,
   HttpStatus,
   UseGuards,
-  Request
+  Request,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
@@ -28,7 +34,7 @@ export class UsersController {
 
   @Public()
   @Post('register')
-  @ApiOperation({ summary: 'Inscription d\'un nouvel utilisateur' })
+  @ApiOperation({ summary: "Inscription d'un nouvel utilisateur" })
   @ApiResponse({ status: 201, description: 'Utilisateur créé avec succès' })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
   async register(@Body() registerDto: RegisterDto) {
@@ -45,6 +51,15 @@ export class UsersController {
     return await this.usersService.login(loginDto);
   }
 
+  @Post('refresh')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Renouveler le token JWT' })
+  @ApiResponse({ status: 200, description: 'Nouveau token généré' })
+  async refresh(@Request() req) {
+    return await this.usersService.refreshToken(req.user.id);
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -55,23 +70,46 @@ export class UsersController {
     return await this.usersService.findOne(req.user.id);
   }
 
+  @Patch('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Mettre à jour le profil utilisateur' })
+  async updateProfile(@Request() req, @Body() updateData: any) {
+    return await this.usersService.update(req.user.id, updateData);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async findAll() {
-    return await this.usersService.findAll();
+  async findAll(
+    @Query('search') search?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Query('role') role?: string,
+    @Query('sort_order') sortOrder?: string,
+  ) {
+    return await this.usersService.findAll(
+      search,
+      limit ? parseInt(limit) : undefined,
+      offset ? parseInt(offset) : undefined,
+      role,
+      sortOrder,
+    );
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string) {
     return await this.usersService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  async update(@Param('id') id: string, @Body() updateData: any, @Request() req) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateData: any,
+    @Request() req,
+  ) {
     // Users can only update their own profile unless they're admin
     if (req.user.id !== id && req.user.role !== UserRole.ADMIN) {
       throw new Error('Unauthorized');
@@ -85,6 +123,16 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string) {
     await this.usersService.remove(id);
+  }
+
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  async uploadAvatar(@Request() req, @Body('avatar_url') avatarUrl: string) {
+    if (!avatarUrl) throw new Error('avatar_url is required');
+    const updated = await this.usersService.update(req.user.id, {
+      avatar_url: avatarUrl,
+    });
+    return { url: avatarUrl, data: updated };
   }
 
   @Post()

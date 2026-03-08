@@ -1,0 +1,197 @@
+{
+    "common": {
+        "dashboard": "لوحة التحكم",
+        "categories": "الفئات",
+        "events": "الفعاليات",
+        "bookings": "حجوزاتي",
+        "services": "الخدمات",
+        "messages": "الرسائل",
+        "notifications": "الإشعارات",
+        "profile": "الملف الشخصي",
+        "search": "ما الذي تحتاجه لفعاليتك ؟",
+        "loading": "جاري التحميل...",
+        "no_results": "لا توجد نتائج",
+        "back": "عودة",
+        "all": "الكل",
+        "about": "حول",
+        "verified": "موثّق",
+        "share": "مشاركة",
+        "optional": "اختياري",
+        "user": "مستخدم",
+        "show_less": "عرض أقل",
+        "sending": "جاري الإرسال",
+        "back_to_services": "العودة إلى الخدمات",
+        "link_copied": "تم نسخ الرابط",
+        "footer": {
+            "terms": "الأحكام والشروط",
+            "privacy": "سياسة الخصوصية",
+            "about": "من نحن"
+        },
+        "retry": "إعادة المحاولة",
+        "periods": {
+            "week": "هذا الأسبوع",
+            "month": "هذا الشهر",
+            "year": "هذه السنة",
+            "last_7_days": "آخر 7 أيام"
+        }
+    },
+    "home": {
+        "hero": {
+            "title": "خطط لفعاليتك المثالية",
+            "subtitle": "أفضل الخدمات لمناسباتكم السعيدة"
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "مرحباً بعودتك",
+            "subtitle": "أدخل بياناتك للدخول إلى حسابك",
+            "email": "البريد الإلكتروني",
+            "password": "كلمة المرور",
+            "submit": "تسجيل الدخول",
+            "success": "تم تسجيل الدخول بنجاح !",
+            "error": "بيانات الدخول غير صحيحة",
+            "no_account": "ليس لديك حساب ؟",
+            "signup_link": "إنشاء حساب جديد"
+        },
+        "signup": {
+            "title": "إنشاء حساب جديد",
+            "subtitle": "أدخل تفاصيلك للبدء",
+            "full_name": "الاسم الكامل",
+            "client": "عميل",
+            "provider": "مورد خدمة",
+            "submit": "تسجيل حساب",
+            "already_have_account": "لديك حساب بالفعل ؟",
+            "login_link": "تسجيل الدخول",
+            "success": "تم إنشاء الحساب بنجاح !",
+            "error": "حدث خطأ أثناء التسجيل"
+        }
+    },
+    "service": {
+        "details": {
+            "title": "تفاصيل الخدمة",
+            "book_now": "احجز الآن",
+            "contact": "تواصل",
+            "share": "مشاركة",
+            "reviews": "التقييمات",
+            "no_reviews": "لا توجد تقييمات بعد",
+            "add_review": "أضف تقييمك",
+            "review_placeholder": "اكتب تعليقك...",
+            "submit_review": "إرسال التقييم",
+            "price_from": "يبدأ من",
+            "duration": "المدة",
+            "duration_unit": "دقيقة",
+            "about_provider": "عن مقدم الخدمة",
+            "provider": "مقدم خدمة",
+            "error_loading": "فشل تحميل تفاصيل الخدمة",
+            "added_fav": "تم الإضافة إلى المفضلة",
+            "removed_fav": "تم الحذف من المفضلة",
+            "error_field": "فشل تحديث المفضلة",
+            "contact_msg": "مرحباً، أود الاستفسار عن خدمة",
+            "conv_created": "تم إنشاء المحادثة",
+            "conv_error": "فشل إنشاء المحادثة",
+            "success_review": "تم إرسال التقييم بنجاح",
+            "error_review": "فشل إرسال التقييم"
+        },
+        "listing": {
+            "title": "الخدمات المتاحة",
+            "subtitle": "اكتشف أفضل مقدمي الخدمات",
+            "search_placeholder": "ابحث عن خدمة...",
+            "results_found": "خدمة وجدت",
+            "no_services": "لا توجد خدمات متاحة",
+            "featured_title": "خدمات مميزة",
+            "featured_subtitle": "مقدمو خدمات متميزون",
+            "load_more": "عرض المزيد",
+            "tip_title": "نصيحة",
+            "tip_desc": "احفظ الخدمات المفضلة لديك لتصفح أسرع",
+            "filters": {
+                "title": "تصفية النتائج",
+                "city": "المدينة",
+                "price_range": "نطاق السعر",
+                "min_rating": "الحد الأدنى للتقييم",
+                "apply": "تطبيق الفلاتر",
+                "reset": "إعادة تعيين",
+                "min_price": "الحد الأدنى",
+                "max_price": "الحد الأقصى"
+            },
+            "sort": {
+                "rating": "الأعلى تقييماً",
+                "popular": "الأكثر طلباً",
+                "newest": "الأحدث",
+                "price_asc": "السعر: الأقل",
+                "price_desc": "السعر: الأعلى"
+            }
+        }
+    },
+    "bookings": {
+        "status": {
+            "pending": "قيد الانتظار",
+            "confirmed": "مؤكد",
+            "cancelled": "ملغي",
+            "completed": "مكتمل"
+        },
+        "error_loading": "فشل تحميل الحجوزات",
+        "confirm_cancel": "هل أنت متأكد من إلغاء هذا الحجز؟",
+        "cancel_success": "تم إلغاء الحجز",
+        "cancel_error": "فشل إلغاء الحجز",
+        "count_label": "حجز",
+        "search_placeholder": "بحث باسم الخدمة...",
+        "sort": {
+            "oldest": "الأقدم"
+        },
+        "no_bookings": "لا توجد حجوزات",
+        "no_bookings_desc": "ابدأ بحجز خدمة لفعاليتك",
+        "explore_services": "استكشف الخدمات",
+        "amount": "المبلغ",
+        "payment_status": "حالة الدفع",
+        "paid": "مدفوع",
+        "partially_paid": "مدفوع جزئياً",
+        "unpaid": "غير مدفوع",
+        "remaining": "المتبقي",
+        "details": "التفاصيل",
+        "cancel": "إلغاء",
+        "event_date": "تاريخ الفعالية",
+        "notes": "ملاحظات",
+        "notes_placeholder": "أي متطلبات أو ملاحظات خاصة...",
+        "errors": {
+            "select_date": "يرجى اختيار تاريخ الفعالية"
+        }
+    },
+    "notifications": {
+        "unread": "غير مقروء",
+        "error_loading": "فشل تحميل الإشعارات",
+        "mark_all_success": "تم تحديد الكل كمقروء",
+        "mark_all_error": "فشل تحديد الكل كمقروء",
+        "confirm_delete_all": "حذف جميع الإشعارات المقروءة؟",
+        "delete_success": "تم حذف الإشعارات المقروءة",
+        "delete_error": "فشل حذف الإشعارات",
+        "no_notifications": "لا توجد إشعارات بعد",
+        "no_notifications_desc": "ستظهر إشعاراتك هنا عند وصولها",
+        "no_category_match": "لا توجد إشعارات في هذا التصنيف",
+        "filters": {
+            "all": "الكل",
+            "unread": "غير مقروء",
+            "booking": "الحجوزات",
+            "message": "الرسائل"
+        },
+        "time": {
+            "now": "الآن",
+            "mins_ago": "منذ {{count}} دقيقة",
+            "hours_ago": "منذ {{count}} ساعة",
+            "days_ago": "منذ {{count}} يوم"
+        },
+        "dates": {
+            "today": "اليوم",
+            "yesterday": "أمس"
+        }
+    },
+    "cities": {
+        "Doha": "الدوحة",
+        "Al Rayyan": "الريان",
+        "Al Wakrah": "الوكرة",
+        "Al Khor": "الخور",
+        "Al Shamal": "الشمال",
+        "Al Shahaniya": "الشيلة",
+        "Umm Salal": "أم صلال",
+        "Al Daayen": "الضعاين"
+    }
+}

@@ -1,4 +1,14 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsObject, Min, Max, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  IsObject,
+  Min,
+  Max,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateProviderDto {
@@ -53,4 +63,54 @@ export class CreateProviderDto {
   @IsBoolean()
   @IsOptional()
   is_verified?: boolean;
+
+  // Enhanced fields
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  min_price?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  max_price?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  max_capacity?: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  categories?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  event_styles?: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  portfolio_images?: string[];
+
+  @IsString()
+  @IsOptional()
+  video_url?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  languages?: string[];
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  years_experience?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  response_time_hours?: number;
 }

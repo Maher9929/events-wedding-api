@@ -1,0 +1,76 @@
+name: Release - Create Tag & Changelog
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (ex: 1.0.0)'
+        required: true
+        type: string
+      release_type:
+        description: 'Type de release'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Update version in package.json
+        run: |
+          npm version ${{ github.event.inputs.version }} --no-git-tag-version
+          cd frontend && npm version ${{ github.event.inputs.version }} --no-git-tag-version
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          echo "## 🚀 Version ${{ github.event.inputs.version }}" > CHANGELOG_ENTRY.md
+          echo "" >> CHANGELOG_ENTRY.md
+          echo "### Changements depuis la dernière version:" >> CHANGELOG_ENTRY.md
+          git log $(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD \
+            --pretty=format:"- %s (%h)" \
+            --no-merges >> CHANGELOG_ENTRY.md || echo "- Premier release" >> CHANGELOG_ENTRY.md
+          cat CHANGELOG_ENTRY.md
+
+      - name: Commit version bump
+        run: |
+          git add package.json frontend/package.json
+          git commit -m "chore: bump version to v${{ github.event.inputs.version }}"
+          git push
+
+      - name: Create Git Tag
+        run: |
+          git tag -a "v${{ github.event.inputs.version }}" -m "Release v${{ github.event.inputs.version }}"
+          git push origin "v${{ github.event.inputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: "v${{ github.event.inputs.version }}"
+          body_path: CHANGELOG_ENTRY.md
+          draft: false
+          prerelease: false

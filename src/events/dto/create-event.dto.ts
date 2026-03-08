@@ -1,4 +1,13 @@
-import { IsString, IsOptional, IsEnum, IsNumber, IsArray, IsObject, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsNumber,
+  IsArray,
+  IsObject,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class CreateEventDto {
   @IsString()
@@ -9,20 +18,29 @@ export class CreateEventDto {
   description?: string;
 
   @IsEnum(['wedding', 'birthday', 'corporate', 'conference', 'party', 'other'])
-  event_type: 'wedding' | 'birthday' | 'corporate' | 'conference' | 'party' | 'other';
+  event_type:
+    | 'wedding'
+    | 'birthday'
+    | 'corporate'
+    | 'conference'
+    | 'party'
+    | 'other';
 
   @IsString()
   event_date: string;
 
   @IsString()
-  start_time: string;
+  @IsOptional()
+  start_time?: string;
 
   @IsString()
-  end_time: string;
+  @IsOptional()
+  end_time?: string;
 
   @IsNumber()
   @Min(1)
-  guest_count: number;
+  @IsOptional()
+  guest_count?: number;
 
   @IsNumber()
   @Min(0)

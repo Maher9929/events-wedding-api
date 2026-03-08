@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  Inject,
+} from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -41,14 +46,18 @@ export class CategoriesService {
     return data;
   }
 
-  async findAll(query: QueryCategoryDto = {}): Promise<{ data: Category[]; total: number }> {
+  async findAll(
+    query: QueryCategoryDto = {},
+  ): Promise<{ data: Category[]; total: number }> {
     let queryBuilder = this.supabase
       .from('categories')
       .select('*', { count: 'exact' });
 
     // Apply filters
     if (query.search) {
-      queryBuilder = queryBuilder.or(`name.ilike.%${query.search}%,description.ilike.%${query.search}%`);
+      queryBuilder = queryBuilder.or(
+        `name.ilike.%${query.search}%,description.ilike.%${query.search}%`,
+      );
     }
 
     if (query.parent_id !== undefined) {
@@ -65,11 +74,16 @@ export class CategoriesService {
     }
 
     if (query.offset) {
-      queryBuilder = queryBuilder.range(query.offset, query.offset + (query.limit || 10) - 1);
+      queryBuilder = queryBuilder.range(
+        query.offset,
+        query.offset + (query.limit || 10) - 1,
+      );
     }
 
     // Order by sort_order, then by name
-    queryBuilder = queryBuilder.order('sort_order', { ascending: true }).order('name', { ascending: true });
+    queryBuilder = queryBuilder
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true });
 
     const { data, error, count } = await queryBuilder;
 
@@ -144,7 +158,10 @@ export class CategoriesService {
     return data || [];
   }
 
-  async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {
+  async update(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+  ): Promise<Category> {
     const { data, error } = await this.supabase
       .from('categories')
       .update(updateCategoryDto)

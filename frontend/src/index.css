@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@theme {
+  --font-tajawal: 'Tajawal', sans-serif;
+
+  --color-primary: #8B4FFF;
+  --color-accent: #FFD93D;
+  --color-bglight: #F7F7FA;
+}
+
+:root {
+  font-family: var(--font-tajawal);
+  background-color: var(--color-bglight);
+}
+
+@layer utilities {
+  .gradient-purple {
+    background: linear-gradient(135deg, #8B4FFF 0%, #A66FFF 100%);
+  }
+
+  .gradient-gold {
+    background: linear-gradient(135deg, #FFD93D 0%, #FFC93D 100%);
+  }
+
+  .shadow-premium {
+    box-shadow: 0 8px 24px rgba(139, 79, 255, 0.15);
+  }
+
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+
+  .card-hover:active {
+    transform: scale(0.97);
+  }
+
+  .status-badge {
+    animation: pulse 2s infinite;
+  }
+
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(139, 79, 255, 0.12);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}

@@ -1,16 +1,16 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
   Delete,
   Query,
   HttpCode,
   HttpStatus,
   UseGuards,
-  Request
+  Request,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -29,7 +29,10 @@ export class ServicesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   async create(@Body() createServiceDto: CreateServiceDto, @Request() req) {
-    return await this.servicesService.create(req.user.provider_id, createServiceDto);
+    return await this.servicesService.createByUserId(
+      req.user.id,
+      createServiceDto,
+    );
   }
 
   @Get()
@@ -39,19 +42,34 @@ export class ServicesController {
 
   @Get('featured')
   async findFeatured(@Query('limit') limit?: string) {
-    return await this.servicesService.findFeatured(limit ? parseInt(limit) : 10);
+    return await this.servicesService.findFeatured(
+      limit ? parseInt(limit) : 10,
+    );
   }
 
   @Get('category/:categoryId')
-  async findByCategory(@Param('categoryId') categoryId: string, @Query('limit') limit?: string) {
-    return await this.servicesService.findByCategory(categoryId, limit ? parseInt(limit) : 10);
+  async findByCategory(
+    @Param('categoryId') categoryId: string,
+    @Query() query: QueryServiceDto,
+  ) {
+    return await this.servicesService.findAll({
+      ...query,
+      category_id: categoryId,
+    });
   }
 
   @Get('my-services')
   @UseGuards(JwtAuthGuard)
-  @Roles(UserRole.PROVIDER)
-  async findMyServices(@Request() req, @Query() query: { limit?: number; offset?: number }) {
-    return await this.servicesService.findByProvider(req.user.provider_id, req.user.id);
+  async findMyServices(
+    @Request() req,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return await this.servicesService.findByUserId(
+      req.user.id,
+      limit ? parseInt(limit) : undefined,
+      offset ? parseInt(offset) : undefined,
+    );
   }
 
   @Get(':id')
@@ -63,9 +81,9 @@ export class ServicesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   async update(
-    @Param('id') id: string, 
-    @Body() updateServiceDto: UpdateServiceDto, 
-    @Request() req
+    @Param('id') id: string,
+    @Body() updateServiceDto: UpdateServiceDto,
+    @Request() req,
   ) {
     return await this.servicesService.update(id, req.user.id, updateServiceDto);
   }
@@ -76,12 +94,12 @@ export class ServicesController {
   async updateFeatured(
     @Param('id') id: string,
     @Body('isFeatured') isFeatured: boolean,
-    @Body('featuredUntil') featuredUntil?: string
+    @Body('featuredUntil') featuredUntil?: string,
   ) {
     return await this.servicesService.updateFeatured(
-      id, 
-      isFeatured, 
-      featuredUntil ? new Date(featuredUntil) : undefined
+      id,
+      isFeatured,
+      featuredUntil ? new Date(featuredUntil) : undefined,
     );
   }
 

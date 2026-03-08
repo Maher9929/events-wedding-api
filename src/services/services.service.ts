@@ -1,4 +1,12 @@
-import { Injectable, NotFoundException, ConflictException, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  ForbiddenException,
+  Inject,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -7,22 +15,26 @@ import { Service } from './entities/service.entity';
 
 @Injectable()
 export class ServicesService {
+  private readonly logger = new Logger(ServicesService.name);
+
   constructor(
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
   ) {}
 
-  async create(providerId: string, createServiceDto: CreateServiceDto): Promise<Service> {
-    // Verify provider exists and user owns it
+  async create(
+    providerId: string,
+    createServiceDto: CreateServiceDto,
+  ): Promise<Service> {
+    // Verify provider exists
     const { data: provider } = await this.supabase
       .from('providers')
       .select('id, user_id')
       .eq('id', providerId)
-      .eq('user_id', providerId)
       .single();
 
     if (!provider) {
-      throw new ForbiddenException('You can only create services for your own provider profile');
+      throw new ForbiddenException('Provider profile not found');
     }
 
     const { data, error } = await this.supabase
@@ -34,7 +46,8 @@ export class ServicesService {
         is_active: createServiceDto.is_active ?? true,
         is_featured: createServiceDto.is_featured ?? false,
       })
-      .select(`
+      .select(
+        `
         *,
         providers!inner(
           id,
@@ -48,20 +61,25 @@ export class ServicesService {
           name,
           slug
         )
-      `)
+      `,
+      )
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      this.logger.error(
+        `Error creating service for provider ${providerId}: ${JSON.stringify(error)}`,
+      );
+      throw new BadRequestException(error.message);
     }
 
     return data;
   }
 
-  async findAll(query: QueryServiceDto = {}): Promise<{ data: Service[]; total: number }> {
-    let queryBuilder = this.supabase
-      .from('services')
-      .select(`
+  async findAll(
+    query: QueryServiceDto = {},
+  ): Promise<{ data: Service[]; total: number }> {
+    let queryBuilder = this.supabase.from('services').select(
+      `
         *,
         providers!inner(
           id,
@@ -77,7 +95,9 @@ export class ServicesService {
           name,
           slug
         )
-      `, { count: 'exact' });
+      `,
+      { count: 'exact' },
+    );
 
     // Apply filters
     if (query.search) {
@@ -89,10 +109,24 @@ export class ServicesService {
     }
 
     if (query.category_id) {
+      // Validate if it's a UUID
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          query.category_id,
+        );
+      if (!isUuid) {
+        return { data: [], total: 0 };
+      }
       queryBuilder = queryBuilder.eq('category_id', query.category_id);
     }
-
     if (query.provider_id) {
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          query.provider_id,
+        );
+      if (!isUuid) {
+        return { data: [], total: 0 };
+      }
       queryBuilder = queryBuilder.eq('provider_id', query.provider_id);
     }
 
@@ -116,6 +150,10 @@ export class ServicesService {
       queryBuilder = queryBuilder.eq('providers.city', query.city);
     }
 
+    if (query.min_rating) {
+      queryBuilder = queryBuilder.gte('providers.rating_avg', query.min_rating);
+    }
+
     if (query.is_active !== undefined) {
       queryBuilder = queryBuilder.eq('is_active', query.is_active);
     }
@@ -130,7 +168,10 @@ export class ServicesService {
     }
 
     if (query.offset) {
-      queryBuilder = queryBuilder.range(query.offset, query.offset + (query.limit || 10) - 1);
+      queryBuilder = queryBuilder.range(
+        query.offset,
+        query.offset + (query.limit || 10) - 1,
+      );
     }
 
     // Apply sorting
@@ -139,16 +180,24 @@ export class ServicesService {
 
     switch (sortBy) {
       case 'price':
-        queryBuilder = queryBuilder.order('base_price', { ascending: sortOrder === 'asc' });
+        queryBuilder = queryBuilder.order('base_price', {
+          ascending: sortOrder === 'asc',
+        });
         break;
       case 'rating':
-        queryBuilder = queryBuilder.order('providers.rating_avg', { ascending: sortOrder === 'asc' });
+        queryBuilder = queryBuilder.order('providers.rating_avg', {
+          ascending: sortOrder === 'asc',
+        });
         break;
       case 'title':
-        queryBuilder = queryBuilder.order('title', { ascending: sortOrder === 'asc' });
+        queryBuilder = queryBuilder.order('title', {
+          ascending: sortOrder === 'asc',
+        });
         break;
       default:
-        queryBuilder = queryBuilder.order('created_at', { ascending: sortOrder === 'asc' });
+        queryBuilder = queryBuilder.order('created_at', {
+          ascending: sortOrder === 'asc',
+        });
     }
 
     const { data, error, count } = await queryBuilder;
@@ -166,7 +215,8 @@ export class ServicesService {
   async findOne(id: string): Promise<Service> {
     const { data, error } = await this.supabase
       .from('services')
-      .select(`
+      .select(
+        `
         *,
         providers!inner(
           id,
@@ -185,7 +235,8 @@ export class ServicesService {
           slug,
           description
         )
-      `)
+      `,
+      )
       .eq('id', id)
       .single();
 
@@ -196,7 +247,78 @@ export class ServicesService {
     return data;
   }
 
-  async findByProvider(providerId: string, userId: string): Promise<{ data: Service[]; total: number }> {
+  async createByUserId(
+    userId: string,
+    createServiceDto: CreateServiceDto,
+  ): Promise<Service> {
+    // Find provider by user_id
+    const { data: provider } = await this.supabase
+      .from('providers')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!provider) {
+      throw new ForbiddenException(
+        'You must have a provider profile to create services',
+      );
+    }
+
+    return this.create(provider.id, createServiceDto);
+  }
+
+  async findByUserId(
+    userId: string,
+    limit?: number,
+    offset?: number,
+  ): Promise<{ data: Service[]; total: number }> {
+    // First find the provider for this user
+    const { data: provider } = await this.supabase
+      .from('providers')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!provider) {
+      return { data: [], total: 0 };
+    }
+
+    let q = this.supabase
+      .from('services')
+      .select(
+        `
+        *,
+        categories(
+          id,
+          name,
+          slug
+        )
+      `,
+        { count: 'exact' },
+      )
+      .eq('provider_id', provider.id)
+      .order('created_at', { ascending: false });
+
+    if (limit !== undefined && offset !== undefined) {
+      q = q.range(offset, offset + limit - 1);
+    }
+
+    const { data, error, count } = await q;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return {
+      data: (data || []).map((s) => ({ ...s, is_active: s.is_active ?? true })),
+      total: count || 0,
+    };
+  }
+
+  async findByProvider(
+    providerId: string,
+    userId: string,
+  ): Promise<{ data: Service[]; total: number }> {
     // Verify user owns the provider
     const { data: provider } = await this.supabase
       .from('providers')
@@ -206,19 +328,24 @@ export class ServicesService {
       .single();
 
     if (!provider) {
-      throw new ForbiddenException('You can only view services for your own provider profile');
+      throw new ForbiddenException(
+        'You can only view services for your own provider profile',
+      );
     }
 
     const { data, error, count } = await this.supabase
       .from('services')
-      .select(`
+      .select(
+        `
         *,
         categories!inner(
           id,
           name,
           slug
         )
-      `, { count: 'exact' })
+      `,
+        { count: 'exact' },
+      )
       .eq('provider_id', providerId)
       .order('created_at', { ascending: false });
 
@@ -232,10 +359,14 @@ export class ServicesService {
     };
   }
 
-  async findByCategory(categoryId: string, limit: number = 10): Promise<Service[]> {
+  async findByCategory(
+    categoryId: string,
+    limit: number = 10,
+  ): Promise<Service[]> {
     const { data, error } = await this.supabase
       .from('services')
-      .select(`
+      .select(
+        `
         *,
         providers!inner(
           id,
@@ -249,7 +380,8 @@ export class ServicesService {
           name,
           slug
         )
-      `)
+      `,
+      )
       .eq('category_id', categoryId)
       .eq('is_active', true)
       .order('providers.rating_avg', { ascending: false })
@@ -266,7 +398,8 @@ export class ServicesService {
   async findFeatured(limit: number = 10): Promise<Service[]> {
     const { data, error } = await this.supabase
       .from('services')
-      .select(`
+      .select(
+        `
         *,
         providers!inner(
           id,
@@ -280,7 +413,8 @@ export class ServicesService {
           name,
           slug
         )
-      `)
+      `,
+      )
       .eq('is_featured', true)
       .eq('is_active', true)
       .or('featured_until.is.null,featured_until.gt.now()')
@@ -294,16 +428,22 @@ export class ServicesService {
     return data || [];
   }
 
-  async update(id: string, userId: string, updateServiceDto: UpdateServiceDto): Promise<Service> {
+  async update(
+    id: string,
+    userId: string,
+    updateServiceDto: UpdateServiceDto,
+  ): Promise<Service> {
     // Get service to verify ownership
     const { data: service } = await this.supabase
       .from('services')
-      .select(`
+      .select(
+        `
         provider_id,
         providers!inner(
           user_id
         )
-      `)
+      `,
+      )
       .eq('id', id)
       .single();
 
@@ -315,7 +455,8 @@ export class ServicesService {
       .from('services')
       .update(updateServiceDto)
       .eq('id', id)
-      .select(`
+      .select(
+        `
         *,
         providers!inner(
           id,
@@ -329,7 +470,8 @@ export class ServicesService {
           name,
           slug
         )
-      `)
+      `,
+      )
       .single();
 
     if (error) {
@@ -339,12 +481,17 @@ export class ServicesService {
     return data;
   }
 
-  async updateFeatured(id: string, isFeatured: boolean, featuredUntil?: Date): Promise<Service> {
+  async updateFeatured(
+    id: string,
+    isFeatured: boolean,
+    featuredUntil?: Date,
+  ): Promise<Service> {
     const { data, error } = await this.supabase
       .from('services')
       .update({
         is_featured: isFeatured,
-        featured_until: isFeatured && featuredUntil ? featuredUntil.toISOString() : null,
+        featured_until:
+          isFeatured && featuredUntil ? featuredUntil.toISOString() : null,
       })
       .eq('id', id)
       .select()
@@ -361,12 +508,14 @@ export class ServicesService {
     // Get service to verify ownership
     const { data: service } = await this.supabase
       .from('services')
-      .select(`
+      .select(
+        `
         provider_id,
         providers!inner(
           user_id
         )
-      `)
+      `,
+      )
       .eq('id', id)
       .single();
 

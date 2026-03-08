@@ -1,0 +1,196 @@
+{
+    "common": {
+        "dashboard": "Dashboard",
+        "categories": "Categories",
+        "events": "Events",
+        "services": "Services",
+        "notifications": "Notifications",
+        "messages": "Messages",
+        "profile": "Profile",
+        "search": "What do you need for your event?",
+        "loading": "Loading...",
+        "no_results": "No results found",
+        "back": "Back",
+        "all": "All",
+        "about": "About",
+        "verified": "Verified",
+        "share": "Share",
+        "optional": "Optional",
+        "user": "User",
+        "show_less": "Show less",
+        "sending": "Sending",
+        "back_to_services": "Back to services",
+        "link_copied": "Link copied to clipboard",
+        "footer": {
+            "terms": "Terms & Conditions",
+            "privacy": "Privacy Policy",
+            "about": "About Us"
+        },
+        "retry": "Retry",
+        "periods": {
+            "week": "This Week",
+            "month": "This Month",
+            "year": "This Year",
+            "last_7_days": "Last 7 Days"
+        }
+    },
+    "home": {
+        "hero": {
+            "title": "Plan Your Perfect Event",
+            "subtitle": "Best services for your weddings and parties"
+        }
+    },
+    "auth": {
+        "login": {
+            "title": "Welcome Back",
+            "subtitle": "Enter your credentials to access your account",
+            "email": "Email",
+            "password": "Password",
+            "submit": "Login",
+            "success": "Login successful!",
+            "error": "Invalid credentials",
+            "no_account": "Don't have an account?",
+            "signup_link": "Create account"
+        },
+        "signup": {
+            "title": "Create Account",
+            "subtitle": "Enter your details to get started",
+            "full_name": "Full Name",
+            "client": "Client",
+            "provider": "Provider",
+            "submit": "Sign up",
+            "already_have_account": "Already have an account?",
+            "login_link": "Login",
+            "success": "Account created successfully!",
+            "error": "An error occurred during signup"
+        }
+    },
+    "service": {
+        "details": {
+            "title": "Service Details",
+            "book_now": "Book Now",
+            "contact": "Contact",
+            "share": "Share",
+            "reviews": "Reviews",
+            "no_reviews": "No reviews yet",
+            "add_review": "Add a review",
+            "review_placeholder": "Write your comment...",
+            "submit_review": "Submit Review",
+            "price_from": "Starts from",
+            "duration": "Duration",
+            "duration_unit": "min",
+            "about_provider": "About the provider",
+            "provider": "Provider",
+            "error_loading": "Failed to load service details",
+            "added_fav": "Added to favorites",
+            "removed_fav": "Removed from favorites",
+            "error_field": "Failed to update favorites",
+            "contact_msg": "Hi, I'd like to inquire about the service",
+            "conv_created": "Conversation created",
+            "conv_error": "Failed to create conversation",
+            "success_review": "Review submitted successfully",
+            "error_review": "Failed to submit review"
+        },
+        "listing": {
+            "title": "Available Services",
+            "subtitle": "Discover the best providers",
+            "search_placeholder": "Search services...",
+            "results_found": "services found",
+            "no_services": "No services found",
+            "featured_title": "Featured Services",
+            "featured_subtitle": "Excellent providers",
+            "load_more": "Load More",
+            "tip_title": "Tip",
+            "tip_desc": "Save your favorites for later",
+            "filters": {
+                "title": "Filter Results",
+                "city": "City",
+                "price_range": "Price Range",
+                "min_rating": "Min Rating",
+                "apply": "Apply Filters",
+                "reset": "Reset",
+                "min_price": "Min Price",
+                "max_price": "Max Price"
+            },
+            "sort": {
+                "rating": "Top Rated",
+                "popular": "Most Popular",
+                "newest": "Newest",
+                "price_asc": "Price: Low to High",
+                "price_desc": "Price: High to Low"
+            }
+        }
+    },
+    "bookings": {
+        "status": {
+            "pending": "Pending",
+            "confirmed": "Confirmed",
+            "cancelled": "Cancelled",
+            "completed": "Completed"
+        },
+        "error_loading": "Failed to load bookings",
+        "confirm_cancel": "Are you sure you want to cancel this booking?",
+        "cancel_success": "Booking cancelled successfully",
+        "cancel_error": "Failed to cancel booking",
+        "count_label": "booking(s)",
+        "search_placeholder": "Search by service name...",
+        "sort": {
+            "oldest": "Oldest"
+        },
+        "no_bookings": "No bookings found",
+        "no_bookings_desc": "Start by booking a service for your event",
+        "explore_services": "Explore Services",
+        "amount": "Amount",
+        "payment_status": "Payment Status",
+        "paid": "Paid",
+        "partially_paid": "Partially Paid",
+        "unpaid": "Unpaid",
+        "remaining": "Remaining",
+        "details": "Details",
+        "cancel": "Cancel",
+        "event_date": "Event Date",
+        "notes": "Notes",
+        "notes_placeholder": "Any special requirements...",
+        "errors": {
+            "select_date": "Please select a date"
+        }
+    },
+    "cities": {
+        "Doha": "Doha",
+        "Al Rayyan": "Al Rayyan",
+        "Al Wakrah": "Al Wakrah",
+        "Al Khor": "Al Khor",
+        "Al Shamal": "North City",
+        "Al Shahaniya": "Al Shahaniya",
+        "Umm Salal": "Umm Salal",
+        "Al Daayen": "Al Daayen"
+    },
+    "notifications": {
+        "unread": "Unread",
+        "error_loading": "Failed to load notifications",
+        "mark_all_success": "Marked all as read",
+        "mark_all_error": "Failed to mark all as read",
+        "confirm_delete_all": "Delete all read notifications?",
+        "delete_success": "Read notifications deleted",
+        "delete_error": "Failed to delete notifications",
+        "no_notifications": "No notifications yet",
+        "no_notifications_desc": "Notifications will appear here as they arrive",
+        "no_category_match": "No notifications in this category",
+        "filters": {
+            "all": "All",
+            "unread": "Unread",
+            "booking": "Bookings",
+            "message": "Messages"
+        },
+        "time": {
+            "now": "Just now",
+            "mins_ago": "{{count}} mins ago",
+            "hours_ago": "{{count}} hours ago",
+            "days_ago": "{{count}} days ago"
+        },
+        "dates": {
+            "today": "Today",
+            "yesterday": "Yesterday"
+        }
+    }
+}

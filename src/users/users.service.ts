@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, NotFoundException, UnauthorizedException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+  Inject,
+} from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto, UserRole } from './dto/create-user.dto';
@@ -27,30 +33,73 @@ export class UsersService {
     }
 
     // Create user with Supabase Auth
-    const { data: authData, error: authError } = await this.supabase.auth.signUp({
-      email: registerDto.email,
-      password: registerDto.password,
-    });
+    const { data: authData, error: authError } =
+      await this.supabase.auth.signUp({
+        email: registerDto.email,
+        password: registerDto.password,
+      });
 
     if (authError) {
       throw new Error(authError.message);
     }
 
-    // Create user profile
-    const { data: profile, error: profileError } = await this.supabase
-      .from('user_profiles')
-      .insert({
-        id: authData.user?.id,
-        email: registerDto.email,
-        full_name: registerDto.full_name,
-        phone: registerDto.phone,
-        role: UserRole.CLIENT,
-      })
-      .select()
-      .single();
+    if (!authData.user) {
+      throw new Error('Failed to create user');
+    }
 
-    if (profileError) {
-      throw new Error(profileError.message);
+    // Retry fetching the profile created by the DB trigger (up to 3 x 500ms)
+    let profile: any = null;
+    let profileError: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const result = await this.supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
+      profile = result.data;
+      profileError = result.error;
+      if (profile) break;
+    }
+
+    // If trigger didn't create it, create it manually
+    if (!profile) {
+      const { data: manualProfile, error: manualError } = await this.supabase
+        .from('user_profiles')
+        .insert({
+          id: authData.user.id,
+          email: registerDto.email,
+          full_name: registerDto.full_name || null,
+          phone: registerDto.phone || null,
+          role: registerDto.role || 'client',
+        })
+        .select()
+        .single();
+
+      if (manualError || !manualProfile) {
+        throw new Error(
+          'Failed to create user profile. Please contact support.',
+        );
+      }
+      profile = manualProfile;
+    }
+
+    // Update additional profile info if provided
+    if (registerDto.full_name || registerDto.phone || registerDto.role) {
+      const { data: updatedProfile } = await this.supabase
+        .from('user_profiles')
+        .update({
+          full_name: registerDto.full_name || null,
+          phone: registerDto.phone || null,
+          role: registerDto.role || 'client',
+        })
+        .eq('id', authData.user.id)
+        .select()
+        .single();
+
+      if (updatedProfile) {
+        Object.assign(profile, updatedProfile);
+      }
     }
 
     const token = await this.generateToken(profile);
@@ -68,29 +117,41 @@ export class UsersService {
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     // Authenticate with Supabase Auth
-    const { data: authData, error: authError } = await this.supabase.auth.signInWithPassword({
-      email: loginDto.email,
-      password: loginDto.password,
-    });
+    const { data: authData, error: authError } =
+      await this.supabase.auth.signInWithPassword({
+        email: loginDto.email,
+        password: loginDto.password,
+      });
 
     if (authError) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
     // Get user profile
+    const authId = authData.user?.id;
+
     const { data: profile, error: profileError } = await this.supabase
       .from('user_profiles')
       .select('*')
-      .eq('id', authData.user?.id)
+      .eq('id', authId)
       .single();
 
     if (profileError || !profile) {
-      console.error('Profile error:', profileError);
-      console.error('Auth user ID:', authData.user?.id);
       throw new NotFoundException('User profile not found');
     }
 
-    const token = await this.generateToken(profile);
+    // Fetch provider_id if user is a provider
+    let providerId: string | null = null;
+    if (profile.role === UserRole.PROVIDER) {
+      const { data: providerData } = await this.supabase
+        .from('providers')
+        .select('id')
+        .eq('user_id', profile.id)
+        .single();
+      providerId = providerData?.id || null;
+    }
+
+    const token = await this.generateToken(profile, providerId);
 
     return {
       access_token: token,
@@ -116,10 +177,11 @@ export class UsersService {
     }
 
     // Create user with Supabase Auth
-    const { data: authData, error: authError } = await this.supabase.auth.signUp({
-      email: createUserDto.email,
-      password: createUserDto.password,
-    });
+    const { data: authData, error: authError } =
+      await this.supabase.auth.signUp({
+        email: createUserDto.email,
+        password: createUserDto.password,
+      });
 
     if (authError) {
       throw new Error(authError.message);
@@ -145,17 +207,39 @@ export class UsersService {
     return data;
   }
 
-  async findAll(): Promise<UserProfile[]> {
-    const { data, error } = await this.supabase
+  async findAll(
+    search?: string,
+    limit?: number,
+    offset?: number,
+    role?: string,
+    sortOrder?: string,
+  ): Promise<{ data: UserProfile[]; total: number }> {
+    let queryBuilder = this.supabase
       .from('user_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('*', { count: 'exact' })
+      .order('created_at', { ascending: sortOrder === 'asc' });
+
+    if (search) {
+      queryBuilder = queryBuilder.or(
+        `full_name.ilike.%${search}%,email.ilike.%${search}%`,
+      );
+    }
+
+    if (role && role !== 'all') {
+      queryBuilder = queryBuilder.eq('role', role);
+    }
+
+    if (limit !== undefined && offset !== undefined) {
+      queryBuilder = queryBuilder.range(offset, offset + limit - 1);
+    }
+
+    const { data, error, count } = await queryBuilder;
 
     if (error) {
       throw new Error(error.message);
     }
 
-    return data || [];
+    return { data: data || [], total: count || 0 };
   }
 
   async findOne(id: string): Promise<UserProfile> {
@@ -186,10 +270,34 @@ export class UsersService {
     return data;
   }
 
-  async update(id: string, updateData: Partial<UserProfile>): Promise<UserProfile> {
+  async update(
+    id: string,
+    updateData: Partial<UserProfile>,
+  ): Promise<UserProfile> {
+    const allowedFields = [
+      'full_name',
+      'phone',
+      'bio',
+      'city',
+      'avatar_url',
+      'language',
+      'timezone',
+      'is_banned',
+    ];
+    const safeData: Record<string, any> = {};
+    for (const key of allowedFields) {
+      if (key in updateData) {
+        safeData[key] = (updateData as any)[key];
+      }
+    }
+
+    if (Object.keys(safeData).length === 0) {
+      return this.findOne(id);
+    }
+
     const { data, error } = await this.supabase
       .from('user_profiles')
-      .update(updateData)
+      .update(safeData)
       .eq('id', id)
       .select()
       .single();
@@ -212,12 +320,47 @@ export class UsersService {
     }
   }
 
-  private async generateToken(user: UserProfile): Promise<string> {
-    const payload = {
+  async refreshToken(userId: string): Promise<{
+    access_token: string;
+    user: Pick<UserProfile, 'id' | 'email' | 'full_name' | 'role'>;
+  }> {
+    const profile = await this.findOne(userId);
+
+    let providerId: string | null = null;
+    if (profile.role === UserRole.PROVIDER) {
+      const { data: providerData } = await this.supabase
+        .from('providers')
+        .select('id')
+        .eq('user_id', profile.id)
+        .single();
+      providerId = providerData?.id || null;
+    }
+
+    const token = await this.generateToken(profile, providerId);
+    return {
+      access_token: token,
+      user: {
+        id: profile.id,
+        email: profile.email,
+        full_name: profile.full_name,
+        role: profile.role,
+      },
+    };
+  }
+
+  private async generateToken(
+    user: UserProfile,
+    providerId: string | null = null,
+  ): Promise<string> {
+    const payload: any = {
       sub: user.id,
       email: user.email,
       role: user.role,
     };
+
+    if (providerId) {
+      payload.provider_id = providerId;
+    }
 
     return this.jwtService.signAsync(payload);
   }

@@ -1,0 +1,321 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { quotesService, type Quote } from '../services/quotes.service';
+import { toastService } from '../services/toast.service';
+
+const statusMap: Record<string, { label: string; cls: string; icon: string }> = {
+    draft:    { label: 'مسودة',       cls: 'bg-gray-100 text-gray-600',   icon: 'fa-file' },
+    sent:     { label: 'مرسل',        cls: 'bg-blue-100 text-blue-700',   icon: 'fa-paper-plane' },
+    accepted: { label: 'مقبول',       cls: 'bg-green-100 text-green-700', icon: 'fa-check-circle' },
+    rejected: { label: 'مرفوض',       cls: 'bg-red-100 text-red-700',     icon: 'fa-times-circle' },
+    expired:  { label: 'منتهي الصلاحية', cls: 'bg-orange-100 text-orange-700', icon: 'fa-clock' },
+};
+
+const PAGE_SIZE = 10;
+
+const QuotesPage = () => {
+    const navigate = useNavigate();
+    const [quotes, setQuotes] = useState<Quote[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [filter, setFilter] = useState<'all' | 'sent' | 'accepted' | 'rejected' | 'expired'>('all');
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(0);
+    const [total, setTotal] = useState(0);
+    const [updating, setUpdating] = useState<string | null>(null);
+
+    useEffect(() => { setPage(0); }, [filter, search]);
+
+    useEffect(() => {
+        const timer = setTimeout(() => fetchQuotes(), search ? 300 : 0);
+        return () => clearTimeout(timer);
+    }, [filter, page, search]); // eslint-disable-line
+
+    const fetchQuotes = async () => {
+        setLoading(true);
+        try {
+            const p = new URLSearchParams();
+            if (filter !== 'all') p.set('status', filter);
+            if (search.trim()) p.set('search', search.trim());
+            p.set('limit', String(PAGE_SIZE));
+            p.set('offset', String(page * PAGE_SIZE));
+            const res: any = await quotesService.getMyQuotes(`?${p.toString()}`);
+            const list = Array.isArray(res) ? res : res?.data || [];
+            const tot = (res as any)?.total ?? list.length;
+            setQuotes(list);
+            setTotal(tot);
+        } catch {
+            toastService.error('فشل تحميل عروض الأسعار');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAccept = async (id: string) => {
+        setUpdating(id);
+        try {
+            await quotesService.updateStatus(id, 'accepted');
+            setQuotes(prev => prev.map(q => q.id === id ? { ...q, status: 'accepted' } : q));
+            toastService.success('تم قبول عرض السعر');
+        } catch {
+            toastService.error('فشل قبول عرض السعر');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const handleReject = async (id: string) => {
+        if (!confirm('هل أنت متأكد من رفض عرض السعر؟')) return;
+        setUpdating(id);
+        try {
+            await quotesService.updateStatus(id, 'rejected');
+            setQuotes(prev => prev.map(q => q.id === id ? { ...q, status: 'rejected' } : q));
+            toastService.success('تم رفض عرض السعر');
+        } catch {
+            toastService.error('فشل رفض عرض السعر');
+        } finally {
+            setUpdating(null);
+        }
+    };
+
+    const handleBookFromQuote = (quote: Quote) => {
+        const params = new URLSearchParams({
+            provider: quote.provider_id,
+            amount: String(quote.total_amount || 0),
+            ...(quote.service_id ? { service: quote.service_id } : {}),
+            ...(quote.event_id ? { event: quote.event_id } : {}),
+        });
+        navigate(`/booking/checkout?${params.toString()}`);
+    };
+
+    const paginated = quotes;
+
+    const timeAgo = (date: string) => {
+        const diff = Date.now() - new Date(date).getTime();
+        const days = Math.floor(diff / 86400000);
+        if (days === 0) return 'اليوم';
+        if (days === 1) return 'أمس';
+        return `منذ ${days} يوم`;
+    };
+
+    return (
+        <div className="min-h-screen bg-bglight font-tajawal pb-24" dir="rtl">
+            <header className="bg-white sticky top-0 z-50 shadow-sm px-5 py-4">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center">
+                        <i className="fa-solid fa-arrow-right text-gray-700"></i>
+                    </button>
+                    <div>
+                        <h1 className="text-xl font-bold text-gray-900">عروض الأسعار</h1>
+                        <p className="text-xs text-gray-500">{total} عرض</p>
+                    </div>
+                </div>
+                <div className="relative mt-3">
+                    <input
+                        type="text"
+                        placeholder="بحث في عروض الأسعار..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        className="w-full h-10 bg-bglight rounded-xl px-4 pe-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    />
+                    <i className="fa-solid fa-search absolute right-3 top-3 text-gray-400 text-sm"></i>
+                </div>
+            </header>
+
+            {/* Stats */}
+            {!loading && total > 0 && (
+                <div className="px-5 pt-3 grid grid-cols-3 gap-3">
+                    <div className="bg-white rounded-2xl p-3 shadow-sm text-center">
+                        <p className="text-xl font-bold text-gray-900">{total}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">إجمالي</p>
+                    </div>
+                    <div className="bg-green-50 rounded-2xl p-3 shadow-sm text-center">
+                        <p className="text-xl font-bold text-green-700">{quotes.filter(q => q.status === 'accepted').length}</p>
+                        <p className="text-xs text-green-600 mt-0.5">مقبول</p>
+                    </div>
+                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-3 shadow-sm text-center">
+                        <p className="text-sm font-bold text-primary">{quotes.filter(q => q.status === 'accepted').reduce((s, q) => s + (q.total_amount || 0), 0).toLocaleString()}</p>
+                        <p className="text-xs text-primary/70 mt-0.5">ر.ق مقبول</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Filter Tabs */}
+            <div className="px-5 py-3 flex gap-2 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+                {(['all', 'sent', 'accepted', 'rejected', 'expired'] as const).map(f => {
+                    const count = f === 'all' ? quotes.length : quotes.filter(q => q.status === f).length;
+                    const labels: Record<string, string> = { all: 'الكل', sent: 'مرسل', accepted: 'مقبول', rejected: 'مرفوض', expired: 'منتهي' };
+                    return (
+                        <button
+                            key={f}
+                            onClick={() => setFilter(f)}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                                filter === f ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-600 shadow-sm'
+                            }`}
+                        >
+                            {labels[f]}
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${filter === f ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                                {count}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+
+            <main className="px-5 py-2">
+                {loading ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="bg-white rounded-2xl p-5 shadow-sm animate-pulse">
+                                <div className="h-5 bg-gray-200 rounded w-2/3 mb-3"></div>
+                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                        ))}
+                    </div>
+                ) : paginated.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                        <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                            <i className="fa-solid fa-file-invoice text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">لا توجد عروض أسعار</h3>
+                        <p className="text-sm text-gray-500">ستظهر هنا عروض الأسعار التي تتلقاها من مقدمي الخدمات</p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {paginated.map(quote => {
+                            const st = statusMap[quote.status] || statusMap.draft;
+                            const isExpired = quote.valid_until && new Date(quote.valid_until) < new Date();
+                            const canRespond = quote.status === 'sent' && !isExpired;
+                            return (
+                                <div key={quote.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                                    <div className="p-5">
+                                        <div className="flex items-start justify-between gap-3 mb-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                                                    <i className="fa-solid fa-file-invoice text-primary"></i>
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-gray-900 text-sm">
+                                                        عرض سعر #{quote.id.substring(0, 8).toUpperCase()}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400">{timeAgo(quote.created_at)}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                {isExpired && quote.status === 'sent' && (
+                                                    <span className="text-xs px-2 py-1 rounded-xl font-bold bg-red-100 text-red-600 flex items-center gap-1">
+                                                        <i className="fa-solid fa-clock text-[10px]"></i>
+                                                        منتهي
+                                                    </span>
+                                                )}
+                                                <span className={`text-xs px-2.5 py-1 rounded-xl font-bold flex items-center gap-1 ${st.cls}`}>
+                                                    <i className={`fa-solid ${st.icon} text-[10px]`}></i>
+                                                    {st.label}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between py-3 border-t border-gray-100">
+                                            <div>
+                                                <p className="text-xs text-gray-500">المبلغ الإجمالي</p>
+                                                <p className="text-xl font-bold text-primary">{(quote.total_amount || 0).toLocaleString()} ر.ق</p>
+                                            </div>
+                                            {quote.valid_until && (
+                                                <div className="text-left">
+                                                    <p className="text-xs text-gray-500">صالح حتى</p>
+                                                    <p className="text-sm font-bold text-gray-700">
+                                                        {new Date(quote.valid_until).toLocaleDateString('ar-EG')}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Items breakdown */}
+                                        {quote.items && quote.items.length > 0 && (
+                                            <div className="mt-3 bg-gray-50 rounded-xl p-3 space-y-1.5">
+                                                <p className="text-xs font-bold text-gray-700 mb-2">تفاصيل العرض:</p>
+                                                {quote.items.map((item: any, idx: number) => (
+                                                    <div key={idx} className="flex items-center justify-between text-xs">
+                                                        <span className="text-gray-600 flex items-center gap-1">
+                                                            <i className="fa-solid fa-circle text-primary text-[6px]"></i>
+                                                            {item.name || item.description}
+                                                            {item.quantity > 1 && <span className="text-gray-400">×{item.quantity}</span>}
+                                                        </span>
+                                                        <span className="font-bold text-gray-900">{((item.price || 0) * (item.quantity || 1)).toLocaleString()} ر.ق</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {quote.notes && (
+                                            <p className="text-xs text-gray-500 bg-gray-50 rounded-xl p-3 mt-2">
+                                                <i className="fa-solid fa-note-sticky ms-1 text-gray-400"></i>
+                                                {quote.notes}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {canRespond && (
+                                        <div className="flex border-t border-gray-100">
+                                            <button
+                                                onClick={() => handleAccept(quote.id)}
+                                                disabled={updating === quote.id}
+                                                className="flex-1 py-3 text-center text-sm font-bold text-green-600 hover:bg-green-50 transition-colors disabled:opacity-50"
+                                            >
+                                                {updating === quote.id
+                                                    ? <i className="fa-solid fa-spinner fa-spin"></i>
+                                                    : <><i className="fa-solid fa-check ms-1"></i>قبول</>
+                                                }
+                                            </button>
+                                            <div className="w-px bg-gray-100"></div>
+                                            <button
+                                                onClick={() => handleReject(quote.id)}
+                                                disabled={updating === quote.id}
+                                                className="flex-1 py-3 text-center text-sm font-bold text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                            >
+                                                <i className="fa-solid fa-times ms-1"></i>رفض
+                                            </button>
+                                        </div>
+                                    )}
+                                    {quote.status === 'accepted' && (
+                                        <div className="border-t border-gray-100">
+                                            <button
+                                                onClick={() => handleBookFromQuote(quote)}
+                                                className="w-full py-3 text-center text-sm font-bold text-white gradient-purple hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                            >
+                                                <i className="fa-solid fa-calendar-check"></i>
+                                                إنشاء حجز من هذا العرض
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {total > PAGE_SIZE && (
+                    <div className="flex items-center justify-center gap-3 pt-4 pb-2">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40"
+                        >
+                            <i className="fa-solid fa-chevron-right text-sm"></i>
+                        </button>
+                        <span className="text-sm font-bold text-gray-700">{page + 1} / {Math.ceil(total / PAGE_SIZE)}</span>
+                        <button
+                            onClick={() => setPage(p => p + 1)}
+                            disabled={(page + 1) * PAGE_SIZE >= total}
+                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40"
+                        >
+                            <i className="fa-solid fa-chevron-left text-sm"></i>
+                        </button>
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+export default QuotesPage;

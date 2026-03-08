@@ -3,7 +3,13 @@ export class Event {
   client_id: string;
   title: string;
   description?: string;
-  event_type: 'wedding' | 'birthday' | 'corporate' | 'conference' | 'party' | 'other';
+  event_type:
+    | 'wedding'
+    | 'birthday'
+    | 'corporate'
+    | 'conference'
+    | 'party'
+    | 'other';
   event_date: Date;
   start_time: string;
   end_time: string;

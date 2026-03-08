@@ -1,0 +1,28 @@
+export class Booking {
+  id: string;
+  event_id?: string;
+  quote_id?: string;
+  service_id?: string;
+  client_id: string;
+  provider_id: string;
+  booking_date: string;
+  start_time?: string;
+  end_time?: string;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected';
+  amount: number;
+  deposit_amount?: number;
+  balance_amount?: number;
+  platform_fee?: number;
+  receipt_url?: string;
+  payment_status: 'pending' | 'deposit_paid' | 'fully_paid' | 'refunded';
+  notes?: string;
+  cancellation_reason?: string;
+  cancellation_deadline?: Date;
+  provider_notes?: string;
+  client_notes?: string;
+  requirements?: string[];
+  location?: string;
+  guest_count?: number;
+  created_at: Date;
+  updated_at: Date;
+}
