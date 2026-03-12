@@ -33,6 +33,41 @@
             "month": "هذا الشهر",
             "year": "هذه السنة",
             "last_7_days": "آخر 7 أيام"
+        },
+        "admin": {
+            "title": "لوحة الإدارة",
+            "back_to_site": "العودة للموقع",
+            "logout": "تسجيل الخروج",
+            "overview": "نظرة عامة",
+            "users": "المستخدمين",
+            "providers": "مقدمو الخدمات",
+            "categories": "الفئات",
+            "bookings": "الحجوزات",
+            "events": "الفعاليات",
+            "services": "الخدمات",
+            "messages": "الرسائل",
+            "reviews": "التقييمات",
+            "quotes": "عروض الأسعار",
+            "commissions": "العمولات",
+            "audit_logs": "سجل المراقبة"
+        },
+        "provider": {
+            "portal": "بوابة المزود",
+            "dashboard": "لوحة التحكم",
+            "calendar": "التقويم",
+            "services": "الخدمات",
+            "bookings": "الحجوزات",
+            "quotes": "عروض الأسعار",
+            "reviews": "التقييمات",
+            "profile": "الملف الشخصي"
+        },
+        "client": {
+            "dashboard": "الرئيسية",
+            "my_events": "فعالياتي",
+            "my_bookings": "حجوزاتي",
+            "favorites": "المفضلة",
+            "messages": "الرسائل",
+            "my_account": "حسابي"
         }
     },
     "home": {

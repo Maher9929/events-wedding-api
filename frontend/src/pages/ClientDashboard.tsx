@@ -4,6 +4,8 @@ import { type Event } from '../services/api';
 import { bookingsService, type Booking } from '../services/bookings.service';
 import { eventsService } from '../services/events.service';
 import { quotesService } from '../services/quotes.service';
+import { messagesService } from '../services/messages.service';
+import { type Conversation } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { toastService } from '../services/toast.service';
 import LoadingSpinner from '../components/common/LoadingSpinner';
@@ -13,8 +15,9 @@ const ClientDashboard = () => {
     const { user, isAuthenticated } = useAuth();
     const [events, setEvents] = useState<Event[]>([]);
     const [bookings, setBookings] = useState<Booking[]>([]);
-    const [totalBookings, setTotalBookings] = useState(0);
-    const [totalEvents, setTotalEvents] = useState(0);
+    const [recentMessages, setRecentMessages] = useState<Conversation[]>([]);
+    const [allBookings, setAllBookings] = useState<Booking[]>([]);
+    const [allEvents, setAllEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -28,21 +31,24 @@ const ClientDashboard = () => {
     const fetchAllData = async () => {
         setLoading(true);
         try {
-            const [eventsData, bookingsData, quotesData] = await Promise.all([
+            const [eventsData, bookingsData, _quotesData, convosData] = await Promise.all([
                 eventsService.getMyEvents().catch(() => ({ data: [], total: 0 })),
                 bookingsService.getMyBookings().catch(() => ({ data: [], total: 0 })),
                 quotesService.getMyQuotes().catch(() => ({ data: [], total: 0 })),
+                messagesService.getConversations().catch(() => [])
             ]);
 
             const eventsList = Array.isArray(eventsData) ? eventsData : (eventsData as any)?.data || [];
             setEvents(eventsList);
-            setTotalEvents((eventsData as any)?.total ?? eventsList.length);
+            setAllEvents(eventsList);
 
             const bookingsList = Array.isArray(bookingsData) ? bookingsData : (bookingsData as any)?.data || [];
             setBookings(bookingsList.slice(0, 5));
-            setTotalBookings((bookingsData as any)?.total ?? bookingsList.length);
+            setAllBookings(bookingsList);
 
-            const quotesList = Array.isArray(quotesData) ? quotesData : (quotesData as any)?.data || [];
+            setRecentMessages(convosData.slice(0, 3));
+
+            // const quotesList = Array.isArray(quotesData) ? quotesData : (quotesData as any)?.data || [];
             // setQuotes(quotesList); // Not used currently
         } catch (error: any) {
             toastService.error('فشل تحميل البيانات');
@@ -56,9 +62,9 @@ const ClientDashboard = () => {
     const nextEvent = sortedEvents.length > 0
         ? sortedEvents.find(e => new Date(e.event_date) >= new Date()) || sortedEvents[0]
         : null;
-    const completedBookings = bookings.filter(b => b.status === 'completed').length;
-    const pendingBookings = bookings.filter(b => b.status === 'pending').length;
-    const totalSpent = bookings.filter(b => b.status === 'completed').reduce((s, b) => s + (b.amount || 0), 0);
+    const completedBookings = allBookings.filter(b => b.status === 'completed').length;
+    const pendingBookings = allBookings.filter(b => b.status === 'pending').length;
+    const totalSpent = allBookings.filter(b => b.status === 'completed').reduce((s, b) => s + (b.amount || 0), 0);
 
     if (loading) {
         return <LoadingSpinner fullScreen message="جاري تحميل لوحة التحكم..." />;
@@ -104,7 +110,7 @@ const ClientDashboard = () => {
                     <div className="w-12 h-12 rounded-2xl bg-purple-100 text-primary flex items-center justify-center mx-auto mb-3">
                         <i className="fa-solid fa-briefcase text-xl"></i>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 mb-1">{totalEvents}</p>
+                    <p className="text-3xl font-bold text-gray-900 mb-1">{allEvents.length}</p>
                     <p className="text-xs text-gray-500 font-bold">فعالياتي</p>
                 </div>
 
@@ -120,7 +126,7 @@ const ClientDashboard = () => {
                     <div className="w-12 h-12 rounded-2xl bg-yellow-100 text-yellow-600 flex items-center justify-center mx-auto mb-3">
                         <i className="fa-solid fa-clock text-xl"></i>
                     </div>
-                    <p className="text-3xl font-bold text-gray-900 mb-1">{totalBookings > 0 ? pendingBookings : 0}</p>
+                    <p className="text-3xl font-bold text-gray-900 mb-1">{pendingBookings}</p>
                     <p className="text-xs text-gray-500 font-bold">بانتظار التأكيد</p>
                 </div>
 
@@ -150,6 +156,42 @@ const ClientDashboard = () => {
                         <span className="text-xs font-bold text-gray-700">{item.label}</span>
                     </Link>
                 ))}
+            </div>
+
+            {/* Recent Messages */}
+            <div className="flex items-center justify-between mt-2">
+                <h3 className="text-lg font-bold text-gray-900">آخر المحادثات</h3>
+                <button onClick={() => navigate('/client/messages')} className="text-sm font-bold text-primary hover:underline">عرض الكل</button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {recentMessages.length === 0 ? (
+                    <div className="md:col-span-3 text-center text-gray-400 py-4 glass-effect rounded-2xl text-sm">لا توجد رسائل بعد</div>
+                ) : (
+                    recentMessages.map(convo => (
+                        <div
+                            key={convo.id}
+                            onClick={() => navigate(`/client/messages?id=${convo.id}`)}
+                            className="glass-effect rounded-2xl p-4 shadow-premium flex items-center gap-3 card-hover cursor-pointer"
+                        >
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary flex-shrink-0 overflow-hidden">
+                                {convo.recipient_avatar ? (
+                                    <img src={convo.recipient_avatar} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    convo.recipient_name?.charAt(0)
+                                )}
+                            </div>
+                            <div className="flex-1 min-w-0 text-right">
+                                <p className="text-sm font-bold text-gray-900 truncate">{convo.recipient_name}</p>
+                                <p className="text-[10px] text-gray-500">{new Date(convo.last_message_at).toLocaleDateString('ar-EG')}</p>
+                            </div>
+                            {(convo.unread_count || 0) > 0 && (
+                                <span className="w-4 h-4 bg-primary text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                                    {convo.unread_count}
+                                </span>
+                            )}
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* Recent Bookings */}

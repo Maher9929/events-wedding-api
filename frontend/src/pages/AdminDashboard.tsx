@@ -12,7 +12,7 @@ const AdminDashboard = () => {
     const [totalEvents, setTotalEvents] = useState(0);
     const [bookingStats, setBookingStats] = useState<{ total_bookings: number; total_revenue: number; pending: number; confirmed: number; completed: number; cancelled: number; monthly_revenue?: { month: string; revenue: number }[] }>({ total_bookings: 0, total_revenue: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 });
     const [eventStats, setEventStats] = useState<{ total: number; by_status: Record<string, number>; by_type: Record<string, number> } | null>(null);
-    const [providerStats, setProviderStats] = useState<{ total: number; verified: number; unverified: number; avg_rating: number; total_services?: number } | null>(null);
+    const [providerStats, setProviderStats] = useState<{ total: number; verified: number; unverified: number; avg_rating: number; total_services?: number; total_users?: number } | null>(null);
     const [allBookings, setAllBookings] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -75,6 +75,10 @@ const AdminDashboard = () => {
                         { to: '/admin/reviews', icon: 'fa-star', label: 'التقييمات', color: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' },
                         { to: '/admin/quotes', icon: 'fa-file-invoice', label: 'عروض الأسعار', color: 'bg-teal-100 text-teal-700 hover:bg-teal-200' },
                         { to: '/admin/categories', icon: 'fa-border-all', label: 'الفئات', color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
+                        { to: '/admin/moderation', icon: 'fa-shield-halved', label: 'الإشراف', color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+                        { to: '/admin/messages', icon: 'fa-comments', label: 'الرسائل', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200' },
+                        { to: '/admin/commissions', icon: 'fa-percent', label: 'العمولات', color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' },
+                        { to: '/admin/audit-logs', icon: 'fa-clipboard-list', label: 'سجل التدقيق', color: 'bg-slate-100 text-slate-700 hover:bg-slate-200' },
                     ].map(item => (
                         <Link key={item.to} to={item.to} className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors ${item.color}`}>
                             <i className={`fa-solid ${item.icon} ms-1`}></i>{item.label}
@@ -96,7 +100,7 @@ const AdminDashboard = () => {
                 <>
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                         {[
-                            { label: 'إجمالي المستخدمين', value: totalUsers, icon: 'fa-users', color: 'bg-purple-100 text-primary' },
+                            { label: 'إجمالي المستخدمين', value: providerStats?.total_users ?? totalUsers, icon: 'fa-users', color: 'bg-purple-100 text-primary' },
                             { label: 'مقدمو الخدمات', value: providerStats?.total ?? providers.length, icon: 'fa-store', color: 'bg-green-100 text-green-600' },
                             { label: 'العملاء', value: clients.length, icon: 'fa-user-group', color: 'bg-blue-100 text-blue-600' },
                             { label: 'الفعاليات', value: eventStats?.total ?? totalEvents, icon: 'fa-calendar', color: 'bg-amber-100 text-amber-600' },

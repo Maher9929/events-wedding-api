@@ -13,7 +13,7 @@ export interface Booking {
   balance_amount?: number;
   platform_fee?: number;
   receipt_url?: string;
-  payment_status: 'pending' | 'paid' | 'refunded';
+  payment_status: 'pending' | 'deposit_paid' | 'fully_paid' | 'refunded';
   notes?: string;
   cancellation_reason?: string;
   created_at: string;

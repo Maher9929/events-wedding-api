@@ -27,7 +27,7 @@ import { UserRole } from '../users/dto/create-user.dto';
 
 @Controller('providers')
 export class ProvidersController {
-  constructor(private readonly providersService: ProvidersService) { }
+  constructor(private readonly providersService: ProvidersService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -78,8 +78,8 @@ export class ProvidersController {
   @Get('performance')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER)
-  async getPerformance(@Request() req, @Query('period') period?: string) {
-    return await this.providersService.getProviderStats(req.user.id, period);
+  async getPerformance(@Request() req) {
+    return await this.providersService.getPerformanceMetrics(req.user.id);
   }
 
   @Get('my-profile')

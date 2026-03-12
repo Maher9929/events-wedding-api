@@ -1,13 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { messagesService } from '../services/messages.service';
 import { authService } from '../services/auth.service';
-import { apiService } from '../services/api';
 import type { Conversation, Message } from '../services/api';
 import { toastService } from '../services/toast.service';
 import { useTranslation } from 'react-i18next';
 
 const MessagesPage = () => {
     const { t } = useTranslation();
+    const [searchParams] = useSearchParams();
+    const providerIdParam = searchParams.get('providerId');
+    const autoStart = searchParams.get('autoStart') === 'true';
+
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedId, setSelectedId] = useState<string | undefined>();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -19,7 +23,6 @@ const MessagesPage = () => {
     const [recipientId, setRecipientId] = useState('');
     const [firstMsg, setFirstMsg] = useState('');
     const [search, setSearch] = useState('');
-    const [userNames, setUserNames] = useState<Record<string, string>>({});
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const currentUser = authService.getCurrentUser();
 
@@ -33,20 +36,19 @@ const MessagesPage = () => {
                 .then((data: any) => {
                     const list = Array.isArray(data) ? data : data?.data || [];
                     setConversations(list);
-                    const ids = new Set<string>();
-                    list.forEach((c: Conversation) => {
-                        c.participant_ids.forEach(id => { if (id !== currentUser?.id) ids.add(id); });
-                    });
-                    ids.forEach(id => {
-                        apiService.get<any>(`/users/${id}`)
-                            .then((u: any) => {
-                                const profile = u?.data || u;
-                                if (profile?.full_name || profile?.email) {
-                                    setUserNames(prev => ({ ...prev, [id]: profile.full_name || profile.email }));
-                                }
-                            })
-                            .catch(() => { });
-                    });
+
+                    // Handle auto-start or pre-selection
+                    if (initial && providerIdParam) {
+                        const existingConvo = list.find((c: any) =>
+                            c.participant_ids?.includes(providerIdParam)
+                        );
+                        if (existingConvo) {
+                            setSelectedId(existingConvo.id);
+                        } else if (autoStart) {
+                            setRecipientId(providerIdParam);
+                            setShowNewConvo(true);
+                        }
+                    }
                 })
                 .catch(() => { })
                 .finally(() => { if (initial) setLoadingConvos(false); });
@@ -62,7 +64,7 @@ const MessagesPage = () => {
                 subscription.unsubscribe();
             };
         }
-    }, [currentUser?.id]);
+    }, [currentUser?.id, providerIdParam, autoStart]);
 
     useEffect(() => {
         if (!selectedId) return;
@@ -139,10 +141,12 @@ const MessagesPage = () => {
         }
     };
 
-    const getContactName = (convo: Conversation) => {
-        const otherId = convo.participant_ids.find(id => id !== currentUser?.id);
-        if (otherId && userNames[otherId]) return userNames[otherId];
-        return `محادثة (${convo.participant_ids.length})`;
+    const getContactName = (convo: any) => {
+        return convo.recipient_name || `محادثة (${convo.participant_ids.length})`;
+    };
+
+    const getContactAvatar = (convo: any) => {
+        return convo.recipient_avatar;
     };
 
     const filteredConvos = conversations.filter(c => {
@@ -211,9 +215,13 @@ const MessagesPage = () => {
                                 onClick={() => setSelectedId(convo.id)}
                                 className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-50 text-right ${isSelected ? 'bg-purple-50 border-r-4 border-r-primary' : ''}`}
                             >
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold flex-shrink-0">
-                                    <i className="fa-solid fa-user text-sm"></i>
-                                </div>
+                                {getContactAvatar(convo) ? (
+                                    <img src={getContactAvatar(convo)} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                                ) : (
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold flex-shrink-0">
+                                        <i className="fa-solid fa-user text-sm"></i>
+                                    </div>
+                                )}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between mb-0.5">
                                         <h3 className={`font-bold text-sm truncate ${unread > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
@@ -265,9 +273,13 @@ const MessagesPage = () => {
                             >
                                 <i className="fa-solid fa-arrow-right"></i>
                             </button>
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold flex-shrink-0">
-                                <i className="fa-solid fa-user text-sm"></i>
-                            </div>
+                            {selectedConvo && (selectedConvo as any).recipient_avatar ? (
+                                <img src={(selectedConvo as any).recipient_avatar} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold flex-shrink-0">
+                                    <i className="fa-solid fa-user text-sm"></i>
+                                </div>
+                            )}
                             <div>
                                 <h3 className="font-bold text-gray-900 text-sm">
                                     {selectedConvo ? getContactName(selectedConvo) : 'محادثة'}
@@ -292,18 +304,61 @@ const MessagesPage = () => {
                                     <p className="text-sm">لا توجد رسائل بعد. ابدأ المحادثة!</p>
                                 </div>
                             )}
-                            {messages.map(msg => {
+                            {messages.map((msg, idx) => {
                                 const isMe = msg.sender_id === currentUser?.id;
+                                const senderInfo = (msg as any).sender;
+                                const attachments = (msg as any).metadata?.attachments || msg.attachments || [];
+                                const showDate = idx === 0 ||
+                                    new Date(msg.created_at).toDateString() !== new Date(messages[idx - 1].created_at).toDateString();
                                 return (
-                                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[75%] rounded-2xl px-4 py-3 ${isMe
-                                            ? 'bg-primary text-white rounded-br-none'
-                                            : 'bg-white text-gray-800 shadow-sm rounded-bl-none border border-gray-100'
-                                            }`}>
-                                            <p className="text-sm leading-relaxed">{msg.content}</p>
-                                            <span className={`text-[10px] block mt-1 ${isMe ? 'text-purple-200' : 'text-gray-400'}`}>
-                                                {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                    <div key={msg.id}>
+                                        {showDate && (
+                                            <div className="flex items-center justify-center my-4">
+                                                <span className="px-3 py-1 bg-gray-100 rounded-full text-[11px] text-gray-500 font-bold">
+                                                    {new Date(msg.created_at).toLocaleDateString('ar-EG', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} group`}>
+                                            {!isMe && (
+                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-1 me-2">
+                                                    {senderInfo?.full_name?.charAt(0) || <i className="fa-solid fa-user text-[10px]"></i>}
+                                                </div>
+                                            )}
+                                            <div className={`max-w-[70%] ${isMe ? '' : ''}`}>
+                                                {!isMe && senderInfo?.full_name && (
+                                                    <p className="text-[11px] font-bold text-gray-500 mb-1 ms-1">{senderInfo.full_name}</p>
+                                                )}
+                                                <div className={`rounded-2xl px-4 py-3 ${isMe
+                                                    ? 'bg-gradient-to-br from-primary to-purple-600 text-white rounded-br-sm'
+                                                    : 'bg-white text-gray-800 shadow-sm rounded-bl-sm border border-gray-100'
+                                                    }`}>
+                                                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                                                    {attachments.length > 0 && (
+                                                        <div className="mt-2 space-y-1.5">
+                                                            {attachments.map((att: any, i: number) => {
+                                                                const isImage = att.type?.startsWith('image/') || att.url?.match(/\.(jpg|jpeg|png|gif|webp)/i);
+                                                                return isImage ? (
+                                                                    <img key={i} src={att.url} alt={att.name || 'مرفق'} className="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(att.url, '_blank')} />
+                                                                ) : (
+                                                                    <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}>
+                                                                        <i className="fa-solid fa-file-arrow-down"></i>
+                                                                        {att.name || 'تحميل الملف'}
+                                                                    </a>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                    <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                        <span className={`text-[10px] ${isMe ? 'text-purple-200' : 'text-gray-400'}`}>
+                                                            {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        {isMe && (
+                                                            <i className={`fa-solid fa-check-double text-[10px] ${isMe ? 'text-purple-200' : 'text-gray-400'}`}></i>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 );

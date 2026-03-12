@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { categoriesService } from '../services/categories.service';
+import { toastService } from '../services/toast.service';
 import type { Category, Event } from '../services/api';
 
 const QuoteRequestPage = () => {
@@ -26,12 +27,10 @@ const QuoteRequestPage = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Load user's events
         apiService.get<Event[]>('/events/my-events')
             .then(data => setEvents(Array.isArray(data) ? data : []))
             .catch(() => { });
 
-        // Load categories
         categoriesService.getAll()
             .then(data => setCategories(Array.isArray(data) ? data : []))
             .catch(() => { });
@@ -61,7 +60,7 @@ const QuoteRequestPage = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedEvent || !title || !description) {
-            alert('Veuillez remplir tous les champs obligatoires');
+            toastService.error('يرجى تعبئة جميع الحقول الإلزامية');
             return;
         }
 
@@ -88,65 +87,65 @@ const QuoteRequestPage = () => {
             };
 
             await apiService.post('/quotes/request', payload);
-            alert('Demande de devis envoyée avec succès!');
-            navigate('/my-quotes');
-        } catch (error) {
-            console.error('Failed to create quote request:', error);
-            alert('Erreur lors de l\'envoi de la demande');
+            toastService.success('تم إرسال طلب عرض السعر بنجاح');
+            navigate('/client/quotes');
+        } catch {
+            toastService.error('حدث خطأ في إرسال الطلب');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-bglight p-5">
+        <div className="min-h-screen bg-bglight p-5" dir="rtl">
             <div className="max-w-4xl mx-auto">
                 <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-primary font-bold mb-5">
-                    <i className="fa-solid fa-arrow-left"></i>
-                    Retour
+                    <i className="fa-solid fa-arrow-right"></i>
+                    رجوع
                 </button>
 
                 <div className="bg-white rounded-3xl shadow-sm p-6">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-6">Demande de devis multi‑prestataires</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 mb-6">طلب عروض أسعار متعددة</h1>
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Event Selection */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Événement concerné *</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">الفعالية *</label>
                             <select
                                 value={selectedEvent}
                                 onChange={e => setSelectedEvent(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20"
                                 required
                             >
-                                <option value="">Sélectionner un événement</option>
+                                <option value="">اختر فعالية</option>
                                 {events.map(event => (
                                     <option key={event.id} value={event.id}>
-                                        {event.title} - {new Date(event.event_date).toLocaleDateString()}
+                                        {event.title} - {new Date(event.event_date).toLocaleDateString('ar-EG')}
                                     </option>
                                 ))}
                             </select>
                         </div>
 
-                        {/* Title and Description */}
+                        {/* Title */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Titre de la demande *</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">عنوان الطلب *</label>
                             <input
                                 type="text"
                                 value={title}
                                 onChange={e => setTitle(e.target.value)}
-                                placeholder="Ex: Devis pour mariage moderne"
+                                placeholder="مثال: طلب عرض سعر زفاف فاخر"
                                 className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20"
                                 required
                             />
                         </div>
 
+                        {/* Description */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Description détaillée *</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">وصف تفصيلي *</label>
                             <textarea
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
-                                placeholder="Décrivez vos besoins, préférences, et attentes..."
+                                placeholder="صف احتياجاتك وتفضيلاتك..."
                                 rows={4}
                                 className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                                 required
@@ -156,14 +155,14 @@ const QuoteRequestPage = () => {
                         {/* Items */}
                         <div>
                             <div className="flex items-center justify-between mb-4">
-                                <label className="text-sm font-bold text-gray-700">Articles/services demandés</label>
+                                <label className="text-sm font-bold text-gray-700">الخدمات المطلوبة</label>
                                 <button
                                     type="button"
                                     onClick={addItem}
-                                    className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold"
+                                    className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors"
                                 >
                                     <i className="fa-solid fa-plus me-2"></i>
-                                    Ajouter un article
+                                    إضافة خدمة
                                 </button>
                             </div>
 
@@ -172,32 +171,32 @@ const QuoteRequestPage = () => {
                                     <div key={index} className="p-4 bg-gray-50 rounded-xl">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-600 mb-1">Catégorie *</label>
+                                                <label className="block text-xs font-bold text-gray-600 mb-1">الفئة *</label>
                                                 <select
                                                     value={item.category_id}
                                                     onChange={e => updateItem(index, 'category_id', e.target.value)}
                                                     className="w-full px-3 py-2 rounded-lg bg-white border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                                                     required
                                                 >
-                                                    <option value="">Sélectionner</option>
+                                                    <option value="">اختر</option>
                                                     {categories.map(cat => (
                                                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                                                     ))}
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-600 mb-1">Description *</label>
+                                                <label className="block text-xs font-bold text-gray-600 mb-1">الوصف *</label>
                                                 <input
                                                     type="text"
                                                     value={item.description}
                                                     onChange={e => updateItem(index, 'description', e.target.value)}
-                                                    placeholder="Ex: Service photographique complet"
+                                                    placeholder="مثال: خدمة تصوير كاملة"
                                                     className="w-full px-3 py-2 rounded-lg bg-white border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                                                     required
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-600 mb-1">Budget estimé (QR)</label>
+                                                <label className="block text-xs font-bold text-gray-600 mb-1">الميزانية التقديرية (ر.ق)</label>
                                                 <input
                                                     type="number"
                                                     value={item.estimated_budget}
@@ -207,7 +206,7 @@ const QuoteRequestPage = () => {
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-bold text-gray-600 mb-1">Quantité</label>
+                                                <label className="block text-xs font-bold text-gray-600 mb-1">الكمية</label>
                                                 <input
                                                     type="number"
                                                     value={item.quantity}
@@ -218,12 +217,12 @@ const QuoteRequestPage = () => {
                                             </div>
                                         </div>
                                         <div className="mt-3">
-                                            <label className="block text-xs font-bold text-gray-600 mb-1">Notes</label>
+                                            <label className="block text-xs font-bold text-gray-600 mb-1">ملاحظات</label>
                                             <input
                                                 type="text"
                                                 value={item.notes}
                                                 onChange={e => updateItem(index, 'notes', e.target.value)}
-                                                placeholder="Détails supplémentaires..."
+                                                placeholder="تفاصيل إضافية..."
                                                 className="w-full px-3 py-2 rounded-lg bg-white border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                                             />
                                         </div>
@@ -231,10 +230,10 @@ const QuoteRequestPage = () => {
                                             <button
                                                 type="button"
                                                 onClick={() => removeItem(index)}
-                                                className="mt-3 text-red-500 text-sm font-bold"
+                                                className="mt-3 text-red-500 text-sm font-bold hover:text-red-700"
                                             >
                                                 <i className="fa-solid fa-trash me-1"></i>
-                                                Supprimer
+                                                حذف
                                             </button>
                                         )}
                                     </div>
@@ -245,17 +244,17 @@ const QuoteRequestPage = () => {
                         {/* Budget and Deadline */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Budget maximum total (QR)</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">أقصى ميزانية (ر.ق)</label>
                                 <input
                                     type="number"
                                     value={maxBudget}
                                     onChange={e => setMaxBudget(e.target.value)}
-                                    placeholder="Budget maximum"
+                                    placeholder="أقصى ميزانية"
                                     className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Date limite de réponse</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">آخر موعد للرد</label>
                                 <input
                                     type="date"
                                     value={deadline}
@@ -268,11 +267,11 @@ const QuoteRequestPage = () => {
 
                         {/* Notes */}
                         <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">Notes supplémentaires</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">ملاحظات إضافية</label>
                             <textarea
                                 value={notes}
                                 onChange={e => setNotes(e.target.value)}
-                                placeholder="Informations complémentaires..."
+                                placeholder="معلومات تكميلية..."
                                 rows={3}
                                 className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                             />
@@ -283,16 +282,19 @@ const QuoteRequestPage = () => {
                             <button
                                 type="button"
                                 onClick={() => navigate(-1)}
-                                className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold"
+                                className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
                             >
-                                Annuler
+                                إلغاء
                             </button>
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg disabled:opacity-50"
+                                className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
                             >
-                                {loading ? 'Envoi en cours...' : 'Envoyer la demande'}
+                                {loading
+                                    ? <><i className="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...</>
+                                    : <><i className="fa-solid fa-paper-plane"></i> إرسال الطلب</>
+                                }
                             </button>
                         </div>
                     </form>

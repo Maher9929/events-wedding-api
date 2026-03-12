@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { servicesService } from '../services/services.service';
 import { reviewsService, type Review } from '../services/reviews.service';
 import { messagesService } from '../services/messages.service';
+import { bookingsService } from '../services/bookings.service';
 import { useAuth } from '../hooks/useAuth';
 import { toastService } from '../services/toast.service';
 import type { ServiceItem } from '../services/api';
@@ -24,6 +25,7 @@ const ServiceDetailsPage = () => {
     const [contacting, setContacting] = useState(false);
     const [bookingDate, setBookingDate] = useState('');
     const [bookingNotes, setBookingNotes] = useState('');
+    const [bookingLoading, setBookingLoading] = useState(false);
     const [isFavorite] = useState(false);
     const [togglingFav, setTogglingFav] = useState(false);
     const today = new Date().toISOString().split('T')[0];
@@ -56,8 +58,7 @@ const ServiceDetailsPage = () => {
         if (!id) return;
         setTogglingFav(true);
         try {
-            // favoritesService removed - functionality disabled
-            toastService.error('Favorites temporarily disabled');
+            toastService.info('المفضلة غير متاحة حالياً');
             // if (isFavorite) {
             //     await favoritesService.remove(id);
             //     setIsFavorite(false);
@@ -312,21 +313,31 @@ const ServiceDetailsPage = () => {
                                 <p className="text-xl font-bold text-primary">{service.base_price.toLocaleString()} QR</p>
                             </div>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (!isAuthenticated) { navigate('/auth/login'); return; }
                                     if (!bookingDate) { toastService.error(t('bookings.errors.select_date') || 'يرجى اختيار تاريخ الفعالية'); return; }
-                                    const params = new URLSearchParams({
-                                        service: service.id,
-                                        provider: service.provider_id,
-                                        amount: String(service.base_price),
-                                        date: bookingDate,
-                                        ...(bookingNotes ? { notes: bookingNotes } : {}),
-                                    });
-                                    navigate(`/client/checkout?${params.toString()}`);
+                                    setBookingLoading(true);
+                                    try {
+                                        const booking = await bookingsService.create({
+                                            service_id: service.id,
+                                            provider_id: service.provider_id,
+                                            booking_date: bookingDate,
+                                            amount: service.base_price,
+                                            notes: bookingNotes || undefined,
+                                        });
+                                        const bookingData = (booking as any)?.data || booking;
+                                        toastService.success('تم إنشاء الحجز بنجاح');
+                                        navigate(`/client/payment/${bookingData.id}`);
+                                    } catch {
+                                        toastService.error('فشل إنشاء الحجز');
+                                    } finally {
+                                        setBookingLoading(false);
+                                    }
                                 }}
-                                className="px-6 py-3 rounded-2xl gradient-purple text-white font-bold text-sm shadow-md hover:opacity-90 transition-opacity"
+                                disabled={bookingLoading}
+                                className="px-6 py-3 rounded-2xl gradient-purple text-white font-bold text-sm shadow-md hover:opacity-90 transition-opacity disabled:opacity-50"
                             >
-                                <i className="fa-solid fa-calendar-plus mx-1"></i>
+                                {bookingLoading ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-calendar-plus mx-1"></i>}
                                 {t('service.details.book_now')}
                             </button>
                         </div>
@@ -431,19 +442,34 @@ const ServiceDetailsPage = () => {
                     <i className="fa-solid fa-comment-dots"></i>
                     {t('service.details.contact')}
                 </button>
-                <button onClick={() => {
+                <button onClick={async () => {
                     if (!isAuthenticated) { navigate('/auth/login'); return; }
-                    const params = new URLSearchParams({
-                        service: service.id,
-                        provider: service.provider_id,
-                        amount: String(service.base_price),
-                        ...(bookingDate ? { date: bookingDate } : {}),
-                        ...(bookingNotes ? { notes: bookingNotes } : {}),
-                    });
-                    navigate(`/booking/checkout?${params.toString()}`);
+                    if (!bookingDate) {
+                        toastService.error('يرجى اختيار تاريخ الفعالية أعلاه');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return;
+                    }
+                    setBookingLoading(true);
+                    try {
+                        const booking = await bookingsService.create({
+                            service_id: service.id,
+                            provider_id: service.provider_id,
+                            booking_date: bookingDate,
+                            amount: service.base_price,
+                            notes: bookingNotes || undefined,
+                        });
+                        const bookingData = (booking as any)?.data || booking;
+                        toastService.success('تم إنشاء الحجز بنجاح');
+                        navigate(`/client/payment/${bookingData.id}`);
+                    } catch {
+                        toastService.error('فشل إنشاء الحجز');
+                    } finally {
+                        setBookingLoading(false);
+                    }
                 }}
-                    className="px-6 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg card-hover text-sm">
-                    {t('service.details.book_now')}
+                    disabled={bookingLoading}
+                    className="px-6 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg card-hover text-sm disabled:opacity-50">
+                    {bookingLoading ? <><i className="fa-solid fa-spinner fa-spin me-1"></i> جاري...</> : t('service.details.book_now')}
                 </button>
             </div>
         </div>

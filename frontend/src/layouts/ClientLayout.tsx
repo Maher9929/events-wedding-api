@@ -2,8 +2,11 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
 import { authService } from '../services/auth.service';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 const ClientLayout = () => {
+    const { t } = useTranslation();
     const location = useLocation();
     const isActive = (path: string) => location.pathname.startsWith(path);
     const isExact = (path: string) => location.pathname === path;
@@ -32,11 +35,12 @@ const ClientLayout = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-bglight font-tajawal pb-20 md:pb-0" dir="rtl">
+        <div className="min-h-screen bg-bglight font-tajawal pb-20 md:pb-0">
             {/* Mobile Header */}
             <header className="glass-effect sticky top-0 z-50 shadow-sm px-5 py-4 flex items-center justify-between md:hidden">
-                <h1 className="text-lg font-bold text-gray-900">لوحة التحكم</h1>
+                <h1 className="text-lg font-bold text-gray-900">{t('common.dashboard')}</h1>
                 <div className="flex items-center gap-2">
+                    <LanguageSwitcher />
                     <Link to="/client/notifications" className="w-10 h-10 rounded-xl bg-bglight flex items-center justify-center hover:bg-gray-200 transition-colors relative">
                         <i className="fa-regular fa-bell text-gray-700"></i>
                         {unreadCount > 0 && (
@@ -62,19 +66,19 @@ const ClientLayout = () => {
             <nav className="fixed bottom-0 left-0 right-0 glass-effect border-t border-gray-100 py-2 px-4 flex justify-between items-center z-50 md:hidden">
                 <Link to="/client/dashboard" className={`flex flex-col items-center gap-1 px-3 py-1 ${isExact('/client/dashboard') ? 'text-primary' : 'text-gray-400'}`}>
                     <i className="fa-solid fa-house text-xl"></i>
-                    <span className="text-xs font-bold">الرئيسية</span>
+                    <span className="text-xs font-bold">{t('common.client.dashboard')}</span>
                 </Link>
                 <Link to="/client/events" className={`flex flex-col items-center gap-1 px-3 py-1 ${isActive('/client/events') ? 'text-primary' : 'text-gray-400'}`}>
                     <i className="fa-solid fa-calendar-days text-xl"></i>
-                    <span className="text-xs">فعالياتي</span>
+                    <span className="text-xs">{t('common.client.my_events')}</span>
                 </Link>
                 <Link to="/client/bookings" className={`flex flex-col items-center gap-1 px-3 py-1 ${isActive('/client/bookings') ? 'text-primary' : 'text-gray-400'}`}>
                     <i className="fa-solid fa-calendar-check text-xl"></i>
-                    <span className="text-xs">حجوزاتي</span>
+                    <span className="text-xs">{t('common.client.my_bookings')}</span>
                 </Link>
                 <Link to="/client/favorites" className={`flex flex-col items-center gap-1 px-3 py-1 ${isActive('/client/favorites') ? 'text-primary' : 'text-gray-400'}`}>
                     <i className="fa-solid fa-heart text-xl"></i>
-                    <span className="text-xs">المفضلة</span>
+                    <span className="text-xs">{t('common.client.favorites')}</span>
                 </Link>
                 <Link to="/client/messages" className={`flex flex-col items-center gap-1 px-3 py-1 relative ${isActive('/client/messages') ? 'text-primary' : 'text-gray-400'}`}>
                     <i className="fa-solid fa-comment-dots text-xl"></i>
@@ -83,11 +87,11 @@ const ClientLayout = () => {
                             <span className="text-white text-[9px] font-bold">{unreadMessages > 9 ? '9+' : unreadMessages}</span>
                         </span>
                     )}
-                    <span className="text-xs">الرسائل</span>
+                    <span className="text-xs">{t('common.client.messages')}</span>
                 </Link>
                 <Link to="/client/profile" className={`flex flex-col items-center gap-1 px-3 py-1 ${isActive('/client/profile') ? 'text-primary' : 'text-gray-400'}`}>
                     <i className="fa-solid fa-user text-xl"></i>
-                    <span className="text-xs">حسابي</span>
+                    <span className="text-xs">{t('common.client.my_account')}</span>
                 </Link>
             </nav>
         </div>

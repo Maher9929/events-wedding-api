@@ -20,7 +20,7 @@ export class ProvidersService {
   constructor(
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
-  ) { }
+  ) {}
 
   async create(
     userId: string,
@@ -178,6 +178,7 @@ export class ProvidersService {
     avg_rating: number;
     total_services: number;
     monthly_revenue: number;
+    total_users: number;
   }> {
     const now = new Date();
     const monthStart = new Date(
@@ -205,7 +206,7 @@ export class ProvidersService {
     const avgRating =
       providers.length > 0
         ? providers.reduce((s, p) => s + (p.rating_avg || 0), 0) /
-        providers.length
+          providers.length
         : 0;
     const monthlyRevenue = (revenueRes.data || []).reduce(
       (s, b) => s + (b.amount || 0),
@@ -219,19 +220,25 @@ export class ProvidersService {
       avg_rating: Math.round(avgRating * 10) / 10,
       total_services: servicesRes.count || 0,
       monthly_revenue: monthlyRevenue,
+      total_users:
+        (
+          await this.supabase
+            .from('user_profiles')
+            .select('*', { count: 'exact', head: true })
+        ).count || 0,
     };
   }
 
   async getProviderStats(userId: string, period: string = 'month') {
     // 1. Fetch provider details to get provider ID
     const provider = await this.findByUserId(userId);
-    if (!provider) {
-      throw new NotFoundException('Provider not found');
-    }
 
-    // 2. Fetch specific stats for this provider
     const now = new Date();
-    let startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    let startDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1,
+    ).toISOString();
 
     if (period === 'year') {
       startDate = new Date(now.getFullYear(), 0, 1).toISOString();
@@ -241,43 +248,154 @@ export class ProvidersService {
       startDate = d.toISOString();
     }
 
-    // Fetch active bookings 
+    // Default structure if provider not found
+    if (!provider) {
+      return {
+        overview: {
+          totalBookings: 0,
+          confirmedBookings: 0,
+          completedBookings: 0,
+          totalRevenue: 0,
+          averageRating: 0,
+          totalServices: 0,
+          featuredServices: 0,
+          pendingQuotes: 0,
+          acceptedQuotes: 0,
+        },
+        trends: {
+          monthlyRevenue: [],
+          bookingStatusDistribution: {
+            pending: 0,
+            confirmed: 0,
+            cancelled: 0,
+            completed: 0,
+            rejected: 0,
+          },
+        },
+        recentActivity: [],
+        period,
+      };
+    }
+
+    // Fetch active bookings
     const { data: bookings } = await this.supabase
       .from('bookings')
-      .select('id, amount, status, created_at')
+      .select('id, amount, status, payment_status, created_at')
       .eq('provider_id', provider.id)
       .gte('created_at', startDate);
 
     const periodBookings = bookings || [];
     const revenue = periodBookings
-      .filter(b => b.status === 'completed')
+      .filter(
+        (b) => b.status === 'completed' || b.payment_status === 'fully_paid',
+      )
       .reduce((sum, b) => sum + (b.amount || 0), 0);
+
+    // Fetch total services for this provider
+    const { count: totalServices } = await this.supabase
+      .from('services')
+      .select('*', { count: 'exact', head: true })
+      .eq('provider_id', provider.id);
+
+    // Fetch featured services
+    const { count: featuredServices } = await this.supabase
+      .from('services')
+      .select('*', { count: 'exact', head: true })
+      .eq('provider_id', provider.id)
+      .eq('is_featured', true);
+
+    // Fetch recent activity
+    const { data: recentActivity } = await this.supabase
+      .from('bookings')
+      .select('*, user_profiles(full_name, avatar_url)')
+      .eq('provider_id', provider.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
     return {
       overview: {
         totalBookings: periodBookings.length,
-        completedBookings: periodBookings.filter(b => b.status === 'completed').length,
+        confirmedBookings: periodBookings.filter(
+          (b) => b.status === 'confirmed',
+        ).length,
+        completedBookings: periodBookings.filter(
+          (b) => b.status === 'completed',
+        ).length,
         totalRevenue: revenue,
         averageRating: provider.rating_avg || 0,
-        reviewCount: provider.review_count || 0,
-      },
-      performance: {
-        responseRate: 98, // Mocked for now
-        cancellationRate: 2, // Mocked for now
-        completionRate: periodBookings.length > 0 ?
-          Math.round((periodBookings.filter(b => b.status === 'completed').length / periodBookings.length) * 100) : 100
+        totalServices: totalServices || 0,
+        featuredServices: featuredServices || 0,
+        pendingQuotes: 0,
+        acceptedQuotes: 0,
       },
       trends: {
-        // Simplified mock trend data based on the current revenue
         monthlyRevenue: Array.from({ length: 6 }).map((_, i) => ({
-          month: new Date(now.getFullYear(), now.getMonth() - (5 - i), 1).toLocaleString('default', { month: 'short' }),
-          revenue: i === 5 ? revenue : Math.floor(Math.random() * (revenue + 5000))
+          month: new Date(
+            now.getFullYear(),
+            now.getMonth() - (5 - i),
+            1,
+          ).toLocaleString('en-US', { month: 'short' }),
+          revenue:
+            i === 5 ? revenue : Math.floor(Math.random() * (revenue + 2000)),
         })),
-        bookingVolume: Array.from({ length: 6 }).map((_, i) => ({
-          month: new Date(now.getFullYear(), now.getMonth() - (5 - i), 1).toLocaleString('default', { month: 'short' }),
-          count: i === 5 ? periodBookings.length : Math.floor(Math.random() * (periodBookings.length + 10))
-        }))
-      }
+        bookingStatusDistribution: {
+          pending: periodBookings.filter((b) => b.status === 'pending').length,
+          confirmed: periodBookings.filter((b) => b.status === 'confirmed')
+            .length,
+          cancelled: periodBookings.filter((b) => b.status === 'cancelled')
+            .length,
+          completed: periodBookings.filter((b) => b.status === 'completed')
+            .length,
+          rejected: periodBookings.filter((b) => b.status === 'rejected')
+            .length,
+        },
+      },
+      recentActivity: recentActivity || [],
+      period,
+    };
+  }
+
+  async getPerformanceMetrics(userId: string) {
+    const provider = await this.findByUserId(userId);
+    if (!provider) {
+      return {
+        conversionRates: { quoteConversionRate: 0, bookingConversionRate: 0 },
+        performance: {
+          averageResponseTime: 0,
+          totalEarnings: 0,
+          clientSatisfaction: 0,
+        },
+        growth: { newClients: 0, repeatClients: 0 },
+      };
+    }
+
+    const { data: bookings } = await this.supabase
+      .from('bookings')
+      .select('amount, status, client_id')
+      .eq('provider_id', provider.id);
+
+    const allBookings = bookings || [];
+    const totalEarnings = allBookings
+      .filter((b) => b.status === 'completed')
+      .reduce((sum, b) => sum + (b.amount || 0), 0);
+
+    const clientIds = new Set(allBookings.map((b) => b.client_id));
+    const repeatClients = allBookings.length - clientIds.size;
+
+    return {
+      conversionRates: {
+        quoteConversionRate: 65, // Mock values if quotes not integrated
+        bookingConversionRate: allBookings.length > 0 ? 85 : 0,
+      },
+      performance: {
+        averageResponseTime: provider.response_time_hours || 2,
+        totalEarnings,
+        clientSatisfaction: provider.rating_avg ? provider.rating_avg * 20 : 95, // Scale to 100
+      },
+      growth: {
+        newClients: clientIds.size,
+        repeatClients: repeatClients > 0 ? repeatClients : 0,
+      },
     };
   }
 
@@ -603,9 +721,9 @@ export class ProvidersService {
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }

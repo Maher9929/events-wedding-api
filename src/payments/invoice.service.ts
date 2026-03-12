@@ -125,7 +125,8 @@ export class InvoiceService {
     // Table row
     const paymentStatusMap: Record<string, string> = {
       pending: 'En attente',
-      paid: 'Payé',
+      deposit_paid: 'Acompte payé',
+      fully_paid: 'Payé intégralement',
       refunded: 'Remboursé',
     };
 
@@ -146,7 +147,7 @@ export class InvoiceService {
         360,
         265,
       )
-      .text(`${Number(booking.amount || 0).toFixed(2)} MAD`, 480, 265);
+      .text(`${Number(booking.amount || 0).toFixed(2)} QAR`, 480, 265);
 
     // ─── Totals ─────────────────────────────────────────────────────────────
     doc.moveTo(50, 300).lineTo(545, 300).strokeColor('#e2e8f0').stroke();
@@ -159,12 +160,12 @@ export class InvoiceService {
       .fontSize(10)
       .font('Helvetica')
       .text('Sous-total:', 380, 315)
-      .text(`${grossAmount.toFixed(2)} MAD`, 480, 315);
+      .text(`${grossAmount.toFixed(2)} QAR`, 480, 315);
 
     if (platformFee > 0) {
       doc
         .text('Frais de plateforme (5%):', 380, 330)
-        .text(`${platformFee.toFixed(2)} MAD`, 480, 330);
+        .text(`${platformFee.toFixed(2)} QAR`, 480, 330);
     }
 
     doc
@@ -172,7 +173,7 @@ export class InvoiceService {
       .fontSize(13)
       .font('Helvetica-Bold')
       .text('TOTAL:', 380, platformFee > 0 ? 350 : 335)
-      .text(`${grossAmount.toFixed(2)} MAD`, 480, platformFee > 0 ? 350 : 335);
+      .text(`${grossAmount.toFixed(2)} QAR`, 480, platformFee > 0 ? 350 : 335);
 
     // ─── Notes ──────────────────────────────────────────────────────────────
     if (booking.notes) {

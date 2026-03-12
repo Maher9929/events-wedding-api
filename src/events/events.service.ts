@@ -5,7 +5,6 @@ import {
   Inject,
   Logger,
   BadRequestException,
-  InternalServerErrorException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CreateEventDto } from './dto/create-event.dto';

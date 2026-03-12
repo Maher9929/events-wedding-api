@@ -1,20 +1,23 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 const ProviderLayout = () => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
-    { path: '/provider/dashboard', label: 'Dashboard', icon: 'fa-chart-line' },
-    { path: '/provider/calendar', label: 'Calendar', icon: 'fa-calendar' },
-    { path: '/provider/services', label: 'Services', icon: 'fa-concierge-bell' },
-    { path: '/provider/bookings', label: 'Bookings', icon: 'fa-calendar-check' },
-    { path: '/provider/quotes', label: 'Quotes', icon: 'fa-file-contract' },
-    { path: '/provider/reviews', label: 'Reviews', icon: 'fa-star' },
-    { path: '/provider/profile', label: 'Profile', icon: 'fa-user' },
+    { path: '/provider/dashboard', label: t('common.provider.dashboard'), icon: 'fa-chart-line' },
+    { path: '/provider/calendar', label: t('common.provider.calendar'), icon: 'fa-calendar' },
+    { path: '/provider/services', label: t('common.provider.services'), icon: 'fa-concierge-bell' },
+    { path: '/provider/bookings', label: t('common.provider.bookings'), icon: 'fa-calendar-check' },
+    { path: '/provider/quotes', label: t('common.provider.quotes'), icon: 'fa-file-contract' },
+    { path: '/provider/reviews', label: t('common.provider.reviews'), icon: 'fa-star' },
+    { path: '/provider/profile', label: t('common.provider.profile'), icon: 'fa-user' },
   ];
 
   return (
@@ -27,7 +30,7 @@ const ProviderLayout = () => {
               <Link to="/" className="text-2xl font-bold text-primary">
                 Dousha
               </Link>
-              <span className="ms-4 text-sm text-gray-500">Provider Portal</span>
+              <span className="ms-4 text-sm text-gray-500">{t('common.provider.portal')}</span>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -37,9 +40,10 @@ const ProviderLayout = () => {
               </Link>
 
               <div className="flex items-center space-x-3">
+                <LanguageSwitcher />
                 <div className="text-right">
                   <p className="text-sm font-medium text-gray-900">{user?.full_name}</p>
-                  <p className="text-xs text-gray-500">Provider</p>
+                  <p className="text-xs text-gray-500">{t('common.provider.portal')}</p>
                 </div>
                 <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                   <i className="fa-solid fa-user text-white text-sm"></i>
@@ -51,7 +55,7 @@ const ProviderLayout = () => {
                 className="px-3 py-2 text-sm text-gray-700 hover:text-primary"
               >
                 <i className="fa-solid fa-sign-out-alt ms-2"></i>
-                Logout
+                {t('common.admin.logout')}
               </button>
             </div>
           </div>

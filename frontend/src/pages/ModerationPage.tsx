@@ -88,7 +88,7 @@ const ModerationPage = () => {
 
     const handleReportAction = async (reportId: string, action: string) => {
         if (!actionNotes.trim()) {
-            alert('Veuillez ajouter des notes pour cette action');
+            alert('يرجى إضافة ملاحظات لهذا الإجراء');
             return;
         }
 
@@ -103,13 +103,13 @@ const ModerationPage = () => {
             loadModerationData();
         } catch (error) {
             console.error('Failed to update report:', error);
-            alert('Erreur lors de la mise à jour du signalement');
+            alert('خطأ في تحديث البلاغ');
         }
     };
 
     const handleKycReview = async (documentId: string, status: 'approved' | 'rejected') => {
         if (!actionNotes.trim()) {
-            alert('Veuillez ajouter des notes pour cette décision');
+            alert('يرجى إضافة ملاحظات لهذا القرار');
             return;
         }
 
@@ -124,7 +124,7 @@ const ModerationPage = () => {
             loadModerationData();
         } catch (error) {
             console.error('Failed to review KYC document:', error);
-            alert('Erreur lors de la révision du document KYC');
+            alert('خطأ في مراجعة مستند الـ KYC');
         }
     };
 
@@ -141,34 +141,34 @@ const ModerationPage = () => {
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'pending': return 'En attente';
-            case 'approved': return 'Approuvé';
-            case 'rejected': return 'Rejeté';
-            case 'resolved': return 'Résolu';
-            case 'expired': return 'Expiré';
+            case 'pending': return 'قيد الانتظار';
+            case 'approved': return 'مقبول';
+            case 'rejected': return 'مرفوض';
+            case 'resolved': return 'تم الحل';
+            case 'expired': return 'منتهي الصلاحية';
             default: return status;
         }
     };
 
     const getDocumentTypeLabel = (type: string) => {
         switch (type) {
-            case 'id_card': return 'Carte d\'identité';
-            case 'business_license': return 'Licence professionnelle';
-            case 'tax_certificate': return 'Certificat fiscal';
-            case 'insurance': return 'Assurance';
-            case 'portfolio': return 'Portfolio';
-            case 'other': return 'Autre';
+            case 'id_card': return 'بطاقة الهوية';
+            case 'business_license': return 'رخصة تجارية';
+            case 'tax_certificate': return 'شهادة ضريبية';
+            case 'insurance': return 'تأمين';
+            case 'portfolio': return 'ملف الأعمال (Portfolio)';
+            case 'other': return 'أخرى';
             default: return type;
         }
     };
 
     return (
-        <div className="min-h-screen bg-bglight p-5">
+        <div className="min-h-screen bg-bglight p-5" dir="rtl">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">Modération & KYC</h1>
-                    <p className="text-gray-600 mt-1">Gestion des signalements et validation des prestataires</p>
+                    <h1 className="text-2xl font-bold text-gray-900">الإشراف والتحقق (KYC)</h1>
+                    <p className="text-gray-600 mt-1">إدارة البلاغات والتحقق من مزودي الخدمات</p>
                 </div>
 
                 {/* Stats Overview */}
@@ -176,18 +176,18 @@ const ModerationPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div className="bg-white rounded-3xl shadow-sm p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">Signalements</h3>
+                                <h3 className="text-lg font-bold text-gray-900">البلاغات</h3>
                                 <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
-                                    {stats.reports.total} total
+                                    {stats.reports.total} إجمالي
                                 </span>
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">En attente</span>
+                                    <span className="text-sm text-gray-600">قيد الانتظار</span>
                                     <span className="text-sm font-bold text-yellow-600">{stats.reports.pending}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Résolus</span>
+                                    <span className="text-sm text-gray-600">تم الحل</span>
                                     <span className="text-sm font-bold text-green-600">{stats.reports.resolved}</span>
                                 </div>
                             </div>
@@ -195,22 +195,22 @@ const ModerationPage = () => {
 
                         <div className="bg-white rounded-3xl shadow-sm p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">KYC</h3>
+                                <h3 className="text-lg font-bold text-gray-900">التحقق (KYC)</h3>
                                 <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
-                                    {stats.kyc.total} documents
+                                    {stats.kyc.total} مستندات
                                 </span>
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">En attente</span>
+                                    <span className="text-sm text-gray-600">قيد الانتظار</span>
                                     <span className="text-sm font-bold text-yellow-600">{stats.kyc.pending}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Approuvés</span>
+                                    <span className="text-sm text-gray-600">مقبولة</span>
                                     <span className="text-sm font-bold text-green-600">{stats.kyc.approved}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Rejetés</span>
+                                    <span className="text-sm text-gray-600">مرفوضة</span>
                                     <span className="text-sm font-bold text-red-600">{stats.kyc.rejected}</span>
                                 </div>
                             </div>
@@ -218,18 +218,18 @@ const ModerationPage = () => {
 
                         <div className="bg-white rounded-3xl shadow-sm p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">Application des règles</h3>
+                                <h3 className="text-lg font-bold text-gray-900">تطبيق القواعد</h3>
                                 <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
-                                    En cours
+                                    حالي
                                 </span>
                             </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Bannis</span>
+                                    <span className="text-sm text-gray-600">محظورين</span>
                                     <span className="text-sm font-bold text-red-600">{stats.enforcement.banned}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Suspendus</span>
+                                    <span className="text-sm text-gray-600">موقوفين</span>
                                     <span className="text-sm font-bold text-orange-600">{stats.enforcement.suspended}</span>
                                 </div>
                             </div>
@@ -237,7 +237,7 @@ const ModerationPage = () => {
 
                         <div className="bg-white rounded-3xl shadow-sm p-6">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">Actions rapides</h3>
+                                <h3 className="text-lg font-bold text-gray-900">إجراءات سريعة</h3>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <button
@@ -249,7 +249,7 @@ const ModerationPage = () => {
                                     }`}
                                 >
                                     <i className="fa-solid fa-flag text-lg mb-1"></i>
-                                    <span className="text-sm font-bold">Signalements</span>
+                                    <span className="text-sm font-bold">البلاغات</span>
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('kyc')}
@@ -271,7 +271,7 @@ const ModerationPage = () => {
                                     }`}
                                 >
                                     <i className="fa-solid fa-chart-bar text-lg mb-1"></i>
-                                    <span className="text-sm font-bold">Statistiques</span>
+                                    <span className="text-sm font-bold">الإحصائيات</span>
                                 </button>
                             </div>
                         </div>
@@ -281,7 +281,7 @@ const ModerationPage = () => {
                 {/* Content based on active tab */}
                 {activeTab === 'reports' && (
                     <div className="bg-white rounded-3xl shadow-sm p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6">Signalements en attente</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-6">البلاغات قيد الانتظار</h2>
                         {loading ? (
                             <div className="animate-pulse">
                                 <div className="h-8 bg-gray-200 rounded mb-4"></div>
@@ -294,7 +294,7 @@ const ModerationPage = () => {
                         ) : reports.length === 0 ? (
                             <div className="text-center py-12">
                                 <i className="fa-solid fa-check-circle text-green-500 text-4xl mb-4"></i>
-                                <p className="text-gray-500">Aucun signalement en attente</p>
+                                <p className="text-gray-500">لا توجد بلاغات قيد الانتظار</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
@@ -307,7 +307,7 @@ const ModerationPage = () => {
                                                         {getStatusText(report.status)}
                                                     </span>
                                                     <span className="text-xs text-gray-500">
-                                                        {new Date(report.created_at).toLocaleDateString('fr-FR')}
+                                                        {new Date(report.created_at).toLocaleDateString('ar-EG')}
                                                     </span>
                                                 </div>
                                                 <p className="font-bold text-gray-900 mb-1">
@@ -318,12 +318,12 @@ const ModerationPage = () => {
                                                 </p>
                                                 {report.reporter && (
                                                     <p className="text-xs text-gray-500">
-                                                        Signalé par {report.reporter.full_name} ({report.reporter.email})
+                                                        مُبلغ من {report.reporter.full_name} ({report.reporter.email})
                                                     </p>
                                                 )}
                                                 {report.evidence_urls && report.evidence_urls.length > 0 && (
                                                     <div className="mt-2">
-                                                        <p className="text-xs text-gray-500 mb-1">Preuves:</p>
+                                                        <p className="text-xs text-gray-500 mb-1">الأدلة:</p>
                                                         <div className="flex gap-2">
                                                             {report.evidence_urls.map((url, idx) => (
                                                                 <a
@@ -333,7 +333,7 @@ const ModerationPage = () => {
                                                                     rel="noopener noreferrer"
                                                                     className="text-blue-600 hover:underline text-xs"
                                                                 >
-                                                                    Preuve {idx + 1}
+                                                                    دليل {idx + 1}
                                                                 </a>
                                                             ))}
                                                         </div>
@@ -350,7 +350,7 @@ const ModerationPage = () => {
                                                             }}
                                                             className="px-4 py-2 rounded-xl bg-green-100 text-green-700 text-sm font-bold"
                                                         >
-                                                            Approuver
+                                                            الموافقة
                                                         </button>
                                                         <button
                                                             onClick={() => {
@@ -359,18 +359,18 @@ const ModerationPage = () => {
                                                             }}
                                                             className="px-4 py-2 rounded-xl bg-red-100 text-red-700 text-sm font-bold"
                                                         >
-                                                            Rejeter
+                                                            رفض
                                                         </button>
                                                     </>
                                                 )}
                                                 {report.status === 'approved' && (
                                                     <span className="px-4 py-2 rounded-xl bg-green-100 text-green-700 text-sm font-bold">
-                                                        Déjà approuvé
+                                                        تمت الموافقة
                                                     </span>
                                                 )}
                                                 {report.status === 'rejected' && (
                                                     <span className="px-4 py-2 rounded-xl bg-red-100 text-red-700 text-sm font-bold">
-                                                        Déjà rejeté
+                                                        مرفوض مسبقاً
                                                     </span>
                                                 )}
                                             </div>
@@ -384,7 +384,7 @@ const ModerationPage = () => {
 
                 {activeTab === 'kyc' && (
                     <div className="bg-white rounded-3xl shadow-sm p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6">Documents KYC en attente</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-6">مستندات KYC قيد الانتظار</h2>
                         {loading ? (
                             <div className="animate-pulse">
                                 <div className="h-8 bg-gray-200 rounded mb-4"></div>
@@ -397,7 +397,7 @@ const ModerationPage = () => {
                         ) : kycDocuments.length === 0 ? (
                             <div className="text-center py-12">
                                 <i className="fa-solid fa-user-check text-green-500 text-4xl mb-4"></i>
-                                <p className="text-gray-500">Aucun document KYC en attente</p>
+                                <p className="text-gray-500">لا توجد مستندات KYC قيد الانتظار</p>
                             </div>
                         ) : (
                             <div className="space-y-4">
@@ -410,7 +410,7 @@ const ModerationPage = () => {
                                                         {getStatusText(doc.status)}
                                                     </span>
                                                     <span className="text-xs text-gray-500">
-                                                        {new Date(doc.submitted_at).toLocaleDateString('fr-FR')}
+                                                        {new Date(doc.submitted_at).toLocaleDateString('ar-EG')}
                                                     </span>
                                                 </div>
                                                 <p className="font-bold text-gray-900 mb-1">
@@ -421,7 +421,7 @@ const ModerationPage = () => {
                                                 </p>
                                                 {doc.provider && (
                                                     <p className="text-xs text-gray-500">
-                                                        Prestataire: {doc.provider.company_name}
+                                                        المزود: {doc.provider.company_name}
                                                     </p>
                                                 )}
                                                 <a
@@ -430,7 +430,7 @@ const ModerationPage = () => {
                                                     rel="noopener noreferrer"
                                                     className="inline-block mt-2 text-blue-600 hover:underline text-sm font-bold"
                                                 >
-                                                    Voir le document
+                                                    عرض المستند
                                                 </a>
                                             </div>
                                             <div className="flex gap-2">
@@ -443,7 +443,7 @@ const ModerationPage = () => {
                                                             }}
                                                             className="px-4 py-2 rounded-xl bg-green-100 text-green-700 text-sm font-bold"
                                                         >
-                                                            Approuver
+                                                            قبول
                                                         </button>
                                                         <button
                                                             onClick={() => {
@@ -452,18 +452,18 @@ const ModerationPage = () => {
                                                             }}
                                                             className="px-4 py-2 rounded-xl bg-red-100 text-red-700 text-sm font-bold"
                                                         >
-                                                            Rejeter
+                                                            رفض
                                                         </button>
                                                     </>
                                                 )}
                                                 {doc.status === 'approved' && (
                                                     <span className="px-4 py-2 rounded-xl bg-green-100 text-green-700 text-sm font-bold">
-                                                        Vérifié
+                                                        تم التحقق
                                                     </span>
                                                 )}
                                                 {doc.status === 'rejected' && (
                                                     <span className="px-4 py-2 rounded-xl bg-red-100 text-red-700 text-sm font-bold">
-                                                        Rejeté
+                                                        مرفوض
                                                     </span>
                                                 )}
                                             </div>
@@ -477,24 +477,24 @@ const ModerationPage = () => {
 
                 {activeTab === 'stats' && stats && (
                     <div className="bg-white rounded-3xl shadow-sm p-6">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6">Statistiques de modération</h2>
+                        <h2 className="text-xl font-bold text-gray-900 mb-6">إحصائيات الإشراف</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Activité des 30 derniers jours</h3>
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">نشاط آخر 30 يوماً</h3>
                                 <div className="space-y-4">
                                     <div className="p-4 bg-gray-50 rounded-xl">
-                                        <h4 className="font-bold text-gray-900 mb-2">Signalements</h4>
+                                        <h4 className="font-bold text-gray-900 mb-2">البلاغات</h4>
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Total</span>
+                                                <span className="text-sm text-gray-600">الإجمالي</span>
                                                 <span className="text-sm font-bold text-gray-900">{stats.reports.total}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">En attente</span>
+                                                <span className="text-sm text-gray-600">قيد الانتظار</span>
                                                 <span className="text-sm font-bold text-yellow-600">{stats.reports.pending}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Résolus</span>
+                                                <span className="text-sm text-gray-600">تم الحل</span>
                                                 <span className="text-sm font-bold text-green-600">{stats.reports.resolved}</span>
                                             </div>
                                         </div>
@@ -503,15 +503,15 @@ const ModerationPage = () => {
                                         <h4 className="font-bold text-gray-900 mb-2">KYC</h4>
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Total</span>
+                                                <span className="text-sm text-gray-600">الإجمالي</span>
                                                 <span className="text-sm font-bold text-gray-900">{stats.kyc.total}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Approuvés</span>
+                                                <span className="text-sm text-gray-600">مقبولة</span>
                                                 <span className="text-sm font-bold text-green-600">{stats.kyc.approved}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Rejetés</span>
+                                                <span className="text-sm text-gray-600">مرفوضة</span>
                                                 <span className="text-sm font-bold text-red-600">{stats.kyc.rejected}</span>
                                             </div>
                                         </div>
@@ -519,17 +519,17 @@ const ModerationPage = () => {
                                 </div>
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-4">Application des règles</h3>
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">تطبيق القواعد</h3>
                                 <div className="space-y-4">
                                     <div className="p-4 bg-gray-50 rounded-xl">
-                                        <h4 className="font-bold text-gray-900 mb-2">Enforcement</h4>
+                                        <h4 className="font-bold text-gray-900 mb-2">التنفيذ</h4>
                                         <div className="space-y-2">
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Bannis actifs</span>
+                                                <span className="text-sm text-gray-600">محظورين نشطين</span>
                                                 <span className="text-sm font-bold text-red-600">{stats.enforcement.banned}</span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Suspendus actifs</span>
+                                                <span className="text-sm text-gray-600">موقوفين نشطين</span>
                                                 <span className="text-sm font-bold text-orange-600">{stats.enforcement.suspended}</span>
                                             </div>
                                         </div>
@@ -545,7 +545,7 @@ const ModerationPage = () => {
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-5">
                         <div className="bg-white rounded-3xl p-6 max-w-md w-full">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">Action de modération</h3>
+                                <h3 className="text-lg font-bold text-gray-900">إجراء إشرافي</h3>
                                 <button
                                     onClick={() => {
                                         setShowReportModal(false);
@@ -560,7 +560,7 @@ const ModerationPage = () => {
 
                             <div className="mb-4">
                                 <p className="text-sm text-gray-600 mb-2">
-                                    Signalement #{selectedReport.id} - {selectedReport.reason}
+                                    بلاغ #{selectedReport.id.slice(0, 8)} - {selectedReport.reason}
                                 </p>
                                 <p className="text-sm text-gray-700">
                                     {selectedReport.description}
@@ -568,11 +568,11 @@ const ModerationPage = () => {
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Notes de modération</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">ملاحظات الإشراف</label>
                                 <textarea
                                     value={actionNotes}
                                     onChange={(e) => setActionNotes(e.target.value)}
-                                    placeholder="Explique votre décision..."
+                                    placeholder="اشرح قرارك..."
                                     rows={4}
                                     className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary/20 resize-none"
                                 />
@@ -583,13 +583,13 @@ const ModerationPage = () => {
                                     onClick={() => handleReportAction(selectedReport.id, 'approve')}
                                     className="flex-1 py-3 rounded-xl bg-green-100 text-green-700 font-bold"
                                 >
-                                    Approuver
+                                    موافقة
                                 </button>
                                 <button
                                     onClick={() => handleReportAction(selectedReport.id, 'reject')}
                                     className="flex-1 py-3 rounded-xl bg-red-100 text-red-700 font-bold"
                                 >
-                                    Rejeter
+                                    رفض
                                 </button>
                                 <button
                                     onClick={() => {
@@ -599,7 +599,7 @@ const ModerationPage = () => {
                                     }}
                                     className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold"
                                 >
-                                    Annuler
+                                    إلغاء
                                 </button>
                             </div>
                         </div>
@@ -611,7 +611,7 @@ const ModerationPage = () => {
                     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-5">
                         <div className="bg-white rounded-3xl p-6 max-w-md w-full">
                             <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-bold text-gray-900">Révision KYC</h3>
+                                <h3 className="text-lg font-bold text-gray-900">مراجعة KYC</h3>
                                 <button
                                     onClick={() => {
                                         setShowKycModal(false);
@@ -626,14 +626,14 @@ const ModerationPage = () => {
 
                             <div className="mb-4">
                                 <p className="text-sm text-gray-600 mb-2">
-                                    Document KYC #{selectedKyc.id} - {getDocumentTypeLabel(selectedKyc.document_type)}
+                                    مستند KYC #{selectedKyc.id.slice(0, 8)} - {getDocumentTypeLabel(selectedKyc.document_type)}
                                 </p>
                                 <p className="text-sm text-gray-700 mb-2">
                                     {selectedKyc.document_name}
                                 </p>
                                 {selectedKyc.provider && (
                                     <p className="text-xs text-gray-500 mb-2">
-                                        Prestataire: {selectedKyc.provider.company_name}
+                                        المزود: {selectedKyc.provider.company_name}
                                     </p>
                                 )}
                                 <a
@@ -642,16 +642,16 @@ const ModerationPage = () => {
                                     rel="noopener noreferrer"
                                     className="inline-block text-blue-600 hover:underline text-sm font-bold mb-2"
                                 >
-                                    Voir le document
+                                    عرض المستند
                                 </a>
                             </div>
 
                             <div className="mb-4">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Notes de révision</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">ملاحظات المراجعة</label>
                                 <textarea
                                     value={actionNotes}
                                     onChange={(e) => setActionNotes(e.target.value)}
-                                    placeholder="Explique votre décision..."
+                                    placeholder="اشرح قرارك..."
                                     rows={4}
                                     className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary/20 resize-none"
                                 />
@@ -662,13 +662,13 @@ const ModerationPage = () => {
                                     onClick={() => handleKycReview(selectedKyc.id, 'approved')}
                                     className="flex-1 py-3 rounded-xl bg-green-100 text-green-700 font-bold"
                                 >
-                                    Approuver
+                                    موافقة
                                 </button>
                                 <button
                                     onClick={() => handleKycReview(selectedKyc.id, 'rejected')}
                                     className="flex-1 py-3 rounded-xl bg-red-100 text-red-700 font-bold"
                                 >
-                                    Rejeter
+                                    رفض
                                 </button>
                                 <button
                                     onClick={() => {
@@ -678,7 +678,7 @@ const ModerationPage = () => {
                                     }}
                                     className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold"
                                 >
-                                    Annuler
+                                    إلغاء
                                 </button>
                             </div>
                         </div>

@@ -181,7 +181,7 @@ const PaymentPage = () => {
         );
     }
 
-    if (paymentStatus === 'paid' || effectiveRemaining <= 0) {
+    if (paymentStatus === 'fully_paid' || effectiveRemaining <= 0) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir="rtl">
                 <div className="text-center bg-white rounded-3xl p-10 shadow-sm max-w-sm mx-4">

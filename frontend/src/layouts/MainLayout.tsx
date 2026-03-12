@@ -1,16 +1,13 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authService } from '../services/auth.service';
+import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
 const MainLayout = () => {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const location = useLocation();
     const isActive = (path: string) => location.pathname === path;
     const user = authService.getCurrentUser();
-
-    const changeLanguage = (lng: string) => {
-        i18n.changeLanguage(lng);
-    };
 
     const dashboardPath = user?.role === 'provider'
         ? '/provider/dashboard'
@@ -44,15 +41,7 @@ const MainLayout = () => {
                     <span className="font-bold text-lg text-gray-800 tracking-tight">DOUSHA</span>
                 </div>
                 <div className="flex items-center gap-3">
-                    <select
-                        onChange={(e) => changeLanguage(e.target.value)}
-                        value={i18n.language}
-                        className="text-xs bg-gray-50 border-none rounded-lg px-2 py-1 focus:ring-1 focus:ring-primary outline-none"
-                    >
-                        <option value="fr">FR</option>
-                        <option value="ar">AR</option>
-                        <option value="en">EN</option>
-                    </select>
+                    <LanguageSwitcher />
                     <Link to={user?.role === 'provider' ? '/provider/notifications' : user?.role === 'admin' ? '/admin/notifications' : '/client/notifications'} className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-primary transition-colors">
                         <i className="fa-solid fa-bell"></i>
                     </Link>

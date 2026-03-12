@@ -32,6 +32,41 @@
             "month": "This Month",
             "year": "This Year",
             "last_7_days": "Last 7 Days"
+        },
+        "admin": {
+            "title": "Admin Panel",
+            "back_to_site": "Back to site",
+            "logout": "Logout",
+            "overview": "Overview",
+            "users": "Users",
+            "providers": "Providers",
+            "categories": "Categories",
+            "bookings": "Bookings",
+            "events": "Events",
+            "services": "Services",
+            "messages": "Messages",
+            "reviews": "Reviews",
+            "quotes": "Quotes",
+            "commissions": "Commissions",
+            "audit_logs": "Audit Logs"
+        },
+        "provider": {
+            "portal": "Provider Portal",
+            "dashboard": "Dashboard",
+            "calendar": "Calendar",
+            "services": "Services",
+            "bookings": "Bookings",
+            "quotes": "Quotes",
+            "reviews": "Reviews",
+            "profile": "Profile"
+        },
+        "client": {
+            "dashboard": "Home",
+            "my_events": "My Events",
+            "my_bookings": "My Bookings",
+            "favorites": "Favorites",
+            "messages": "Messages",
+            "my_account": "My Account"
         }
     },
     "home": {

@@ -207,7 +207,7 @@ export class BookingsService {
     // Notify the other party about status change
     const notifyUserId =
       booking.client_id === userId ? booking.provider_id : booking.client_id;
-    const statusMessages = {
+    const statusMessages: any = {
       confirmed: {
         title: 'تم تأكيد الحجز',
         message: 'تم تأكيد طلب الحجز بنجاح',
@@ -329,6 +329,20 @@ export class BookingsService {
       amount = Math.round(amount * 0.7); // 70% balance
     }
 
+    const isMock =
+      !this.configService.get<string>('STRIPE_SECRET_KEY') ||
+      this.configService
+        .get<string>('STRIPE_SECRET_KEY')
+        ?.includes('YOUR_STRIPE_SECRET_KEY');
+
+    if (isMock) {
+      this.logger.log(`Creating MOCK payment intent for booking ${bookingId}`);
+      return {
+        client_secret: `pi_mock_${bookingId}_secret_${Date.now()}`,
+        payment_intent_id: `pi_mock_${bookingId}`,
+      };
+    }
+
     const paymentIntent = await this.stripe.paymentIntents.create({
       amount: amount * 100, // Convert to cents
       currency: 'qar',
@@ -342,6 +356,30 @@ export class BookingsService {
       client_secret: paymentIntent.client_secret || '',
       payment_intent_id: paymentIntent.id,
     };
+  }
+
+  async confirmMockPayment(
+    bookingId: string,
+    paymentIntentId: string,
+    paymentType: string,
+  ): Promise<void> {
+    const booking = await this.supabase
+      .from('bookings')
+      .select('amount')
+      .eq('id', bookingId)
+      .single();
+    if (!booking.data) throw new NotFoundException('Booking not found');
+
+    let amount = booking.data.amount;
+    if (paymentType === 'deposit') amount *= 0.3;
+    else if (paymentType === 'balance') amount *= 0.7;
+
+    await this.applyPaymentToBooking(
+      bookingId,
+      paymentIntentId,
+      amount,
+      paymentType as any,
+    );
   }
 
   async confirmPayment(paymentIntentId: string): Promise<void> {
@@ -529,7 +567,9 @@ export class BookingsService {
     const confirmed = bookings.filter((b) => b.status === 'confirmed').length;
     const cancelled = bookings.filter((b) => b.status === 'cancelled').length;
     const totalRevenue = bookings
-      .filter((b) => b.payment_status === 'fully_paid' || b.status === 'completed')
+      .filter(
+        (b) => b.payment_status === 'fully_paid' || b.status === 'completed',
+      )
       .reduce((sum, b) => sum + (b.amount || 0), 0);
 
     // Calculate monthly revenue for last 6 months

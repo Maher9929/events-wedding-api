@@ -8,7 +8,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
-  ) { }
+  ) {}
 
   @Public()
   @Get()

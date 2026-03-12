@@ -18,65 +18,98 @@ export class MessagesService {
   ) {}
 
   async createConversation(participantIds: string[]): Promise<Conversation> {
-    // Check if conversation already exists
-    // This is a simplified check. In real app, we need to check if ANY row has these generic participants
-    // For now, let's just create a new one
-
-    // Ensure unique and sorted for consistent lookup if we wanted to enforce uniqueness
     const sortedIds = [...participantIds].sort();
 
     const { data, error } = await this.supabase
       .from('conversations')
       .insert({
         participant_ids: sortedIds,
-        last_message_at: new Date(),
+        last_message_at: new Date().toISOString(),
       })
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('Error creating conversation:', error);
+      throw new InternalServerErrorException(
+        `فشل إنشاء المحادثة: ${error.message}`,
+      );
+    }
+    if (!data) {
+      throw new InternalServerErrorException(
+        'لم يتم إرجاع بيانات بعد إنشاء المحادثة',
+      );
+    }
     return data;
   }
 
-  async getConversations(userId: string): Promise<Conversation[]> {
+  async getConversations(userId: string): Promise<any[]> {
     if (!userId) return [];
 
-    const { data, error } = await this.supabase
+    const { data: convos, error } = await this.supabase
       .from('conversations')
       .select('*')
       .contains('participant_ids', [userId])
       .order('last_message_at', { ascending: false });
 
     if (error) {
+      console.error('Error fetching conversations:', error);
       throw new InternalServerErrorException(error.message);
     }
-    const convos = data || [];
+    const conversations = convos || [];
 
-    // Attach unread_count per conversation
-    const withUnread = await Promise.all(
-      convos.map(async (c) => {
-        const { count } = await this.supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', c.id)
-          .neq('sender_id', userId)
-          .is('read_at', null);
-        return { ...c, unread_count: count || 0 };
+    const enrichedConversations = await Promise.all(
+      conversations.map(async (c) => {
+        try {
+          const { count } = await this.supabase
+            .from('messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', c.id)
+            .neq('sender_id', userId)
+            .is('read_at', null);
+
+          const { data: profiles } = await this.supabase
+            .from('user_profiles')
+            .select('id, full_name, avatar_url, role')
+            .in('id', c.participant_ids);
+
+          const otherParticipant = profiles?.find((p) => p.id !== userId);
+
+          return {
+            ...c,
+            unread_count: count || 0,
+            recipient_name: otherParticipant?.full_name || 'مستخدم',
+            recipient_avatar: otherParticipant?.avatar_url,
+            recipient_role: otherParticipant?.role,
+          };
+        } catch (e) {
+          console.error(`Error enriching conversation ${c.id}:`, e);
+          return { ...c, unread_count: 0, recipient_name: 'مستخدم' };
+        }
       }),
     );
-    return withUnread;
+    return enrichedConversations;
   }
 
-  async getMessages(conversationId: string): Promise<Message[]> {
+  async getMessages(conversationId: string): Promise<any[]> {
     if (!conversationId) return [];
 
     const { data, error } = await this.supabase
       .from('messages')
-      .select('*')
+      .select(
+        `
+        *,
+        sender:user_profiles (
+          full_name,
+          avatar_url
+        )
+      `,
+      )
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
     if (error) {
+      console.error('Error fetching messages:', error);
       throw new InternalServerErrorException(error.message);
     }
     return data || [];
@@ -94,6 +127,7 @@ export class MessagesService {
       .is('read_at', null);
 
     if (error) {
+      console.error('Error marking conversation read:', error);
       throw new InternalServerErrorException(error.message);
     }
     return { success: true };
@@ -109,9 +143,7 @@ export class MessagesService {
 
     let conversationId = createMessageDto.conversation_id;
 
-    // If no conversation ID, create or find existing one
     if (!conversationId && createMessageDto.recipient_id) {
-      // Try to find existing conversation first
       const existing = await this.findExistingConversation(
         senderId,
         createMessageDto.recipient_id,
@@ -133,7 +165,6 @@ export class MessagesService {
       );
     }
 
-    // Insert Message
     const { data: message, error } = await this.supabase
       .from('messages')
       .insert({
@@ -141,7 +172,6 @@ export class MessagesService {
         sender_id: senderId,
         content: createMessageDto.content,
         type: createMessageDto.type || 'text',
-        // Store attachments inside metadata (no standalone attachments column in schema)
         metadata: {
           ...(createMessageDto.metadata || {}),
           ...(createMessageDto.attachments?.length
@@ -150,24 +180,24 @@ export class MessagesService {
         },
       })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
+      console.error('Error sending message:', error);
       throw new InternalServerErrorException(error.message);
     }
 
-    // Update Conversation Last Message At
     await this.supabase
       .from('conversations')
-      .update({ last_message_at: new Date() })
+      .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId);
 
-    // Notify other participants
     const { data: convo } = await this.supabase
       .from('conversations')
       .select('participant_ids')
       .eq('id', conversationId)
-      .single();
+      .maybeSingle();
+
     if (convo?.participant_ids) {
       const recipients = (convo.participant_ids as string[]).filter(
         (id) => id !== senderId,
@@ -183,8 +213,8 @@ export class MessagesService {
             is_read: false,
             data: { conversation_id: conversationId, sender_id: senderId },
           });
-        } catch {
-          /* silent */
+        } catch (e) {
+          console.error('Error creating notification:', e);
         }
       }
     }
@@ -197,12 +227,16 @@ export class MessagesService {
     userId2: string,
   ): Promise<Conversation | null> {
     const sortedIds = [userId1, userId2].sort();
-    const { data } = await this.supabase
+    const { data, error } = await this.supabase
       .from('conversations')
       .select('*')
       .contains('participant_ids', sortedIds)
-      .limit(1)
-      .single();
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error finding existing conversation:', error);
+    }
+
     return data || null;
   }
 }

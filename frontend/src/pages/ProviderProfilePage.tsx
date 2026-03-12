@@ -57,8 +57,8 @@ const ProviderProfilePage = () => {
         );
     }
 
-    const averageRating = reviews.length > 0 
-        ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length 
+    const averageRating = reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
         : 0;
 
     return (
@@ -66,8 +66,8 @@ const ProviderProfilePage = () => {
             {/* Header */}
             <div className="relative">
                 {provider.portfolio_images && provider.portfolio_images.length > 0 && (
-                    <img 
-                        src={getThumbnailUrl(provider.portfolio_images[0])} 
+                    <img
+                        src={getThumbnailUrl(provider.portfolio_images[0])}
                         alt="Cover"
                         className="w-full h-48 object-cover"
                     />
@@ -171,9 +171,11 @@ const ProviderProfilePage = () => {
                         </div>
                     )}
 
-                    {/* Contact Actions */}
                     <div className="flex gap-3">
-                        <button className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg">
+                        <button
+                            onClick={() => navigate(`/client/messages?providerId=${provider.user_id}&autoStart=true`)}
+                            className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg"
+                        >
                             Contacter
                         </button>
                         <button className="flex-1 py-3 rounded-xl bg-white text-primary font-bold border-2 border-primary">
@@ -193,11 +195,10 @@ const ProviderProfilePage = () => {
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key as any)}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all ${
-                                activeTab === tab.key 
-                                    ? 'bg-primary text-white' 
+                            className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all ${activeTab === tab.key
+                                    ? 'bg-primary text-white'
                                     : 'bg-white text-gray-600'
-                            }`}
+                                }`}
                         >
                             <i className={`fa-solid ${tab.icon} text-xs`}></i>
                             {tab.label}
@@ -213,9 +214,9 @@ const ProviderProfilePage = () => {
                             <p className="text-gray-700 whitespace-pre-wrap">{provider.description}</p>
                             {provider.website && (
                                 <div className="mt-4">
-                                    <a 
-                                        href={provider.website} 
-                                        target="_blank" 
+                                    <a
+                                        href={provider.website}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-primary font-bold flex items-center gap-2"
                                     >
@@ -233,9 +234,9 @@ const ProviderProfilePage = () => {
                             {provider.portfolio_images && provider.portfolio_images.length > 0 ? (
                                 <div className="grid grid-cols-2 gap-3">
                                     {provider.portfolio_images?.map((img: string, idx: number) => (
-                                        <img 
+                                        <img
                                             key={idx}
-                                            src={getThumbnailUrl(img)} 
+                                            src={getThumbnailUrl(img)}
                                             alt={`Portfolio ${idx + 1}`}
                                             className="w-full h-32 object-cover rounded-xl"
                                         />
@@ -246,9 +247,9 @@ const ProviderProfilePage = () => {
                             )}
                             {provider.video_url && (
                                 <div className="mt-4">
-                                    <a 
-                                        href={provider.video_url} 
-                                        target="_blank" 
+                                    <a
+                                        href={provider.video_url}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-primary font-bold flex items-center gap-2"
                                     >

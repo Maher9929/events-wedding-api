@@ -38,6 +38,18 @@ import ProtectedRoute from './components/common/ProtectedRoute';
 import PaymentPage from './pages/PaymentPage';
 import LegalPage from './pages/LegalPage';
 import ModerationPage from './pages/ModerationPage';
+import ProviderProfilePage from './pages/ProviderProfilePage';
+import ProviderServicesPage from './pages/ProviderServicesPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminProvidersPage from './pages/AdminProvidersPage';
+import AdminBookingsPage from './pages/AdminBookingsPage';
+import AdminEventsPage from './pages/AdminEventsPage';
+import AdminCategoriesPage from './pages/AdminCategoriesPage';
+import AdminServicesPage from './pages/AdminServicesPage';
+import AdminReviewsPage from './pages/AdminReviewsPage';
+import AdminQuotesPage from './pages/AdminQuotesPage';
+import AdminCommissionsPage from './pages/AdminCommissionsPage';
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage';
 
 function App() {
   return (
@@ -51,6 +63,7 @@ function App() {
             <Route path="categories" element={<CategoriesPage />} />
             <Route path="services" element={<ServiceListingPage />} />
             <Route path="services/:id" element={<ServiceDetailsPage />} />
+            <Route path="providers/:id" element={<ProviderProfilePage />} />
             <Route path="legal" element={<LegalPage />} />
           </Route>
 
@@ -97,6 +110,8 @@ function App() {
             <Route path="bookings" element={<BookingsPage />} />
             <Route path="bookings/:id" element={<BookingDetailsPage />} />
             <Route path="payment/:bookingId" element={<PaymentPage />} />
+            <Route path="services" element={<ProviderServicesPage />} />
+            <Route path="reviews" element={<QuotesPage />} />
           </Route>
 
           {/* Protected Admin Routes */}
@@ -106,6 +121,16 @@ function App() {
             </ProtectedRoute>
           }>
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="providers" element={<AdminProvidersPage />} />
+            <Route path="bookings" element={<AdminBookingsPage />} />
+            <Route path="events" element={<AdminEventsPage />} />
+            <Route path="categories" element={<AdminCategoriesPage />} />
+            <Route path="services" element={<AdminServicesPage />} />
+            <Route path="quotes" element={<AdminQuotesPage />} />
+            <Route path="reviews" element={<AdminReviewsPage />} />
+            <Route path="commissions" element={<AdminCommissionsPage />} />
+            <Route path="audit-logs" element={<AdminAuditLogsPage />} />
             <Route path="moderation" element={<ModerationPage />} />
             <Route path="messages" element={<MessagesPage />} />
             <Route path="notifications" element={<NotificationsPage />} />

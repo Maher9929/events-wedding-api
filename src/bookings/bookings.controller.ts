@@ -21,7 +21,7 @@ import { UserRole } from '../users/dto/create-user.dto';
 
 @Controller('bookings')
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) { }
+  constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -138,6 +138,20 @@ export class BookingsController {
     return await this.bookingsService.createPaymentIntent(
       id,
       req.user.id,
+      paymentType,
+    );
+  }
+
+  @Post(':id/mock-confirm')
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
+  async confirmMockPayment(
+    @Param('id') id: string,
+    @Body('paymentIntentId') paymentIntentId: string,
+    @Body('paymentType') paymentType: string,
+  ) {
+    return this.bookingsService.confirmMockPayment(
+      id,
+      paymentIntentId,
       paymentType,
     );
   }

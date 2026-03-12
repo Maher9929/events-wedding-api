@@ -24,7 +24,7 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
             setLoading(true);
             messagesService.getMessages(conversationId)
                 .then(data => { if (Array.isArray(data)) setMessages(data); })
-                .catch(() => {})
+                .catch(() => { })
                 .finally(() => setLoading(false));
         }
     }, [conversationId]);
@@ -107,22 +107,37 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
                 {!loading && messages.length === 0 && (
                     <p className="text-center text-gray-400 text-sm">لا توجد رسائل بعد. ابدأ المحادثة!</p>
                 )}
-                {messages.map((msg) => {
+                {messages.map((msg: any) => {
                     const isMe = msg.sender_id === currentUser?.id;
+                    const senderProfile = (msg as any).sender;
                     return (
-                        <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                            {!isMe && (
+                                <div className="flex-shrink-0 mt-auto mb-1">
+                                    {senderProfile?.avatar_url ? (
+                                        <img src={senderProfile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shadow-sm" />
+                                    ) : (
+                                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-primary text-xs font-bold">
+                                            {senderProfile?.full_name?.charAt(0).toUpperCase() || '?'}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className={`max-w-[70%] rounded-2xl p-4 ${isMe
                                 ? 'bg-primary text-white rounded-br-none'
-                                : 'bg-white text-gray-800 shadow-sm rounded-bl-none'
+                                : 'bg-white text-gray-800 shadow-sm rounded-bl-none border border-gray-100'
                                 }`}>
+                                {!isMe && senderProfile?.full_name && (
+                                    <span className="text-[10px] font-bold block mb-1 text-primary">{senderProfile.full_name}</span>
+                                )}
                                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                                 {msg.attachments && msg.attachments.length > 0 && (
                                     <div className="mt-2 space-y-1">
-                                        {msg.attachments.map((file, idx) => (
-                                            <a 
-                                                key={idx} 
-                                                href={file.url} 
-                                                target="_blank" 
+                                        {msg.attachments.map((file: any, idx: number) => (
+                                            <a
+                                                key={idx}
+                                                href={file.url}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
                                                 className={`flex items-center gap-2 p-2 rounded text-xs ${isMe ? 'bg-white/20' : 'bg-gray-100'} hover:opacity-80 transition-opacity`}
                                             >

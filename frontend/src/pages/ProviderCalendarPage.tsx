@@ -68,11 +68,11 @@ const ProviderCalendarPage = () => {
 
     const getStatusText = (status: string) => {
         switch (status) {
-            case 'confirmed': return 'Confirmé';
-            case 'pending': return 'En attente';
-            case 'cancelled': return 'Annulé';
-            case 'completed': return 'Terminé';
-            case 'rejected': return 'Refusé';
+            case 'confirmed': return 'مؤكد';
+            case 'pending': return 'قيد الانتظار';
+            case 'cancelled': return 'ملغي';
+            case 'completed': return 'مكتمل';
+            case 'rejected': return 'مرفوض';
             default: return status;
         }
     };
@@ -93,14 +93,14 @@ const ProviderCalendarPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-bglight p-5">
+        <div className="min-h-screen bg-bglight p-5" dir="rtl">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Calendrier des réservations</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">تقويم الحجوزات</h1>
                         <p className="text-gray-600 mt-1">
-                            {currentMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                            {currentMonth.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -114,7 +114,7 @@ const ProviderCalendarPage = () => {
                                             : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
-                                    {mode === 'month' ? 'Mois' : mode === 'week' ? 'Semaine' : 'Jour'}
+                                    {mode === 'month' ? 'شهر' : mode === 'week' ? 'أسبوع' : 'يوم'}
                                 </button>
                             ))}
                         </div>
@@ -131,7 +131,7 @@ const ProviderCalendarPage = () => {
                 <div className="bg-white rounded-3xl shadow-sm p-6">
                     {/* Weekday headers */}
                     <div className="grid grid-cols-7 gap-2 mb-4">
-                        {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map(day => (
+                        {['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'].map(day => (
                             <div key={day} className="text-center text-sm font-bold text-gray-600 py-2">
                                 {day}
                             </div>
@@ -171,12 +171,12 @@ const ProviderCalendarPage = () => {
                                                 className={`text-xs px-1 py-0.5 rounded border truncate ${getStatusColor(booking.status)}`}
                                                 title={`${booking.booking_date} - ${getStatusText(booking.status)}`}
                                             >
-                                                {booking.start_time || 'Toute la journée'}
+                                                {booking.start_time || 'طوال اليوم'}
                                             </div>
                                         ))}
                                         {dayBookings.length > 2 && (
                                             <div className="text-xs text-gray-500 font-bold">
-                                                +{dayBookings.length - 2} plus
+                                                +{dayBookings.length - 2} أخرى
                                             </div>
                                         )}
                                     </div>
@@ -190,7 +190,7 @@ const ProviderCalendarPage = () => {
                 {selectedDate && (
                     <div className="bg-white rounded-3xl shadow-sm p-6 mt-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">
-                            Réservations du {selectedDate.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            حجوزات {selectedDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </h3>
                         <div className="space-y-3">
                             {getBookingsForDate(selectedDate).length > 0 ? (
@@ -203,23 +203,23 @@ const ProviderCalendarPage = () => {
                                                         {getStatusText(booking.status)}
                                                     </span>
                                                     <span className="text-sm text-gray-600">
-                                                        {booking.start_time || 'Toute la journée'} {booking.end_time ? `- ${booking.end_time}` : ''}
+                                                        {booking.start_time || 'طوال اليوم'} {booking.end_time ? `- ${booking.end_time}` : ''}
                                                     </span>
                                                 </div>
                                                 <p className="font-bold text-gray-900 mb-1">
-                                                    {booking.location || 'Lieu à définir'}
+                                                    {booking.location || 'المكان غير محدد'}
                                                 </p>
                                                 <p className="text-sm text-gray-600 mb-2">
-                                                    {booking.guest_count ? `${booking.guest_count} invités` : ''}
+                                                    {booking.guest_count ? `${booking.guest_count} ضيف` : ''}
                                                 </p>
                                                 <div className="flex items-center gap-4 text-sm">
                                                     <span className="font-bold text-primary">
-                                                        {booking.amount.toLocaleString('fr-FR')} ر.ق
+                                                        {booking.amount.toLocaleString('ar-EG')} ر.ق
                                                     </span>
                                                     <span className="text-gray-500">
-                                                        {booking.payment_status === 'fully_paid' ? 'Payé' :
-                                                            booking.payment_status === 'deposit_paid' ? 'Acompte payé' :
-                                                                'En attente de paiement'}
+                                                        {booking.payment_status === 'fully_paid' ? 'مدفوع بالكامل' :
+                                                            booking.payment_status === 'deposit_paid' ? 'تم دفع العربون' :
+                                                                'بانتظار الدفع'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -227,14 +227,14 @@ const ProviderCalendarPage = () => {
                                                 onClick={() => navigate(`/bookings/${booking.id}`)}
                                                 className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold"
                                             >
-                                                Voir détails
+                                                عرض التفاصيل
                                             </button>
                                         </div>
                                     </div>
                                 ))
                             ) : (
                                 <p className="text-center text-gray-500 py-8">
-                                    Aucune réservation pour cette date
+                                    لا توجد حجوزات لهذا التاريخ
                                 </p>
                             )}
                         </div>
@@ -249,7 +249,7 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-check text-green-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">Confirmées</p>
+                                <p className="text-xs text-gray-500">مؤكدة</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings.filter(b => b.status === 'confirmed').length}
                                 </p>
@@ -262,7 +262,7 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-clock text-yellow-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">En attente</p>
+                                <p className="text-xs text-gray-500">قيد الانتظار</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings.filter(b => b.status === 'pending').length}
                                 </p>
@@ -275,7 +275,7 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-calendar-check text-blue-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">Ce mois</p>
+                                <p className="text-xs text-gray-500">هذا الشهر</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings.length}
                                 </p>
@@ -288,12 +288,12 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-money-bill text-purple-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">Revenus</p>
+                                <p className="text-xs text-gray-500">الإيرادات</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings
                                         .filter(b => b.payment_status === 'fully_paid')
                                         .reduce((sum, b) => sum + b.amount, 0)
-                                        .toLocaleString('fr-FR')} ر.ق
+                                        .toLocaleString('ar-EG')} ر.ق
                                 </p>
                             </div>
                         </div>

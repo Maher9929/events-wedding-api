@@ -43,6 +43,7 @@ export interface ServiceItem {
   rating?: number;
   review_count?: number;
   is_featured?: boolean;
+  is_active?: boolean;
   created_at: string;
 }
 
@@ -95,6 +96,10 @@ export interface Conversation {
   last_message_at: string;
   created_at: string;
   updated_at: string;
+  recipient_name?: string;
+  recipient_avatar?: string;
+  recipient_role?: string;
+  unread_count?: number;
 }
 
 export interface Message {

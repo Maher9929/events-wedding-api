@@ -13,7 +13,7 @@ export class ReviewsService {
   constructor(
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
-  ) { }
+  ) {}
 
   async create(clientId: string, dto: CreateReviewDto): Promise<Review> {
     // 1. Check if user actually has a COMPLETED booking for this provider's service
@@ -36,7 +36,9 @@ export class ReviewsService {
       .limit(1);
 
     if (!pastBookings || pastBookings.length === 0) {
-      throw new ForbiddenException('You can only review providers after a completed booking');
+      throw new ForbiddenException(
+        'You can only review providers after a completed booking',
+      );
     }
 
     // 2. Check if user already reviewed this service

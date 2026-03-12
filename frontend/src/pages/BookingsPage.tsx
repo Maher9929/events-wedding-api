@@ -188,8 +188,8 @@ const BookingsPage = () => {
                                             </div>
                                             <div className="text-left">
                                                 <p className="text-xs text-gray-500">{t('bookings.payment_status')}</p>
-                                                <p className={`text-sm font-bold ${booking.payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>
-                                                    {booking.payment_status === 'paid' ? t('bookings.paid') : isPartiallyPaid ? t('bookings.partially_paid') : t('bookings.unpaid')}
+                                                <p className={`text-sm font-bold ${booking.payment_status === 'fully_paid' ? 'text-green-600' : booking.payment_status === 'deposit_paid' ? 'text-blue-600' : 'text-yellow-600'}`}>
+                                                    {booking.payment_status === 'fully_paid' ? t('bookings.paid') : booking.payment_status === 'deposit_paid' ? t('bookings.partially_paid') : isPartiallyPaid ? t('bookings.partially_paid') : t('bookings.unpaid')}
                                                 </p>
                                                 {booking.payment_status === 'pending' && balanceAmount > 0 && (
                                                     <p className="text-[11px] text-gray-500">{t('bookings.remaining')}: {balanceAmount.toLocaleString()} QR</p>

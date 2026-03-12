@@ -4,10 +4,10 @@ import { bookingsService, type Booking } from '../services/bookings.service';
 import { toastService } from '../services/toast.service';
 
 const statusMap: Record<string, { label: string; cls: string; icon: string }> = {
-    pending:   { label: 'قيد الانتظار', cls: 'bg-yellow-100 text-yellow-700', icon: 'fa-clock' },
-    confirmed: { label: 'مؤكد',          cls: 'bg-green-100 text-green-700',  icon: 'fa-check-circle' },
-    cancelled: { label: 'ملغي',           cls: 'bg-red-100 text-red-700',     icon: 'fa-times-circle' },
-    completed: { label: 'مكتمل',          cls: 'bg-blue-100 text-blue-700',   icon: 'fa-flag-checkered' },
+    pending: { label: 'قيد الانتظار', cls: 'bg-yellow-100 text-yellow-700', icon: 'fa-clock' },
+    confirmed: { label: 'مؤكد', cls: 'bg-green-100 text-green-700', icon: 'fa-check-circle' },
+    cancelled: { label: 'ملغي', cls: 'bg-red-100 text-red-700', icon: 'fa-times-circle' },
+    completed: { label: 'مكتمل', cls: 'bg-blue-100 text-blue-700', icon: 'fa-flag-checkered' },
 };
 
 const BookingDetailsPage = () => {
@@ -200,18 +200,20 @@ const BookingDetailsPage = () => {
                                 <i className="fa-solid fa-credit-card text-primary w-4"></i>
                                 حالة الدفع
                             </span>
-                            <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${
-                                booking.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
-                                booking.payment_status === 'refunded' ? 'bg-blue-100 text-blue-700' :
-                                'bg-yellow-100 text-yellow-700'
-                            }`}>
-                                {booking.payment_status === 'paid'
-                                    ? 'مدفوع'
-                                    : booking.payment_status === 'refunded'
-                                        ? 'مسترجع'
-                                        : isPartiallyPaid
-                                            ? 'مدفوع جزئياً'
-                                            : 'غير مدفوع'}
+                            <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${booking.payment_status === 'fully_paid' ? 'bg-green-100 text-green-700' :
+                                booking.payment_status === 'deposit_paid' ? 'bg-blue-100 text-blue-700' :
+                                    booking.payment_status === 'refunded' ? 'bg-orange-100 text-orange-700' :
+                                        'bg-yellow-100 text-yellow-700'
+                                }`}>
+                                {booking.payment_status === 'fully_paid'
+                                    ? 'مدفوع بالكامل'
+                                    : booking.payment_status === 'deposit_paid'
+                                        ? 'عربون مدفوع'
+                                        : booking.payment_status === 'refunded'
+                                            ? 'مسترجع'
+                                            : isPartiallyPaid
+                                                ? 'مدفوع جزئياً'
+                                                : 'غير مدفوع'}
                             </span>
                         </div>
 
@@ -272,7 +274,7 @@ const BookingDetailsPage = () => {
                     )}
 
                     <button
-                        onClick={() => navigate('/client/messages')}
+                        onClick={() => navigate(`/client/messages?providerId=${booking.provider_id}&autoStart=true`)}
                         className="w-full py-3.5 rounded-2xl bg-white border-2 border-primary text-primary font-bold flex items-center justify-center gap-2 hover:bg-purple-50 transition-colors shadow-sm"
                     >
                         <i className="fa-solid fa-comment-dots"></i>

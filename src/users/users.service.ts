@@ -10,7 +10,6 @@ import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto, UserRole } from './dto/create-user.dto';
 import { LoginDto, RegisterDto, AuthResponseDto } from './dto/auth.dto';
 import { UserProfile } from './entities/user.entity';
-import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class UsersService {
@@ -49,7 +48,6 @@ export class UsersService {
 
     // Retry fetching the profile created by the DB trigger (up to 3 x 500ms)
     let profile: any = null;
-    let profileError: any = null;
     for (let attempt = 0; attempt < 3; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, 500));
       const result = await this.supabase
@@ -58,7 +56,6 @@ export class UsersService {
         .eq('id', authData.user.id)
         .single();
       profile = result.data;
-      profileError = result.error;
       if (profile) break;
     }
 

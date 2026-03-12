@@ -1,9 +1,11 @@
+import { UserRole } from '../dto/create-user.dto';
+
 export class User {
   id: string;
   email: string;
   full_name?: string;
   phone?: string;
-  role: string;
+  role: UserRole;
   avatar_url?: string;
   bio?: string;
   created_at: Date;
@@ -15,7 +17,7 @@ export class UserProfile {
   email: string;
   full_name?: string;
   phone?: string;
-  role: string;
+  role: UserRole;
   avatar_url?: string;
   bio?: string;
   created_at: Date;

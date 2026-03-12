@@ -32,6 +32,41 @@
             "month": "Ce Mois",
             "year": "Cette Année",
             "last_7_days": "7 derniers jours"
+        },
+        "admin": {
+            "title": "Panel Admin",
+            "back_to_site": "Retour au site",
+            "logout": "Déconnexion",
+            "overview": "Aperçu",
+            "users": "Utilisateurs",
+            "providers": "Prestataires",
+            "categories": "Catégories",
+            "bookings": "Réservations",
+            "events": "Événements",
+            "services": "Services",
+            "messages": "Messages",
+            "reviews": "Avis",
+            "quotes": "Devis",
+            "commissions": "Commissions",
+            "audit_logs": "Logs d'Audit"
+        },
+        "provider": {
+            "portal": "Portail Prestataire",
+            "dashboard": "Tableau de Bord",
+            "calendar": "Calendrier",
+            "services": "Services",
+            "bookings": "Réservations",
+            "quotes": "Devis",
+            "reviews": "Avis",
+            "profile": "Profil"
+        },
+        "client": {
+            "dashboard": "Accueil",
+            "my_events": "Mes Événements",
+            "my_bookings": "Mes Réservations",
+            "favorites": "Favoris",
+            "messages": "Messages",
+            "my_account": "Mon Compte"
         }
     },
     "home": {
