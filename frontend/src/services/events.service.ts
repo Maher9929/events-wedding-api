@@ -1,10 +1,11 @@
 import { apiService } from './api';
+import type { Event } from './api';
 import type { EventBudget, EventTask, EventTimelineItem, EventGuest } from '../types/events';
 
-const getMyEvents = (params = '') => apiService.get<any>(`/events/my-events${params}`);
-const findOne = (id: string) => apiService.get<any>(`/events/${id}`);
-const create = (data: any) => apiService.post<any>('/events', data);
-const update = (id: string, data: any) => apiService.patch<any>(`/events/${id}`, data);
+const getMyEvents = (params = '') => apiService.get<Event[]>(`/events/my-events${params}`);
+const findOne = (id: string) => apiService.get<Event>(`/events/${id}`);
+const create = (data: Omit<Event, 'id' | 'created_at' | 'client_id'>) => apiService.post<Event>('/events', data);
+const update = (id: string, data: Partial<Event>) => apiService.patch<Event>(`/events/${id}`, data);
 const remove = (id: string) => apiService.delete(`/events/${id}`);
 
 // Budget

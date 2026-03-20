@@ -17,7 +17,7 @@ const AdminProvidersPage = () => {
     const loadProviders = async () => {
         setLoading(true);
         try {
-            const data: any = await apiService.get('/providers');
+            const data = await apiService.get<{ data?: Provider[] } | Provider[]>('/providers');
             const list = Array.isArray(data) ? data : data?.data || [];
             setProviders(list);
         } catch (error) {
@@ -29,7 +29,7 @@ const AdminProvidersPage = () => {
 
     const handleVerificationToggle = async (providerId: string, currentStatus: boolean) => {
         try {
-            await apiService.patch(`/providers/${providerId}`, { is_verified: !currentStatus });
+            await apiService.patch(`/providers/${providerId}/verify`, { isVerified: !currentStatus });
             setProviders(prev => prev.map(p => p.id === providerId ? { ...p, is_verified: !currentStatus } : p));
             toastService.success(t('common.admin.success_update'));
         } catch (error) {

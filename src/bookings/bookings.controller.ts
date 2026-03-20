@@ -143,6 +143,7 @@ export class BookingsController {
   }
 
   @Post(':id/mock-confirm')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   async confirmMockPayment(
     @Param('id') id: string,

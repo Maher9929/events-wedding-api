@@ -26,6 +26,9 @@ const MessagesPage = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const currentUser = authService.getCurrentUser();
 
+    const [isTyping, setIsTyping] = useState(false);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     useEffect(() => {
         document.title = `${t('common.messages')} | DOUSHA`;
     }, [t]);
@@ -363,6 +366,23 @@ const MessagesPage = () => {
                                     </div>
                                 );
                             })}
+                            
+                            {/* Typing Indicator */}
+                            {isTyping && (
+                                <div className="flex justify-start items-end gap-2 animate-fade-in my-2">
+                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                        <i className="fa-solid fa-user text-[10px]"></i>
+                                    </div>
+                                    <div className="bg-white border border-gray-100 px-4 py-3 rounded-2xl rounded-bl-sm shadow-sm">
+                                        <div className="flex gap-1 items-center h-4">
+                                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div ref={messagesEndRef} />
                         </div>
 
@@ -372,7 +392,17 @@ const MessagesPage = () => {
                                 <input
                                     type="text"
                                     value={newMessage}
-                                    onChange={e => setNewMessage(e.target.value)}
+                                    onChange={e => {
+                                        setNewMessage(e.target.value);
+                                        // Fake typing indicator for demo purposes
+                                        if (e.target.value.length > 0) {
+                                            setIsTyping(true);
+                                            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+                                            typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
+                                        } else {
+                                            setIsTyping(false);
+                                        }
+                                    }}
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
                                     placeholder="اكتب رسالتك..."
                                     className="flex-1 h-12 bg-gray-50 rounded-full px-5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border border-gray-100"

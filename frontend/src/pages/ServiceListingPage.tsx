@@ -7,19 +7,36 @@ import type { ServiceItem, Category } from '../services/api';
 import { getThumbnailUrl } from '../utils/image.utils';
 
 const ServiceListingPage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
     const CITIES = [
-        t('cities.Doha'),
-        t('cities.Al Rayyan'),
-        t('cities.Al Wakrah'),
-        t('cities.Al Khor'),
-        t('cities.Al Shamal'),
-        t('cities.Al Shahaniya'),
-        t('cities.Umm Salal'),
-        t('cities.Al Daayen')
+        t('cities.Doha', 'الدوحة'),
+        t('cities.Al Rayyan', 'الريان'),
+        t('cities.Al Wakrah', 'الوكرة'),
+        t('cities.Al Khor', 'الخور'),
+        t('cities.Al Shamal', 'الشمال'),
+        t('cities.Al Shahaniya', 'الشحانية'),
+        t('cities.Umm Salal', 'أم صلال'),
+        t('cities.Al Daayen', 'الضعاين')
+    ];
+
+    const EVENT_STYLES = [
+        { value: '', label: t('common.all', 'الكل') },
+        { value: 'modern', label: t('service.listing.styles.modern', 'عصري') },
+        { value: 'traditional', label: t('service.listing.styles.traditional', 'تقليدي') },
+        { value: 'rustic', label: t('service.listing.styles.rustic', 'ريفي') },
+        { value: 'elegant', label: t('service.listing.styles.elegant', 'أنيق') },
+        { value: 'bohemian', label: t('service.listing.styles.bohemian', 'بوهيمي') },
+    ];
+
+    const SORT_OPTIONS = [
+        { key: 'rating', label: t('service.listing.sort.rating', 'التقييم'), icon: 'fa-star' },
+        { key: 'popular', label: t('service.listing.sort.popular', 'الأكثر شعبية'), icon: 'fa-fire' },
+        { key: 'newest', label: t('service.listing.sort.newest', 'الأحدث'), icon: 'fa-clock' },
+        { key: 'price_asc', label: t('service.listing.sort.price_asc', 'أقل سعر'), icon: 'fa-arrow-up-short-wide' },
+        { key: 'price_desc', label: t('service.listing.sort.price_desc', 'أعلى سعر'), icon: 'fa-arrow-down-short-wide' },
     ];
 
     const [services, setServices] = useState<ServiceItem[]>([]);
@@ -30,6 +47,8 @@ const ServiceListingPage = () => {
     const [sortBy, setSortBy] = useState<'price_asc' | 'price_desc' | 'rating' | 'popular' | 'newest'>('rating');
     const [loading, setLoading] = useState(true);
     const [showFilters, setShowFilters] = useState(false);
+    
+    // Filters State
     const [filters, setFilters] = useState({
         minPrice: '',
         maxPrice: '',
@@ -54,34 +73,34 @@ const ServiceListingPage = () => {
         maxCapacity: '',
         eventStyle: ''
     });
+
     const [visibleCount, setVisibleCount] = useState(12);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     useEffect(() => {
         const catName = selectedCategory === 'all' ? '' : categories.find(c => c.id === selectedCategory)?.name;
         document.title = catName
-            ? `${catName} | ${t('service.listing.title')} | DOUSHA`
-            : `${t('service.listing.title')} | DOUSHA`;
+            ? `${catName} | ${t('service.listing.title', 'الخدمات')} | DOUSHA`
+            : `${t('service.listing.title', 'الخدمات')} | DOUSHA`;
     }, [selectedCategory, categories, t]);
 
     useEffect(() => {
         categoriesService.getAll()
-            .then((data: any) => {
-                const list = Array.isArray(data) ? data : data?.data || [];
+            .then(data => {
+                const list = Array.isArray(data) ? data : (data as { data: Category[] })?.data || [];
                 setCategories(list);
             })
             .catch(() => { });
     }, []);
 
     useEffect(() => {
-        // Reset count when filters change
         setVisibleCount(12);
     }, [selectedCategory, appliedFilters, searchQuery, sortBy]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setLoading(true);
-            const params: any = {
+            const params: Record<string, any> = {
                 city: appliedFilters.city || undefined,
                 min_price: appliedFilters.minPrice ? parseFloat(appliedFilters.minPrice) : undefined,
                 max_price: appliedFilters.maxPrice ? parseFloat(appliedFilters.maxPrice) : undefined,
@@ -97,19 +116,21 @@ const ServiceListingPage = () => {
                 sort_by: sortBy === 'price_asc' || sortBy === 'price_desc' ? 'price' : sortBy === 'popular' ? 'review_count' : sortBy === 'newest' ? 'created_at' : 'rating',
                 sort_order: sortBy === 'price_asc' ? 'asc' : 'desc',
             };
-            const fetch = selectedCategory !== 'all'
+            
+            const fetchPromise = selectedCategory !== 'all'
                 ? servicesService.getByCategory(selectedCategory, params)
                 : servicesService.getAll(params);
-            fetch
-                .then((data: any) => {
-                    const list = Array.isArray(data) ? data : data?.data || [];
+                
+            fetchPromise
+                .then(data => {
+                    const list = Array.isArray(data) ? data : (data as { data: ServiceItem[] })?.data || [];
                     setServices(list);
                 })
                 .catch(() => { })
                 .finally(() => setLoading(false));
         }, searchQuery ? 300 : 0);
         return () => clearTimeout(timer);
-    }, [selectedCategory, appliedFilters, searchQuery, sortBy]); // eslint-disable-line
+    }, [selectedCategory, appliedFilters, searchQuery, sortBy, providerIdFilter]); 
 
     const applyFilters = () => {
         setAppliedFilters({ ...filters });
@@ -135,24 +156,22 @@ const ServiceListingPage = () => {
     };
 
     const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
-
     const filteredServices = services;
-
     const visibleServices = filteredServices.slice(0, visibleCount);
     const hasMore = visibleCount < filteredServices.length;
 
     return (
-        <div className="min-h-screen bg-bglight font-tajawal pb-20">
+        <div className="min-h-screen bg-bglight font-tajawal pb-20" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
             {/* Header */}
             <header id="header" className="bg-white sticky top-0 z-50 shadow-sm">
                 <div className="px-5 py-4">
                     <div className="flex items-center gap-3 mb-4">
                         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center card-hover">
-                            <i className="fa-solid fa-arrow-right text-gray-700"></i>
+                            <i className={`fa-solid ${i18n.language === 'en' ? 'fa-arrow-left' : 'fa-arrow-right'} text-gray-700`}></i>
                         </button>
                         <div className="flex-1">
-                            <h1 className="text-xl font-bold text-gray-900">{t('service.listing.title')}</h1>
-                            <p className="text-xs text-gray-500">{t('service.listing.subtitle')}</p>
+                            <h1 className="text-xl font-bold text-gray-900">{t('service.listing.title', 'تصفح الخدمات')}</h1>
+                            <p className="text-xs text-gray-500">{t('service.listing.subtitle', 'اكتشف أفضل الخدمات لمناسبتك')}</p>
                         </div>
                         <button
                             onClick={() => setShowFilters(true)}
@@ -170,12 +189,12 @@ const ServiceListingPage = () => {
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder={t('service.listing.search_placeholder')}
-                            className="w-full h-12 rounded-2xl bg-bglight pe-12 ps-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                            placeholder={t('service.listing.search_placeholder', 'ابحث عن خدمات...')}
+                            className={`w-full h-12 rounded-2xl bg-bglight ${i18n.language === 'en' ? 'pe-4 ps-12' : 'pe-12 ps-4'} text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
-                        <i className="fa-solid fa-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <i className={`fa-solid fa-magnifying-glass absolute ${i18n.language === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`}></i>
                     </div>
                 </div>
             </header>
@@ -185,19 +204,23 @@ const ServiceListingPage = () => {
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                     <button
                         onClick={() => setSelectedCategory('all')}
-                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 ${selectedCategory === 'all'
-                            ? 'bg-primary text-white shadow-md transform scale-105'
-                            : 'bg-bglight text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >{t('common.all')}</button>
+                        className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 ${
+                            selectedCategory === 'all'
+                                ? 'bg-primary text-white shadow-md transform scale-105'
+                                : 'bg-bglight text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                        {t('common.all', 'الكل')}
+                    </button>
                     {categories.map(cat => (
                         <button
                             key={cat.id}
                             onClick={() => setSelectedCategory(cat.id)}
-                            className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 ${selectedCategory === cat.id
-                                ? 'bg-primary text-white shadow-md transform scale-105'
-                                : 'bg-bglight text-gray-700 hover:bg-gray-200'
-                                }`}
+                            className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 ${
+                                selectedCategory === cat.id
+                                    ? 'bg-primary text-white shadow-md transform scale-105'
+                                    : 'bg-bglight text-gray-700 hover:bg-gray-200'
+                            }`}
                         >
                             {cat.name}
                         </button>
@@ -209,7 +232,7 @@ const ServiceListingPage = () => {
             {activeFilterCount > 0 && (
                 <section className="px-5 pb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs text-gray-500">{t('service.listing.filters.title')}:</span>
+                        <span className="text-xs text-gray-500">{t('service.listing.filters.title', 'عوامل التصفية النشطة')}:</span>
                         {appliedFilters.city && (
                             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                                 <i className="fa-solid fa-location-dot"></i>{appliedFilters.city}
@@ -218,7 +241,7 @@ const ServiceListingPage = () => {
                         {(appliedFilters.minPrice || appliedFilters.maxPrice) && (
                             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                                 <i className="fa-solid fa-coins"></i>
-                                {appliedFilters.minPrice || '0'} - {appliedFilters.maxPrice || '∞'} QR
+                                {appliedFilters.minPrice || '0'} - {appliedFilters.maxPrice || '∞'} {t('common.currency', 'QR')}
                             </span>
                         )}
                         {appliedFilters.minRating && (
@@ -227,7 +250,7 @@ const ServiceListingPage = () => {
                             </span>
                         )}
                         <button onClick={resetFilters} className="text-xs text-red-500 font-bold hover:underline">
-                            {t('service.listing.filters.reset')}
+                            {t('common.clear', 'مسح الكل')}
                         </button>
                     </div>
                 </section>
@@ -236,18 +259,13 @@ const ServiceListingPage = () => {
             {/* Sort Chips */}
             <section className="px-5 py-3">
                 <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
-                    {[
-                        { key: 'rating', label: t('service.listing.sort.rating'), icon: 'fa-star' },
-                        { key: 'popular', label: t('service.listing.sort.popular'), icon: 'fa-fire' },
-                        { key: 'newest', label: t('service.listing.sort.newest'), icon: 'fa-clock' },
-                        { key: 'price_asc', label: t('service.listing.sort.price_asc'), icon: 'fa-arrow-up-short-wide' },
-                        { key: 'price_desc', label: t('service.listing.sort.price_desc'), icon: 'fa-arrow-down-short-wide' },
-                    ].map(opt => (
+                    {SORT_OPTIONS.map(opt => (
                         <button
                             key={opt.key}
                             onClick={() => setSortBy(opt.key as typeof sortBy)}
-                            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${sortBy === opt.key ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'
-                                }`}
+                            className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
+                                sortBy === opt.key ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'
+                            }`}
                         >
                             <i className={`fa-solid ${opt.icon} text-xs`}></i>
                             {opt.label}
@@ -259,7 +277,9 @@ const ServiceListingPage = () => {
             {/* Results Header */}
             <section id="results-header" className="px-5 pb-4">
                 <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">{t('common.search')}: <span className="font-bold text-primary">{filteredServices.length}</span> {t('service.listing.results_found')}</p>
+                    <p className="text-sm text-gray-600">
+                        {t('common.search', 'البحث')}: <span className="font-bold text-primary">{filteredServices.length}</span> {t('service.listing.results_found', 'نتيجة')}
+                    </p>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setViewMode('grid')}
@@ -283,9 +303,9 @@ const ServiceListingPage = () => {
                     <div>
                         <div className="flex items-center gap-2 mb-2">
                             <i className="fa-solid fa-crown text-accent text-lg"></i>
-                            <h3 className="font-bold text-gray-900">{t('service.listing.featured_title')}</h3>
+                            <h3 className="font-bold text-gray-900">{t('service.listing.featured_title', 'خدمات مميزة')}</h3>
                         </div>
-                        <p className="text-xs text-gray-600">{t('service.listing.featured_subtitle')}</p>
+                        <p className="text-xs text-gray-600">{t('service.listing.featured_subtitle', 'أفضل الخيارات لمناسبتك')}</p>
                     </div>
                 </div>
             </section>
@@ -297,15 +317,20 @@ const ServiceListingPage = () => {
                         {[1, 2, 3, 4].map(i => (
                             <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-sm animate-pulse">
                                 <div className="h-44 bg-gray-200"></div>
-                                <div className="p-3"><div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div><div className="h-3 bg-gray-200 rounded w-1/2"></div></div>
+                                <div className="p-3">
+                                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
                             </div>
                         ))}
                     </div>
                 ) : filteredServices.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                         <i className="fa-solid fa-box-open text-gray-300 text-5xl mb-4"></i>
-                        <p className="text-gray-500 font-bold">{t('service.listing.no_services')}</p>
-                        <button onClick={resetFilters} className="mt-4 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold">{t('service.listing.filters.reset')}</button>
+                        <p className="text-gray-500 font-bold">{t('service.listing.no_services', 'لا توجد خدمات مطابقة للبحث')}</p>
+                        <button onClick={resetFilters} className="mt-4 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold">
+                            {t('service.listing.filters.reset', 'إعادة ضبط')}
+                        </button>
                     </div>
                 ) : viewMode === 'grid' ? (
                     <div className="grid grid-cols-2 gap-3">
@@ -331,19 +356,16 @@ const ServiceListingPage = () => {
                                             />
                                             {service.is_featured && (
                                                 <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-accent text-gray-900 text-xs font-bold">
-                                                    <i className="fa-solid fa-crown mx-1"></i>{t('service.listing.featured_title')}
+                                                    <i className="fa-solid fa-crown mx-1"></i>{t('service.listing.featured_title', 'مميز')}
                                                 </div>
                                             )}
-                                            <button className="absolute top-2 left-2 w-8 h-8 rounded-full bg-white flex items-center justify-center hover:text-red-500 transition-colors" onClick={(e) => { e.stopPropagation(); }}>
-                                                <i className="fa-regular fa-heart text-gray-600 text-sm"></i>
-                                            </button>
                                         </div>
                                         <div className="p-3 flex-1 flex flex-col">
                                             <div className="flex items-center gap-1 mb-2">
                                                 <i className="fa-solid fa-star text-accent text-xs"></i>
                                                 <span className="text-xs font-bold text-gray-900">{service.rating || '0'}</span>
                                                 <span className="text-xs text-gray-500">({service.review_count || 0})</span>
-                                                {catName && <span className="me-auto text-xs text-gray-500"><i className="fa-solid fa-tag text-primary mx-1"></i>{catName}</span>}
+                                                {catName && <span className={`${i18n.language === 'en' ? 'ml-auto' : 'mr-auto'} text-xs text-gray-500`}><i className="fa-solid fa-tag text-primary mx-1"></i>{catName}</span>}
                                             </div>
                                             <h3 className="font-bold text-sm text-gray-900 mb-1">{service.title}</h3>
                                             <p className="text-xs text-gray-600 mb-2 line-clamp-2">{service.description}</p>
@@ -354,8 +376,8 @@ const ServiceListingPage = () => {
                                             )}
                                             <div className="flex items-center justify-between mt-auto">
                                                 <div>
-                                                    <p className="text-xs text-gray-500">{t('service.details.price_from')}</p>
-                                                    <p className="text-base font-bold text-primary">{service.base_price} QR</p>
+                                                    <p className="text-xs text-gray-500">{t('service.details.price_from', 'تبدأ من')}</p>
+                                                    <p className="text-base font-bold text-primary">{service.base_price} {t('common.currency', 'QR')}</p>
                                                 </div>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); navigate(`/services/${service.id}`); }}
@@ -418,7 +440,7 @@ const ServiceListingPage = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="font-bold text-primary text-sm">{service.base_price} ر.ق</p>
+                                            <p className="font-bold text-primary text-sm">{service.base_price} {t('common.currency', 'QR')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -435,8 +457,8 @@ const ServiceListingPage = () => {
                         onClick={() => setVisibleCount(c => c + 12)}
                         className="w-full h-14 rounded-2xl bg-white text-primary font-bold text-base shadow-sm card-hover border-2 border-primary"
                     >
-                        {t('service.listing.load_more')} ({filteredServices.length - visibleCount})
-                        <i className="fa-solid fa-chevron-down mx-2"></i>
+                        {t('service.listing.load_more', 'تحميل المزيد')} ({filteredServices.length - visibleCount})
+                        <i className={`fa-solid fa-chevron-down ${i18n.language === 'en' ? 'ml-2' : 'mr-2'}`}></i>
                     </button>
                 </section>
             )}
@@ -449,28 +471,13 @@ const ServiceListingPage = () => {
                             <i className="fa-solid fa-filter text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900">{t('service.listing.filters.title')}?</h3>
-                            <p className="text-xs text-gray-600">{t('service.listing.subtitle')}</p>
+                            <h3 className="font-bold text-gray-900">{t('service.listing.filters.title', 'خيارات التصفية')}</h3>
+                            <p className="text-xs text-gray-600">{t('service.listing.subtitle', 'قم بتضييق نطاق البحث')}</p>
                         </div>
                     </div>
                     <button onClick={() => setShowFilters(true)} className="w-full h-12 rounded-xl gradient-purple text-white font-bold text-sm">
-                        {t('service.listing.filters.apply')}
+                        {t('service.listing.filters.apply', 'تطبيق الخيارات')}
                     </button>
-                </div>
-            </section>
-
-            {/* Help Banner */}
-            <section id="help-banner" className="px-5 pb-20">
-                <div className="bg-white rounded-3xl p-5 shadow-sm">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
-                            <i className="fa-solid fa-lightbulb text-blue-500 text-lg"></i>
-                        </div>
-                        <div>
-                            <h4 className="font-bold text-gray-900 text-sm">{t('service.listing.tip_title')}</h4>
-                            <p className="text-xs text-gray-600">{t('service.listing.tip_desc')}</p>
-                        </div>
-                    </div>
                 </div>
             </section>
 
@@ -479,7 +486,7 @@ const ServiceListingPage = () => {
                 <div className="fixed inset-0 bg-black/50 flex items-end z-50" onClick={() => setShowFilters(false)}>
                     <div className="bg-white rounded-t-3xl w-full p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="font-bold text-lg text-gray-900">{t('service.listing.filters.title')}</h3>
+                            <h3 className="font-bold text-lg text-gray-900">{t('service.listing.filters.title', 'خيارات التصفية')}</h3>
                             <button onClick={() => setShowFilters(false)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
                                 <i className="fa-solid fa-times text-sm"></i>
                             </button>
@@ -488,13 +495,13 @@ const ServiceListingPage = () => {
                         <div className="space-y-5 max-h-[60vh] overflow-y-auto">
                             {/* City */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.city')}</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.city', 'المدينة')}</label>
                                 <div className="flex flex-wrap gap-2">
                                     <button
                                         onClick={() => setFilters(f => ({ ...f, city: '' }))}
                                         className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-all ${!filters.city ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
                                     >
-                                        {t('common.all')}
+                                        {t('common.all', 'الكل')}
                                     </button>
                                     {CITIES.map(city => (
                                         <button
@@ -510,11 +517,11 @@ const ServiceListingPage = () => {
 
                             {/* Price Range */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.price_range')} (QR)</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.price_range', 'نطاق السعر')} ({t('common.currency', 'QR')})</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <input
                                         type="number"
-                                        placeholder={t('service.listing.filters.min_price')}
+                                        placeholder={t('service.listing.filters.min_price', 'الأدنى')}
                                         value={filters.minPrice}
                                         onChange={e => setFilters(f => ({ ...f, minPrice: e.target.value }))}
                                         className="w-full px-4 py-2.5 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
@@ -522,7 +529,7 @@ const ServiceListingPage = () => {
                                     />
                                     <input
                                         type="number"
-                                        placeholder={t('service.listing.filters.max_price')}
+                                        placeholder={t('service.listing.filters.max_price', 'الأقصى')}
                                         value={filters.maxPrice}
                                         onChange={e => setFilters(f => ({ ...f, maxPrice: e.target.value }))}
                                         className="w-full px-4 py-2.5 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
@@ -533,7 +540,7 @@ const ServiceListingPage = () => {
 
                             {/* Available Date */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Date disponible</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.available_date', 'التاريخ المتاح')}</label>
                                 <input
                                     type="date"
                                     value={filters.availableDate}
@@ -544,10 +551,10 @@ const ServiceListingPage = () => {
 
                             {/* Max Budget */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Budget maximum (QR)</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.max_budget', 'الميزانية القصوى')} ({t('common.currency', 'QR')})</label>
                                 <input
                                     type="number"
-                                    placeholder="Budget max"
+                                    placeholder={t('service.listing.filters.max_budget', 'الميزانية القصوى')}
                                     value={filters.maxBudget}
                                     onChange={e => setFilters(f => ({ ...f, maxBudget: e.target.value }))}
                                     className="w-full px-4 py-2.5 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
@@ -557,13 +564,13 @@ const ServiceListingPage = () => {
 
                             {/* Category */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Catégorie</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.category', 'الفئة')}</label>
                                 <select
                                     value={filters.category}
                                     onChange={e => setFilters(f => ({ ...f, category: e.target.value }))}
                                     className="w-full px-4 py-2.5 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
                                 >
-                                    <option value="">Toutes</option>
+                                    <option value="">{t('common.all', 'الكل')}</option>
                                     {categories.map(cat => (
                                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                                     ))}
@@ -572,11 +579,11 @@ const ServiceListingPage = () => {
 
                             {/* Capacity Range */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Capacité (invités)</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.capacity', 'السعة (عدد الضيوف)')}</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <input
                                         type="number"
-                                        placeholder="Min"
+                                        placeholder={t('service.listing.filters.min', 'الحد الأدنى')}
                                         value={filters.minCapacity}
                                         onChange={e => setFilters(f => ({ ...f, minCapacity: e.target.value }))}
                                         className="w-full px-4 py-2.5 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
@@ -584,7 +591,7 @@ const ServiceListingPage = () => {
                                     />
                                     <input
                                         type="number"
-                                        placeholder="Max"
+                                        placeholder={t('service.listing.filters.max', 'الحد الأقصى')}
                                         value={filters.maxCapacity}
                                         onChange={e => setFilters(f => ({ ...f, maxCapacity: e.target.value }))}
                                         className="w-full px-4 py-2.5 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 text-sm"
@@ -595,15 +602,15 @@ const ServiceListingPage = () => {
 
                             {/* Event Style */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Style d'événement</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.event_style', 'نمط الفعالية')}</label>
                                 <div className="flex flex-wrap gap-2">
-                                    {['', 'modern', 'traditional', 'rustic', 'elegant', 'bohemian'].map(style => (
+                                    {EVENT_STYLES.map(style => (
                                         <button
-                                            key={style}
-                                            onClick={() => setFilters(f => ({ ...f, eventStyle: f.eventStyle === style ? '' : style }))}
-                                            className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-all ${filters.eventStyle === style ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
+                                            key={style.value}
+                                            onClick={() => setFilters(f => ({ ...f, eventStyle: f.eventStyle === style.value ? '' : style.value }))}
+                                            className={`px-3 py-1.5 rounded-xl text-sm font-bold transition-all ${filters.eventStyle === style.value ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
                                         >
-                                            {style === '' ? 'Tous' : style}
+                                            {style.label}
                                         </button>
                                     ))}
                                 </div>
@@ -611,7 +618,7 @@ const ServiceListingPage = () => {
 
                             {/* Min Rating */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.min_rating')}</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.min_rating', 'الحد الأدنى للتقييم')}</label>
                                 <div className="flex gap-2">
                                     {['', '3', '4', '4.5'].map(val => (
                                         <button
@@ -619,7 +626,7 @@ const ServiceListingPage = () => {
                                             onClick={() => setFilters(f => ({ ...f, minRating: val }))}
                                             className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${filters.minRating === val ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}
                                         >
-                                            {val === '' ? t('common.all') : (
+                                            {val === '' ? t('common.all', 'الكل') : (
                                                 <span className="flex items-center justify-center gap-1">
                                                     <i className="fa-solid fa-star text-xs"></i>{val}+
                                                 </span>
@@ -635,13 +642,13 @@ const ServiceListingPage = () => {
                                 onClick={applyFilters}
                                 className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg"
                             >
-                                {t('service.listing.filters.apply')}
+                                {t('service.listing.filters.apply', 'تطبيق الخيارات')}
                             </button>
                             <button
                                 onClick={resetFilters}
                                 className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold"
                             >
-                                {t('service.listing.filters.reset')}
+                                {t('service.listing.filters.reset', 'إعادة ضبط')}
                             </button>
                         </div>
                     </div>

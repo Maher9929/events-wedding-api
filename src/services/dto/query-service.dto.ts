@@ -85,9 +85,41 @@ export class QueryServiceDto {
 
   @IsString()
   @IsOptional()
-  sort_by?: 'price' | 'rating' | 'created_at' | 'title';
+  sort_by?: 'price' | 'rating' | 'created_at' | 'title' | 'review_count';
 
   @IsEnum(['asc', 'desc'])
   @IsOptional()
   sort_order?: 'asc' | 'desc';
+
+  @IsString()
+  @IsOptional()
+  available_date?: string;
+
+  @Transform(({ value }) =>
+    value !== undefined ? parseFloat(value) : undefined,
+  )
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  max_budget?: number;
+
+  @IsString()
+  @IsOptional()
+  category?: string;
+
+  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  min_capacity?: number;
+
+  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  max_capacity?: number;
+
+  @IsString()
+  @IsOptional()
+  event_style?: string;
 }

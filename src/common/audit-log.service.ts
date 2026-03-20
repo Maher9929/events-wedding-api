@@ -40,7 +40,7 @@ export class AuditLogService {
       await this.supabase.from('audit_logs').insert({
         user_id: userId,
         action,
-        entity_type: entityType,
+        entity: entityType,
         entity_id: entityId || null,
         details: details || {},
       });

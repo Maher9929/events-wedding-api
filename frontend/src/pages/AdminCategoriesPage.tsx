@@ -19,7 +19,7 @@ const AdminCategoriesPage = () => {
     const loadCategories = async () => {
         setLoading(true);
         try {
-            const data: any = await apiService.get('/categories');
+            const data = await apiService.get<{ data?: Category[] } | Category[]>('/categories');
             const list = Array.isArray(data) ? data : data?.data || [];
             setCategories(list);
         } catch (error) {

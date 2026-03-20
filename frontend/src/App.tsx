@@ -111,7 +111,8 @@ function App() {
             <Route path="bookings/:id" element={<BookingDetailsPage />} />
             <Route path="payment/:bookingId" element={<PaymentPage />} />
             <Route path="services" element={<ProviderServicesPage />} />
-            <Route path="reviews" element={<QuotesPage />} />
+            <Route path="reviews" element={<AdminReviewsPage />} />
+            <Route path="profile" element={<ProviderProfilePage />} />
           </Route>
 
           {/* Protected Admin Routes */}

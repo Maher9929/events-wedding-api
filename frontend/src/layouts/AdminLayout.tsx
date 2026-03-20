@@ -110,12 +110,12 @@ const AdminLayout = () => {
                     </div>
                     <div className="flex items-center gap-3">
                         <LanguageSwitcher />
-                        <div className="flex items-center gap-2">
+                        <div className="hidden lg:flex items-center gap-2">
                             {navItems.slice(0, 3).map(item => (
                                 <Link
                                     key={item.to}
                                     to={item.to}
-                                    className={`hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${isActive(item.to) ? 'bg-primary text-white' : 'bg-bglight text-gray-600 hover:bg-gray-200'
+                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-colors ${isActive(item.to) ? 'bg-primary text-white' : 'bg-bglight text-gray-600 hover:bg-gray-200'
                                         }`}
                                 >
                                     <i className={`fa-solid ${item.icon}`}></i>
@@ -125,7 +125,7 @@ const AdminLayout = () => {
                         </div>
                         <button
                             onClick={() => authService.logout()}
-                            className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
                         >
                             <i className="fa-solid fa-sign-out-alt"></i>
                             {t('common.admin.logout')}

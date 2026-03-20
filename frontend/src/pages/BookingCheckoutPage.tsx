@@ -1,11 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { bookingsService } from '../services/bookings.service';
 import { servicesService } from '../services/services.service';
 import { useAuth } from '../hooks/useAuth';
-import type { ServiceItem } from '../services/api';
+import type { ServiceItem, Booking } from '../services/api';
+
+interface PromoResult {
+    id: string;
+    discount_type: string;
+    discount_value: number;
+}
 
 const BookingCheckoutPage = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();
@@ -17,7 +25,7 @@ const BookingCheckoutPage = () => {
     const [service, setService] = useState<ServiceItem | null>(null);
     const [promoCode, setPromoCode] = useState('');
     const [promoValidating, setPromoValidating] = useState(false);
-    const [promoResult, setPromoResult] = useState<{ id: string; discount_type: string; discount_value: number } | null>(null);
+    const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
     const [promoError, setPromoError] = useState('');
 
     const serviceId = searchParams.get('service') || '';
@@ -31,10 +39,10 @@ const BookingCheckoutPage = () => {
         if (notesParam) setNotes(notesParam);
         if (serviceId) {
             servicesService.findById(serviceId)
-                .then((data: any) => setService(data?.data || data))
+                .then((data) => setService((data as { data?: ServiceItem }).data || (data as ServiceItem)))
                 .catch(() => { });
         }
-    }, [serviceId]);  // eslint-disable-line
+    }, [serviceId]);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -45,7 +53,6 @@ const BookingCheckoutPage = () => {
         : 0;
     const finalAmount = Math.max(0, amount - discountAmount);
 
-    // Calculate deposit (e.g., 20% by default, or from service settings if available)
     const depositPercentage = service?.availability_settings?.deposit_percentage || 20;
     const requireDeposit = service?.availability_settings?.deposit_required ?? true;
     const depositAmount = requireDeposit ? Math.round(finalAmount * (depositPercentage / 100)) : 0;
@@ -62,12 +69,9 @@ const BookingCheckoutPage = () => {
         setPromoError('');
         setPromoResult(null);
         try {
-            // Promo code service removed - validation skipped
-            // const data: any = await promoCodesService.validate(promoCode.trim(), providerId || undefined);
-            setPromoError('Promo codes temporarily disabled');
-            // setPromoResult(data?.data || data);
+            setPromoError(t('bookings.checkout.promo_disabled', 'أكواد الخصم غير مفعلة مؤقتاً'));
         } catch (err: any) {
-            setPromoError(err?.message || 'كود الخصم غير صالح');
+            setPromoError(err?.message || t('bookings.checkout.invalid_promo', 'كود الخصم غير صالح'));
         } finally {
             setPromoValidating(false);
         }
@@ -80,7 +84,7 @@ const BookingCheckoutPage = () => {
             return;
         }
         if (bookingDate < today) {
-            setError('يجب أن يكون تاريخ الحجز في المستقبل');
+            setError(t('bookings.errors.past_date', 'يجب أن يكون تاريخ الحجز في المستقبل'));
             return;
         }
         setLoading(true);
@@ -89,16 +93,16 @@ const BookingCheckoutPage = () => {
             const effectivePaymentType: 'deposit' | 'full' = requireDeposit && paymentOption === 'deposit' ? 'deposit' : 'full';
             const amountToPay = effectivePaymentType === 'deposit' ? depositAmount : finalAmount;
 
-            const result: any = await bookingsService.create({
+            const result = await bookingsService.create({
                 service_id: serviceId,
                 provider_id: providerId,
                 booking_date: bookingDate,
-                amount: amount, // Send original amount, backend will recalculate
+                amount: amount, 
                 deposit_amount: depositAmount,
                 notes: notes,
                 promo_code_id: promoResult?.id || undefined,
             });
-            const bookingId = result?.id || result?.data?.id || '';
+            const bookingId = (result as { id?: string; data?: Booking }).id || (result as { data?: Booking }).data?.id || '';
             const params = new URLSearchParams({
                 ...(bookingId && { booking_id: bookingId }),
                 ...(service?.title && { service: service.title }),
@@ -112,7 +116,7 @@ const BookingCheckoutPage = () => {
                 navigate(`/client/booking-success/${bookingId}?${params.toString()}`);
             }
         } catch (err: any) {
-            setError(err.message || 'حدث خطأ أثناء الحجز');
+            setError(err.message || t('bookings.errors.create_failed', 'حدث خطأ أثناء الحجز'));
         } finally {
             setLoading(false);
         }
@@ -125,12 +129,11 @@ const BookingCheckoutPage = () => {
                     <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center">
                         <i className="fa-solid fa-arrow-right"></i>
                     </button>
-                    <h1 className="font-bold text-lg">إتمام الحجز</h1>
+                    <h1 className="font-bold text-lg">{t('bookings.checkout.title', 'إتمام الحجز')}</h1>
                 </div>
             </header>
 
             <main className="p-5">
-                {/* Progress Steps */}
                 <div className="flex items-center justify-center mb-8">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? 'bg-primary text-white' : 'bg-gray-200'}`}>1</div>
                     <div className={`w-16 h-1 bg-gray-200 mx-2 ${step >= 2 ? 'bg-primary' : ''}`}></div>
@@ -140,7 +143,7 @@ const BookingCheckoutPage = () => {
                 <div className="glass-effect border border-white/50 rounded-3xl p-6 shadow-premium mb-4 animate-fade-in-up">
                     <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
                         <i className="fa-regular fa-calendar-check text-primary"></i>
-                        تفاصيل الحجز
+                        {t('bookings.checkout.details', 'تفاصيل الحجز')}
                     </h3>
                     {service ? (
                         <>
@@ -152,14 +155,14 @@ const BookingCheckoutPage = () => {
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-sm text-gray-900">{service.title}</h4>
                                         <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{service.description}</p>
-                                        <p className="text-primary font-bold text-base mt-1">{amount.toLocaleString()} ر.ق</p>
+                                        <p className="text-primary font-bold text-base mt-1">{amount.toLocaleString()} {t('common.currency', 'ر.ق')}</p>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {service.duration_minutes && (
                                         <span className="flex items-center gap-1 text-xs bg-bglight px-2.5 py-1 rounded-lg text-gray-600">
                                             <i className="fa-solid fa-clock text-primary"></i>
-                                            {service.duration_minutes} دقيقة
+                                            {service.duration_minutes} {t('common.minute', 'دقيقة')}
                                         </span>
                                     )}
                                     {(service as any).providers?.company_name && (
@@ -177,7 +180,7 @@ const BookingCheckoutPage = () => {
                                     {(service as any).providers?.is_verified && (
                                         <span className="flex items-center gap-1 text-xs bg-green-100 px-2.5 py-1 rounded-lg text-green-700 font-bold">
                                             <i className="fa-solid fa-circle-check"></i>
-                                            موثق
+                                            {t('common.verified', 'موثق')}
                                         </span>
                                     )}
                                 </div>
@@ -185,7 +188,7 @@ const BookingCheckoutPage = () => {
 
                             {requireDeposit && depositAmount > 0 && (
                                 <div className="mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                    <h4 className="font-bold text-blue-900 mb-2">خيارات الدفع</h4>
+                                    <h4 className="font-bold text-blue-900 mb-2">{t('bookings.checkout.payment_options', 'خيارات الدفع')}</h4>
                                     <div className="space-y-2">
                                         <label className="flex items-center gap-3 p-3 rounded-lg border bg-white cursor-pointer hover:border-primary transition-colors">
                                             <input
@@ -197,10 +200,10 @@ const BookingCheckoutPage = () => {
                                                 className="w-4 h-4 text-primary"
                                             />
                                             <div className="flex-1">
-                                                <span className="block font-bold">دفع العربون فقط ({depositPercentage}%)</span>
-                                                <span className="block text-sm text-gray-500">الباقي يُدفع لاحقاً</span>
+                                                <span className="block font-bold">{t('bookings.checkout.deposit_only', 'دفع العربون فقط')} ({depositPercentage}%)</span>
+                                                <span className="block text-sm text-gray-500">{t('bookings.checkout.deposit_rest', 'الباقي يُدفع لاحقاً')}</span>
                                             </div>
-                                            <span className="font-bold text-primary">{depositAmount.toLocaleString()} ر.ق</span>
+                                            <span className="font-bold text-primary">{depositAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                                         </label>
                                         <label className="flex items-center gap-3 p-3 rounded-lg border bg-white cursor-pointer hover:border-primary transition-colors">
                                             <input
@@ -212,9 +215,9 @@ const BookingCheckoutPage = () => {
                                                 className="w-4 h-4 text-primary"
                                             />
                                             <div className="flex-1">
-                                                <span className="block font-bold">دفع المبلغ كاملاً</span>
+                                                <span className="block font-bold">{t('bookings.checkout.pay_full', 'دفع المبلغ كاملاً')}</span>
                                             </div>
-                                            <span className="font-bold text-primary">{finalAmount.toLocaleString()} ر.ق</span>
+                                            <span className="font-bold text-primary">{finalAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                                         </label>
                                     </div>
                                 </div>
@@ -235,23 +238,22 @@ const BookingCheckoutPage = () => {
                             <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
                         )}
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">تاريخ المناسبة</label>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">{t('bookings.event_date', 'تاريخ المناسبة')}</label>
                             <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} min={today} className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20" required />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">ملاحظات إضافية</label>
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 h-24" placeholder="أي تفاصيل إضافية تود إخبارنا بها..."></textarea>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">{t('bookings.notes', 'ملاحظات إضافية')} ({t('common.optional', 'اختياري')})</label>
+                            <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 h-24" placeholder={t('bookings.notes_placeholder', 'أي تفاصيل إضافية تود إخبارنا بها...')}></textarea>
                         </div>
 
-                        {/* Promo Code */}
                         <div className="bg-white/60 p-4 rounded-2xl border border-white shadow-inner">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">كود الخصم (اختياري)</label>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">{t('bookings.checkout.promo_code', 'كود الخصم (اختياري)')}</label>
                             <div className="flex gap-2">
                                 <input
                                     type="text"
                                     value={promoCode}
                                     onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoResult(null); setPromoError(''); }}
-                                    placeholder="أدخل كود الخصم"
+                                    placeholder={t('bookings.checkout.promo_placeholder', 'أدخل كود الخصم')}
                                     className="flex-1 px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono uppercase text-sm shadow-sm"
                                 />
                                 <button
@@ -263,14 +265,14 @@ const BookingCheckoutPage = () => {
                                     {promoValidating ? (
                                         <i className="fa-solid fa-spinner fa-spin"></i>
                                     ) : (
-                                        'تطبيق'
+                                        t('bookings.checkout.apply', 'تطبيق')
                                     )}
                                 </button>
                             </div>
                             {promoResult && (
                                 <div className="mt-2 flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-2 rounded-xl">
                                     <i className="fa-solid fa-circle-check"></i>
-                                    خصم {promoResult.discount_type === 'percentage' ? `${promoResult.discount_value}%` : `${promoResult.discount_value} ر.ق`} مطبق!
+                                    {t('bookings.checkout.discount_applied', 'خصم {{amount}} مطبق!', { amount: promoResult.discount_type === 'percentage' ? `${promoResult.discount_value}%` : `${promoResult.discount_value} ر.ق` })}
                                 </div>
                             )}
                             {promoError && (
@@ -280,18 +282,18 @@ const BookingCheckoutPage = () => {
 
                         <div className="pt-4 border-t border-gray-100 mt-4">
                             <div className="flex justify-between mb-2">
-                                <span className="text-sm text-gray-600">المجموع الفرعي</span>
-                                <span className="text-sm font-bold">{amount.toLocaleString()} ر.ق</span>
+                                <span className="text-sm text-gray-600">{t('bookings.checkout.subtotal', 'المجموع الفرعي')}</span>
+                                <span className="text-sm font-bold">{amount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                             </div>
                             {discountAmount > 0 && (
                                 <div className="flex justify-between mb-2">
-                                    <span className="text-sm text-green-600">الخصم ({promoCode})</span>
-                                    <span className="text-sm font-bold text-green-600">- {discountAmount.toLocaleString()} ر.ق</span>
+                                    <span className="text-sm text-green-600">{t('bookings.checkout.discount', 'الخصم')} ({promoCode})</span>
+                                    <span className="text-sm font-bold text-green-600">- {discountAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-lg font-bold text-primary">
-                                <span>الإجمالي</span>
-                                <span>{finalAmount.toLocaleString()} ر.ق</span>
+                                <span>{t('bookings.checkout.total', 'الإجمالي')}</span>
+                                <span>{finalAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                             </div>
                         </div>
 
@@ -299,10 +301,10 @@ const BookingCheckoutPage = () => {
                             {loading ? (
                                 <span className="flex items-center justify-center gap-2">
                                     <i className="fa-solid fa-spinner fa-spin"></i>
-                                    جاري الحجز...
+                                    {t('common.sending', 'جاري الإرسال...')}
                                 </span>
                             ) : (
-                                'تأكيد الحجز والدفع'
+                                t('bookings.checkout.confirm', 'تأكيد الحجز والدفع')
                             )}
                         </button>
                     </form>

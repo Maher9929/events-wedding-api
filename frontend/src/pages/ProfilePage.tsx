@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../hooks/useAuth';
 import { apiService } from '../services/api';
 import { toastService } from '../services/toast.service';
@@ -20,6 +21,7 @@ interface ProviderProfile {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ const ProfilePage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toastService.error('حجم الصورة يجب أن يكون أقل من 5 ميغابايت');
+      toastService.error(t('profile.avatar.size_error', 'حجم الصورة يجب أن يكون أقل من 5 ميغابايت'));
       return;
     }
     setAvatarFile(file);
@@ -70,9 +72,10 @@ const ProfilePage = () => {
         city: (user as any).city || '',
       });
       if (user.role === 'provider') {
-        apiService.get<any>('/providers/my-profile')
-          .then((data: any) => {
-            const p = data?.data || data;
+        interface ProfileResponse { data?: ProviderProfile; id?: string }
+        apiService.get<ProfileResponse | ProviderProfile>('/providers/my-profile')
+          .then((res) => {
+            const p = (res as { data?: ProviderProfile }).data || (res as ProviderProfile);
             if (p?.id) {
               setProviderProfile(p);
               setProviderForm({
@@ -102,10 +105,10 @@ const ProfilePage = () => {
     try {
       await apiService.patch('/providers/my-profile', providerForm);
       setProviderProfile(prev => prev ? { ...prev, ...providerForm } : prev);
-      toastService.success('تم تحديث ملف الشركة بنجاح');
+      toastService.success(t('profile.provider.success_update', 'تم تحديث ملف الشركة بنجاح'));
       setEditingProvider(false);
     } catch {
-      toastService.error('فشل تحديث ملف الشركة');
+      toastService.error(t('profile.provider.error_update', 'فشل تحديث ملف الشركة'));
     } finally {
       setSavingProvider(false);
     }
@@ -117,30 +120,30 @@ const ProfilePage = () => {
     try {
       let avatarUrl = (user as any)?.avatar_url || null;
 
-      // Upload avatar if a new file was selected (send as base64 data URL)
+      // Upload avatar if a new file was selected
       if (avatarFile && avatarPreview) {
         try {
-          const uploadRes: any = await apiService.post('/users/avatar', { avatar_url: avatarPreview });
+          const uploadRes = await apiService.post<{ url?: string; data?: { url?: string } }>('/users/avatar', { avatar_url: avatarPreview });
           if (uploadRes?.url || uploadRes?.data?.url) {
-            avatarUrl = uploadRes?.url || uploadRes?.data?.url;
+            avatarUrl = uploadRes.url || uploadRes.data?.url;
           }
         } catch { /* avatar upload failed silently */ }
       }
 
       const payload = { ...formData, ...(avatarUrl ? { avatar_url: avatarUrl } : {}) };
       await authService.updateProfile(payload);
-      toastService.success('تم تحديث الملف الشخصي بنجاح');
+      toastService.success(t('profile.success_update', 'تم تحديث الملف الشخصي بنجاح'));
       setEditing(false);
       setAvatarFile(null);
     } catch (error: any) {
-      toastService.error(error.message || 'فشل تحديث الملف الشخصي');
+      toastService.error(error.message || t('profile.error_update', 'فشل تحديث الملف الشخصي'));
     } finally {
       setLoading(false);
     }
   };
 
   if (!user) {
-    return <LoadingSpinner fullScreen message="جاري التحميل..." />;
+    return <LoadingSpinner fullScreen message={t('common.loading', 'جاري التحميل...')} />;
   }
 
   return (
@@ -151,20 +154,20 @@ const ProfilePage = () => {
           className="text-gray-500 hover:text-primary mb-4 flex items-center gap-2 transition-colors"
         >
           <i className="fa-solid fa-arrow-right"></i>
-          العودة
+          {t('common.back', 'العودة')}
         </button>
 
         <div className="bg-white rounded-3xl p-6 shadow-sm">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">الملف الشخصي</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('profile.title', 'الملف الشخصي')}</h1>
             {!editing && (
               <button
                 onClick={() => setEditing(true)}
                 className="px-4 py-2 rounded-xl bg-primary text-white font-bold hover:bg-purple-700 transition-colors"
               >
                 <i className="fa-solid fa-edit ms-2"></i>
-                تعديل
+                {t('common.edit', 'تعديل')}
               </button>
             )}
           </div>
@@ -201,14 +204,14 @@ const ProfilePage = () => {
                 className="hidden"
               />
             </div>
-            <h2 className="text-xl font-bold text-gray-900">{user.full_name || 'مستخدم'}</h2>
+            <h2 className="text-xl font-bold text-gray-900">{user.full_name || t('user.default_name', 'مستخدم')}</h2>
             <p className="text-sm text-gray-500">{user.email}</p>
             <span className="mt-2 px-3 py-1 rounded-full bg-purple-100 text-primary text-xs font-bold">
-              {user.role === 'client' ? 'عميل' : user.role === 'provider' ? 'مزود خدمة' : 'مدير'}
+              {user.role === 'client' ? t('roles.client', 'عميل') : user.role === 'provider' ? t('roles.provider', 'مزود خدمة') : t('roles.admin', 'مدير')}
             </span>
             {avatarFile && (
               <p className="text-xs text-primary mt-1">
-                <i className="fa-solid fa-check ms-1"></i>تم اختيار صورة جديدة
+                <i className="fa-solid fa-check ms-1"></i>{t('profile.avatar.success', 'تم اختيار صورة جديدة')}
               </p>
             )}
           </div>
@@ -216,7 +219,7 @@ const ProfilePage = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">الاسم الكامل</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.fields.full_name', 'الاسم الكامل')}</label>
               <input
                 type="text"
                 name="full_name"
@@ -229,7 +232,7 @@ const ProfilePage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">رقم الهاتف</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.fields.phone', 'رقم الهاتف')}</label>
               <input
                 type="tel"
                 name="phone"
@@ -242,7 +245,7 @@ const ProfilePage = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">المدينة</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.fields.city', 'المدينة')}</label>
               <input
                 type="text"
                 name="city"
@@ -250,12 +253,12 @@ const ProfilePage = () => {
                 onChange={handleChange}
                 disabled={!editing}
                 className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                placeholder="الدوحة"
+                placeholder={t('cities.doha', 'الدوحة')}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">نبذة عني</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.fields.bio', 'نبذة عني')}</label>
               <textarea
                 name="bio"
                 value={formData.bio}
@@ -263,7 +266,7 @@ const ProfilePage = () => {
                 disabled={!editing}
                 rows={4}
                 className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                placeholder="أخبرنا عن نفسك..."
+                placeholder={t('profile.fields.bio_placeholder', 'أخبرنا عن نفسك...')}
               />
             </div>
 
@@ -274,7 +277,7 @@ const ProfilePage = () => {
                   disabled={loading}
                   className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50"
                 >
-                  {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+                  {loading ? t('common.saving', 'جاري الحفظ...') : t('common.save_changes', 'حفظ التغييرات')}
                 </button>
                 <button
                   type="button"
@@ -282,7 +285,7 @@ const ProfilePage = () => {
                   disabled={loading}
                   className="flex-1 py-3 rounded-xl bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition-colors disabled:opacity-50"
                 >
-                  إلغاء
+                  {t('common.cancel', 'إلغاء')}
                 </button>
               </div>
             )}
@@ -290,34 +293,34 @@ const ProfilePage = () => {
 
           {/* Account Info */}
           <div className="mt-8 pt-6 border-t border-gray-100">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">معلومات الحساب</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{t('profile.account_info', 'معلومات الحساب')}</h3>
             <div className="space-y-3">
               <div className="flex justify-between items-center py-2 border-b border-gray-50">
                 <span className="text-sm text-gray-600 flex items-center gap-2">
                   <i className="fa-solid fa-envelope text-primary w-4"></i>
-                  البريد الإلكتروني
+                  {t('profile.fields.email', 'البريد الإلكتروني')}
                 </span>
                 <span className="text-sm font-bold text-gray-900">{user.email}</span>
               </div>
               <div className="flex justify-between items-center py-2 border-b border-gray-50">
                 <span className="text-sm text-gray-600 flex items-center gap-2">
                   <i className="fa-solid fa-calendar text-primary w-4"></i>
-                  تاريخ التسجيل
+                  {t('profile.registration_date', 'تاريخ التسجيل')}
                 </span>
                 <span className="text-sm font-bold text-gray-900">
-                  {new Date(user.created_at).toLocaleDateString('ar-EG')}
+                  {new Date(user.created_at).toLocaleDateString(t('common.date_locale', 'ar-EG'))}
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
                 <span className="text-sm text-gray-600 flex items-center gap-2">
                   <i className="fa-solid fa-shield text-primary w-4"></i>
-                  الدور
+                  {t('profile.role', 'الدور')}
                 </span>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${user.role === 'admin' ? 'bg-red-100 text-red-700' :
                   user.role === 'provider' ? 'bg-green-100 text-green-700' :
                     'bg-blue-100 text-blue-700'
                   }`}>
-                  {user.role === 'client' ? 'عميل' : user.role === 'provider' ? 'مزود خدمة' : 'مدير'}
+                  {user.role === 'client' ? t('roles.client', 'عميل') : user.role === 'provider' ? t('roles.provider', 'مزود خدمة') : t('roles.admin', 'مدير')}
                 </span>
               </div>
             </div>
@@ -327,11 +330,11 @@ const ProfilePage = () => {
           {user.role === 'provider' && (
             <div className="mt-8 pt-6 border-t border-gray-100">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">ملف الشركة</h3>
+                <h3 className="text-lg font-bold text-gray-900">{t('profile.provider.title', 'ملف الشركة')}</h3>
                 <div className="flex items-center gap-2">
                   {providerProfile?.is_verified && (
                     <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold flex items-center gap-1">
-                      <i className="fa-solid fa-circle-check"></i> موثق
+                      <i className="fa-solid fa-circle-check"></i> {t('profile.provider.verified', 'موثق')}
                     </span>
                   )}
                   {providerProfile?.id && (
@@ -339,7 +342,7 @@ const ProfilePage = () => {
                       to={`/services?provider=${providerProfile.id}`}
                       className="px-3 py-1.5 rounded-xl bg-bglight text-primary text-xs font-bold flex items-center gap-1 hover:bg-purple-50 transition-colors"
                     >
-                      <i className="fa-solid fa-eye"></i> عرض الملف
+                      <i className="fa-solid fa-eye"></i> {t('common.view_profile', 'عرض الملف')}
                     </Link>
                   )}
                   {!editingProvider && (
@@ -347,7 +350,7 @@ const ProfilePage = () => {
                       onClick={() => setEditingProvider(true)}
                       className="px-3 py-2 rounded-xl bg-primary text-white text-sm font-bold hover:bg-purple-700 transition-colors"
                     >
-                      <i className="fa-solid fa-edit ms-1"></i>تعديل
+                      <i className="fa-solid fa-edit ms-1"></i>{t('common.edit', 'تعديل')}
                     </button>
                   )}
                 </div>
@@ -356,7 +359,7 @@ const ProfilePage = () => {
               {providerProfile ? (
                 <form onSubmit={handleProviderSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">اسم الشركة</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.provider.company_name', 'اسم الشركة')}</label>
                     <input
                       type="text"
                       name="company_name"
@@ -367,7 +370,7 @@ const ProfilePage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">المدينة</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.fields.city', 'المدينة')}</label>
                     <input
                       type="text"
                       name="city"
@@ -375,11 +378,11 @@ const ProfilePage = () => {
                       onChange={handleProviderChange}
                       disabled={!editingProvider}
                       className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                      placeholder="الدوحة"
+                      placeholder={t('cities.doha', 'الدوحة')}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">الموقع الإلكتروني</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.provider.website', 'الموقع الإلكتروني')}</label>
                     <input
                       type="url"
                       name="website"
@@ -391,7 +394,7 @@ const ProfilePage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">وصف الشركة</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">{t('profile.provider.description', 'وصف الشركة')}</label>
                     <textarea
                       name="description"
                       value={providerForm.description}
@@ -399,41 +402,41 @@ const ProfilePage = () => {
                       disabled={!editingProvider}
                       rows={3}
                       className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                      placeholder="وصف مختصر عن خدماتك..."
+                      placeholder={t('profile.provider.description_placeholder', 'وصف مختصر عن خدماتك...')}
                     />
                   </div>
                   <div className="flex items-center gap-4 py-2 bg-bglight rounded-xl px-4">
                     <div className="text-center">
                       <p className="text-xl font-bold text-primary">{providerProfile.rating_avg?.toFixed(1) || '0.0'}</p>
-                      <p className="text-xs text-gray-500">التقييم</p>
+                      <p className="text-xs text-gray-500">{t('profile.provider.rating', 'التقييم')}</p>
                     </div>
                     <div className="w-px h-8 bg-gray-200"></div>
                     <div className="text-center">
                       <p className="text-xl font-bold text-gray-900">{providerProfile.review_count || 0}</p>
-                      <p className="text-xs text-gray-500">مراجعة</p>
+                      <p className="text-xs text-gray-500">{t('profile.provider.reviews', 'مراجعة')}</p>
                     </div>
                   </div>
                   {editingProvider && (
-                    <div className="flex gap-3">
-                      <button
-                        type="submit"
-                        disabled={savingProvider}
-                        className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold disabled:opacity-50"
-                      >
-                        {savingProvider ? 'جاري الحفظ...' : 'حفظ'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingProvider(false)}
-                        className="flex-1 py-3 rounded-xl bg-gray-200 text-gray-700 font-bold"
-                      >
-                        إلغاء
-                      </button>
-                    </div>
+                     <div className="flex gap-3">
+                       <button
+                         type="submit"
+                         disabled={savingProvider}
+                         className="flex-1 py-3 rounded-xl gradient-purple text-white font-bold disabled:opacity-50"
+                       >
+                         {savingProvider ? t('common.saving', 'جاري الحفظ...') : t('common.save', 'حفظ')}
+                       </button>
+                       <button
+                         type="button"
+                         onClick={() => setEditingProvider(false)}
+                         className="flex-1 py-3 rounded-xl bg-gray-200 text-gray-700 font-bold"
+                       >
+                         {t('common.cancel', 'إلغاء')}
+                       </button>
+                     </div>
                   )}
                 </form>
               ) : (
-                <p className="text-sm text-gray-400 text-center py-4">لا يوجد ملف شركة بعد</p>
+                <p className="text-sm text-gray-400 text-center py-4">{t('profile.provider.no_profile_yet', 'لا يوجد ملف شركة بعد')}</p>
               )}
             </div>
           )}
@@ -446,7 +449,7 @@ const ProfilePage = () => {
               className="w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <i className="fa-solid fa-right-from-bracket"></i>
-              {loggingOut ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'}
+              {loggingOut ? t('auth.logging_out', 'جاري تسجيل الخروج...') : t('auth.logout', 'تسجيل الخروج')}
             </button>
           </div>
         </div>

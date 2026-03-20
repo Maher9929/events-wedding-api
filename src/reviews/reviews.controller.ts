@@ -30,8 +30,6 @@ export class ReviewsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async findAll(
     @Query('rating') rating?: string,
     @Query('limit') limit?: string,

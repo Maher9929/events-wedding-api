@@ -20,7 +20,7 @@ const AdminUsersPage = () => {
     const loadUsers = async () => {
         setLoading(true);
         try {
-            const data: any = await apiService.get('/users');
+            const data = await apiService.get<{ data?: User[] } | User[]>('/users');
             const list = Array.isArray(data) ? data : data?.data || [];
             setUsers(list);
         } catch {

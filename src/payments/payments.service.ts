@@ -223,8 +223,9 @@ export class PaymentsService {
         signature,
         webhookSecret,
       );
-    } catch {
-      throw new Error('Invalid webhook signature');
+    } catch (err: any) {
+      console.error(`Webhook signature verification failed: ${err.message}`);
+      throw new BadRequestException(`Webhook Error: ${err.message}`);
     }
 
     if (event.type === 'payment_intent.succeeded') {

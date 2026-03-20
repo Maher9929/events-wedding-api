@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseProvider } from './config/supabase.config';
+import { StorageController } from './common/storage.controller';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -19,7 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 
 @Module({
-  controllers: [AppController],
+  controllers: [AppController, StorageController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,

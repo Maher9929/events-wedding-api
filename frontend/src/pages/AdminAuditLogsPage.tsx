@@ -32,7 +32,7 @@ const AdminAuditLogsPage = () => {
             // Try to load from audit-logs endpoint, fallback to constructing from bookings
             let auditData: AuditEntry[] = [];
             try {
-                const data: any = await apiService.get('/audit-logs');
+                const data = await apiService.get<{ data?: AuditEntry[] }>('/audit-logs');
                 const list = Array.isArray(data) ? data : data?.data || [];
                 auditData = list;
             } catch {
@@ -41,7 +41,7 @@ const AdminAuditLogsPage = () => {
 
             // Also construct audit entries from bookings as supplementary data
             try {
-                const bookingsData: any = await apiService.get('/bookings');
+                const bookingsData = await apiService.get<{ data?: Booking[] }>('/bookings');
                 const bookings: Booking[] = Array.isArray(bookingsData) ? bookingsData : bookingsData?.data || [];
 
                 const bookingAuditEntries: AuditEntry[] = bookings.map(b => ({
@@ -53,7 +53,10 @@ const AdminAuditLogsPage = () => {
                     entity_type: 'booking',
                     entity_id: b.id,
                     user_email: b.client_id?.substring(0, 8),
-                    details: `حجز ${b.status === 'cancelled' ? 'ملغي' : b.status === 'confirmed' ? 'مؤكد' : b.status === 'completed' ? 'مكتمل' : 'جديد'} — ${(b.amount || 0).toLocaleString()} ر.ق`,
+                    details: t('admin_audit.synthetic_booking_detail', 'حجز {{status}} — {{amount}} ر.ق', { 
+                        status: b.status === 'cancelled' ? t('payment.statuses.refunded', 'ملغي') : b.status === 'confirmed' ? t('payment.statuses.fully_paid_full', 'مؤكد') : b.status === 'completed' ? t('payment.statuses.completed', 'مكتمل') : t('payment.statuses.new', 'جديد'),
+                        amount: (b.amount || 0).toLocaleString() 
+                    }),
                     created_at: b.updated_at || b.created_at,
                     severity: b.status === 'cancelled' ? 'warning' as const : 'info' as const,
                 }));
@@ -70,7 +73,7 @@ const AdminAuditLogsPage = () => {
             auditData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             setLogs(auditData);
         } catch (error) {
-            console.error('Failed to load audit logs:', error);
+            console.error(t('admin_audit.error_loading', 'Failed to load audit logs:'), error);
         } finally {
             setLoading(false);
         }
@@ -98,15 +101,15 @@ const AdminAuditLogsPage = () => {
 
     const getActionLabel = (action: string) => {
         const labels: Record<string, string> = {
-            'booking_created': 'إنشاء حجز',
-            'booking_confirmed': 'تأكيد حجز',
-            'booking_cancelled': 'إلغاء حجز',
-            'booking_completed': 'إكمال حجز',
-            'payment_received': 'استلام دفعة',
-            'user_created': 'تسجيل مستخدم',
-            'user_deleted': 'حذف مستخدم',
-            'provider_verified': 'توثيق مورد',
-            'review_created': 'إضافة تقييم',
+            'booking_created': t('admin_audit.actions.booking_created', 'إنشاء حجز'),
+            'booking_confirmed': t('admin_audit.actions.booking_confirmed', 'تأكيد حجز'),
+            'booking_cancelled': t('admin_audit.actions.booking_cancelled', 'إلغاء حجز'),
+            'booking_completed': t('admin_audit.actions.booking_completed', 'إكمال حجز'),
+            'payment_received': t('admin_audit.actions.payment_received', 'استلام دفعة'),
+            'user_created': t('admin_audit.actions.user_created', 'تسجيل مستخدم'),
+            'user_deleted': t('admin_audit.actions.user_deleted', 'حذف مستخدم'),
+            'provider_verified': t('admin_audit.actions.provider_verified', 'توثيق مورد'),
+            'review_created': t('admin_audit.actions.review_created', 'إضافة تقييم'),
         };
         return labels[action] || action;
     };
@@ -121,13 +124,13 @@ const AdminAuditLogsPage = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">سجل التدقيق</h1>
-                    <p className="text-gray-500">تتبع جميع الإجراءات والعمليات على المنصة</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('admin_audit.title', 'سجل التدقيق')}</h1>
+                    <p className="text-gray-500">{t('admin_audit.subtitle', 'تتبع جميع الإجراءات والعمليات على المنصة')}</p>
                 </div>
                 <div className="relative w-full md:w-64">
                     <input
                         type="text"
-                        placeholder="بحث في السجلات..."
+                        placeholder={t('admin_audit.search', 'بحث في السجلات...')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
@@ -145,7 +148,7 @@ const AdminAuditLogsPage = () => {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-gray-900">{logs.length}</p>
-                            <p className="text-xs text-gray-500">إجمالي السجلات</p>
+                            <p className="text-xs text-gray-500">{t('admin_audit.total_logs', 'إجمالي السجلات')}</p>
                         </div>
                     </div>
                 </div>
@@ -156,7 +159,7 @@ const AdminAuditLogsPage = () => {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-green-600">{totalInfo}</p>
-                            <p className="text-xs text-gray-500">معلومات</p>
+                            <p className="text-xs text-gray-500">{t('admin_audit.info', 'معلومات')}</p>
                         </div>
                     </div>
                 </div>
@@ -167,7 +170,7 @@ const AdminAuditLogsPage = () => {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-yellow-600">{totalWarning}</p>
-                            <p className="text-xs text-gray-500">تحذيرات</p>
+                            <p className="text-xs text-gray-500">{t('admin_audit.warnings', 'تحذيرات')}</p>
                         </div>
                     </div>
                 </div>
@@ -178,7 +181,7 @@ const AdminAuditLogsPage = () => {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-red-600">{totalCritical}</p>
-                            <p className="text-xs text-gray-500">حرجة</p>
+                            <p className="text-xs text-gray-500">{t('admin_audit.critical', 'حرجة')}</p>
                         </div>
                     </div>
                 </div>
@@ -194,10 +197,10 @@ const AdminAuditLogsPage = () => {
                             ? 'bg-primary text-white shadow-sm'
                             : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
                     >
-                        {type === 'all' ? 'الكل' :
-                            type === 'booking' ? 'الحجوزات' :
-                                type === 'payment' ? 'المدفوعات' :
-                                    type === 'user' ? 'المستخدمين' : 'الموردين'}
+                        {type === 'all' ? t('common.all', 'الكل') :
+                            type === 'booking' ? t('admin_audit.filters.bookings', 'الحجوزات') :
+                                type === 'payment' ? t('admin_audit.filters.payments', 'المدفوعات') :
+                                    type === 'user' ? t('admin_audit.filters.users', 'المستخدمين') : t('admin_audit.filters.providers', 'الموردين')}
                     </button>
                 ))}
             </div>
@@ -220,7 +223,7 @@ const AdminAuditLogsPage = () => {
                 ) : filteredLogs.length === 0 ? (
                     <div className="p-10 text-center">
                         <i className="fa-solid fa-clipboard-list text-gray-300 text-4xl mb-3"></i>
-                        <p className="text-gray-500">{t('common.no_results')}</p>
+                        <p className="text-gray-500">{t('common.no_results', 'لا توجد نتائج')}</p>
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-50">
@@ -235,10 +238,10 @@ const AdminAuditLogsPage = () => {
                                         <div className="flex items-center gap-2 mb-0.5">
                                             <span className="text-sm font-bold text-gray-900">{getActionLabel(log.action)}</span>
                                             {log.severity === 'warning' && (
-                                                <span className="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 text-[10px] font-bold">تحذير</span>
+                                                <span className="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700 text-[10px] font-bold">{t('admin_audit.tags.warning', 'تحذير')}</span>
                                             )}
                                             {log.severity === 'critical' && (
-                                                <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold">حرج</span>
+                                                <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold">{t('admin_audit.tags.critical', 'حرج')}</span>
                                             )}
                                         </div>
                                         <p className="text-xs text-gray-500 truncate">{log.details}</p>

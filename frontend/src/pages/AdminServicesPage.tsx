@@ -17,7 +17,7 @@ const AdminServicesPage = () => {
     const loadServices = async () => {
         setLoading(true);
         try {
-            const data: any = await apiService.get('/services');
+            const data = await apiService.get<{ data?: ServiceItem[] } | ServiceItem[]>('/services');
             const list = Array.isArray(data) ? data : data?.data || [];
             setServices(list);
         } catch (error) {
@@ -29,7 +29,7 @@ const AdminServicesPage = () => {
 
     const handleFeatureToggle = async (serviceId: string, currentStatus: boolean) => {
         try {
-            await apiService.patch(`/services/${serviceId}`, { is_featured: !currentStatus });
+            await apiService.patch(`/services/${serviceId}/featured`, { isFeatured: !currentStatus });
             setServices(prev => prev.map(s => s.id === serviceId ? { ...s, is_featured: !currentStatus } : s));
             toastService.success(t('common.admin.success_update'));
         } catch (error) {

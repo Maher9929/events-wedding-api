@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Booking } from '../services/api';
 
 const ProviderCalendarPage = () => {
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -13,15 +15,16 @@ const ProviderCalendarPage = () => {
 
     useEffect(() => {
         loadBookings();
-    }, [currentMonth]);
+    }, [currentMonth]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const loadBookings = async () => {
         try {
             const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
             const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-            const data = await apiService.get<Booking[]>(`/bookings/provider/me?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`);
-            setBookings(Array.isArray(data) ? data : []);
+            const data = await apiService.get<Booking[] | { data: Booking[] }>(`/bookings/provider/me?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`);
+            const payload = Array.isArray(data) ? data : data?.data || [];
+            setBookings(payload);
         } catch (error) {
             console.error('Failed to load bookings:', error);
         } finally {
@@ -67,14 +70,7 @@ const ProviderCalendarPage = () => {
     };
 
     const getStatusText = (status: string) => {
-        switch (status) {
-            case 'confirmed': return 'مؤكد';
-            case 'pending': return 'قيد الانتظار';
-            case 'cancelled': return 'ملغي';
-            case 'completed': return 'مكتمل';
-            case 'rejected': return 'مرفوض';
-            default: return status;
-        }
+        return t(`bookings.status.${status}`, status);
     };
 
     const navigateMonth = (direction: number) => {
@@ -93,14 +89,13 @@ const ProviderCalendarPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-bglight p-5" dir="rtl">
+        <div className="min-h-screen bg-bglight p-5" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
             <div className="max-w-7xl mx-auto">
-                {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">تقويم الحجوزات</h1>
+                        <h1 className="text-2xl font-bold text-gray-900">{t('provider.calendar.title', 'تقويم الحجوزات')}</h1>
                         <p className="text-gray-600 mt-1">
-                            {currentMonth.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
+                            {currentMonth.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'ar-EG', { month: 'long', year: 'numeric' })}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -114,7 +109,7 @@ const ProviderCalendarPage = () => {
                                             : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
-                                    {mode === 'month' ? 'شهر' : mode === 'week' ? 'أسبوع' : 'يوم'}
+                                    {t(`provider.calendar.modes.${mode}`, mode === 'month' ? 'شهر' : mode === 'week' ? 'أسبوع' : 'يوم')}
                                 </button>
                             ))}
                         </div>
@@ -127,18 +122,23 @@ const ProviderCalendarPage = () => {
                     </div>
                 </div>
 
-                {/* Calendar Grid */}
                 <div className="bg-white rounded-3xl shadow-sm p-6">
-                    {/* Weekday headers */}
                     <div className="grid grid-cols-7 gap-2 mb-4">
-                        {['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'].map(day => (
+                        {[
+                            t('provider.calendar.days.sun', 'أحد'), 
+                            t('provider.calendar.days.mon', 'اثنين'), 
+                            t('provider.calendar.days.tue', 'ثلاثاء'), 
+                            t('provider.calendar.days.wed', 'أربعاء'), 
+                            t('provider.calendar.days.thu', 'خميس'), 
+                            t('provider.calendar.days.fri', 'جمعة'), 
+                            t('provider.calendar.days.sat', 'سبت')
+                        ].map(day => (
                             <div key={day} className="text-center text-sm font-bold text-gray-600 py-2">
                                 {day}
                             </div>
                         ))}
                     </div>
 
-                    {/* Calendar days */}
                     <div className="grid grid-cols-7 gap-2">
                         {getDaysInMonth().map((date, index) => {
                             const dayBookings = date ? getBookingsForDate(date) : [];
@@ -171,12 +171,12 @@ const ProviderCalendarPage = () => {
                                                 className={`text-xs px-1 py-0.5 rounded border truncate ${getStatusColor(booking.status)}`}
                                                 title={`${booking.booking_date} - ${getStatusText(booking.status)}`}
                                             >
-                                                {booking.start_time || 'طوال اليوم'}
+                                                {booking.start_time || t('provider.calendar.all_day', 'طوال اليوم')}
                                             </div>
                                         ))}
                                         {dayBookings.length > 2 && (
                                             <div className="text-xs text-gray-500 font-bold">
-                                                +{dayBookings.length - 2} أخرى
+                                                +{dayBookings.length - 2} {t('provider.calendar.others', 'أخرى')}
                                             </div>
                                         )}
                                     </div>
@@ -186,11 +186,10 @@ const ProviderCalendarPage = () => {
                     </div>
                 </div>
 
-                {/* Selected Date Details */}
                 {selectedDate && (
                     <div className="bg-white rounded-3xl shadow-sm p-6 mt-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">
-                            حجوزات {selectedDate.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            {t('provider.calendar.bookings_on', 'حجوزات')} {selectedDate.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </h3>
                         <div className="space-y-3">
                             {getBookingsForDate(selectedDate).length > 0 ? (
@@ -203,23 +202,23 @@ const ProviderCalendarPage = () => {
                                                         {getStatusText(booking.status)}
                                                     </span>
                                                     <span className="text-sm text-gray-600">
-                                                        {booking.start_time || 'طوال اليوم'} {booking.end_time ? `- ${booking.end_time}` : ''}
+                                                        {booking.start_time || t('provider.calendar.all_day', 'طوال اليوم')} {booking.end_time ? `- ${booking.end_time}` : ''}
                                                     </span>
                                                 </div>
                                                 <p className="font-bold text-gray-900 mb-1">
-                                                    {booking.location || 'المكان غير محدد'}
+                                                    {booking.location || t('provider.calendar.no_location', 'المكان غير محدد')}
                                                 </p>
                                                 <p className="text-sm text-gray-600 mb-2">
-                                                    {booking.guest_count ? `${booking.guest_count} ضيف` : ''}
+                                                    {booking.guest_count ? `${booking.guest_count} ${t('provider.calendar.guest', 'ضيف')}` : ''}
                                                 </p>
                                                 <div className="flex items-center gap-4 text-sm">
                                                     <span className="font-bold text-primary">
-                                                        {booking.amount.toLocaleString('ar-EG')} ر.ق
+                                                        {booking.amount.toLocaleString(i18n.language === 'en' ? 'en-US' : 'ar-EG')} {t('common.currency', 'ر.ق')}
                                                     </span>
                                                     <span className="text-gray-500">
-                                                        {booking.payment_status === 'fully_paid' ? 'مدفوع بالكامل' :
-                                                            booking.payment_status === 'deposit_paid' ? 'تم دفع العربون' :
-                                                                'بانتظار الدفع'}
+                                                        {booking.payment_status === 'fully_paid' ? t('provider.calendar.payment.fully_paid', 'مدفوع بالكامل') :
+                                                            booking.payment_status === 'deposit_paid' ? t('provider.calendar.payment.deposit_paid', 'تم دفع العربون') :
+                                                                t('provider.calendar.payment.pending', 'بانتظار الدفع')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -227,21 +226,20 @@ const ProviderCalendarPage = () => {
                                                 onClick={() => navigate(`/bookings/${booking.id}`)}
                                                 className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold"
                                             >
-                                                عرض التفاصيل
+                                                {t('provider.calendar.view_details', 'عرض التفاصيل')}
                                             </button>
                                         </div>
                                     </div>
                                 ))
                             ) : (
                                 <p className="text-center text-gray-500 py-8">
-                                    لا توجد حجوزات لهذا التاريخ
+                                    {t('provider.calendar.no_bookings', 'لا توجد حجوزات لهذا التاريخ')}
                                 </p>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Quick Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
                     <div className="bg-white rounded-xl p-4 shadow-sm">
                         <div className="flex items-center gap-3">
@@ -249,7 +247,7 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-check text-green-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">مؤكدة</p>
+                                <p className="text-xs text-gray-500">{t('provider.calendar.stats.confirmed', 'مؤكدة')}</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings.filter(b => b.status === 'confirmed').length}
                                 </p>
@@ -262,7 +260,7 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-clock text-yellow-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">قيد الانتظار</p>
+                                <p className="text-xs text-gray-500">{t('provider.calendar.stats.pending', 'قيد الانتظار')}</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings.filter(b => b.status === 'pending').length}
                                 </p>
@@ -275,7 +273,7 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-calendar-check text-blue-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">هذا الشهر</p>
+                                <p className="text-xs text-gray-500">{t('provider.calendar.stats.this_month', 'هذا الشهر')}</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings.length}
                                 </p>
@@ -288,12 +286,12 @@ const ProviderCalendarPage = () => {
                                 <i className="fa-solid fa-money-bill text-purple-600"></i>
                             </div>
                             <div>
-                                <p className="text-xs text-gray-500">الإيرادات</p>
+                                <p className="text-xs text-gray-500">{t('provider.calendar.stats.revenue', 'الإيرادات')}</p>
                                 <p className="font-bold text-gray-900">
                                     {bookings
                                         .filter(b => b.payment_status === 'fully_paid')
                                         .reduce((sum, b) => sum + b.amount, 0)
-                                        .toLocaleString('ar-EG')} ر.ق
+                                        .toLocaleString(i18n.language === 'en' ? 'en-US' : 'ar-EG')} {t('common.currency', 'ر.ق')}
                                 </p>
                             </div>
                         </div>

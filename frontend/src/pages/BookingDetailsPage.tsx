@@ -255,7 +255,7 @@ const BookingDetailsPage = () => {
                 <div className="space-y-3 pt-2">
                     {booking.payment_status === 'pending' && booking.status !== 'cancelled' && payableAmount > 0 && (
                         <button
-                            onClick={() => navigate(`/booking/payment?booking_id=${booking.id}&amount=${payableAmount}&paymentType=${paymentType}&service=${encodeURIComponent((booking as any).services?.title || '')}`)}
+                            onClick={() => navigate(`/client/payment/${booking.id}?amount=${payableAmount}&paymentType=${paymentType}&service=${encodeURIComponent((booking as any).services?.title || '')}`)}
                             className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold flex items-center justify-center gap-2 shadow-lg hover:opacity-90 transition-opacity"
                         >
                             <i className="fa-solid fa-credit-card"></i>

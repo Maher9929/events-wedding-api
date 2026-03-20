@@ -414,8 +414,8 @@ export class BookingsService {
     search?: string,
     sortBy?: string,
     sortOrder?: string,
-  ): Promise<Booking[]> {
-    let query = this.supabase.from('bookings').select('*');
+  ): Promise<{ data: Booking[]; total: number }> {
+    let query = this.supabase.from('bookings').select('*', { count: 'exact' });
 
     if (status) {
       query = query.eq('status', status);
@@ -440,11 +440,11 @@ export class BookingsService {
       query = query.order('created_at', { ascending: false });
     }
 
-    const { data, error } = await query;
+    const { data, count, error } = await query;
     if (error) {
       throw new BadRequestException(error.message);
     }
-    return data || [];
+    return { data: data || [], total: count || 0 };
   }
 
   async findByClient(
@@ -454,10 +454,10 @@ export class BookingsService {
     offset?: number,
     search?: string,
     sortOrder?: string,
-  ): Promise<Booking[]> {
+  ): Promise<{ data: Booking[]; total: number }> {
     let query = this.supabase
       .from('bookings')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('client_id', clientId);
 
     if (status) {
@@ -476,11 +476,11 @@ export class BookingsService {
     }
     query = query.order('created_at', { ascending: sortOrder !== 'desc' });
 
-    const { data, error } = await query;
+    const { data, count, error } = await query;
     if (error) {
       throw new BadRequestException(error.message);
     }
-    return data || [];
+    return { data: data || [], total: count || 0 };
   }
 
   async findByProvider(
@@ -491,10 +491,10 @@ export class BookingsService {
     offset?: number,
     search?: string,
     sortOrder?: string,
-  ): Promise<Booking[]> {
+  ): Promise<{ data: Booking[]; total: number }> {
     let query = this.supabase
       .from('bookings')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('provider_id', providerId);
 
     if (status) {
@@ -516,11 +516,11 @@ export class BookingsService {
     }
     query = query.order('created_at', { ascending: sortOrder !== 'desc' });
 
-    const { data, error } = await query;
+    const { data, count, error } = await query;
     if (error) {
       throw new BadRequestException(error.message);
     }
-    return data || [];
+    return { data: data || [], total: count || 0 };
   }
 
   async getStats(providerId: string): Promise<any> {

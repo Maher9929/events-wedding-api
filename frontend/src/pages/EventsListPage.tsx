@@ -1,24 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Event } from '../services/api';
 import { toastService } from '../services/toast.service';
 
-const statusMap: Record<string, { label: string; cls: string }> = {
-    planning: { label: 'جاري التخطيط', cls: 'bg-blue-100 text-blue-700' },
-    confirmed: { label: 'مؤكد', cls: 'bg-green-100 text-green-700' },
-    in_progress: { label: 'قيد التنفيذ', cls: 'bg-yellow-100 text-yellow-700' },
-    completed: { label: 'مكتمل', cls: 'bg-purple-100 text-purple-700' },
-    cancelled: { label: 'ملغي', cls: 'bg-red-100 text-red-700' },
-};
-
-const eventTypeMap: Record<string, string> = {
-    wedding: 'حفل زفاف', birthday: 'عيد ميلاد',
-    party: 'حفلة / خطوبة', corporate: 'فعالية شركة', conference: 'مؤتمر', other: 'أخرى',
-};
-
 const EventsListPage = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
@@ -27,6 +16,23 @@ const EventsListPage = () => {
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 10;
+
+    const statusMap = {
+        planning: { label: t('events.status.planning', 'جاري التخطيط'), cls: 'bg-blue-100 text-blue-700' },
+        confirmed: { label: t('events.status.confirmed', 'مؤكد'), cls: 'bg-green-100 text-green-700' },
+        in_progress: { label: t('events.status.in_progress', 'قيد التنفيذ'), cls: 'bg-yellow-100 text-yellow-700' },
+        completed: { label: t('events.status.completed', 'مكتمل'), cls: 'bg-purple-100 text-purple-700' },
+        cancelled: { label: t('events.status.cancelled', 'ملغي'), cls: 'bg-red-100 text-red-700' },
+    };
+
+    const eventTypeMap: Record<string, string> = {
+        wedding: t('events.type.wedding', 'حفل زفاف'),
+        birthday: t('events.type.birthday', 'عيد ميلاد'),
+        party: t('events.type.party', 'حفلة / خطوبة'),
+        corporate: t('events.type.corporate', 'فعالية شركة'),
+        conference: t('events.type.conference', 'مؤتمر'),
+        other: t('events.type.other', 'أخرى'),
+    };
 
     useEffect(() => { setPage(0); }, [filterStatus, filterType, sortOrder]);
 
@@ -43,25 +49,32 @@ const EventsListPage = () => {
             p.set('sort_order', sortOrder);
             p.set('limit', String(PAGE_SIZE));
             p.set('offset', String(page * PAGE_SIZE));
-            const res: any = await apiService.get<any>(`/events/my-events?${p.toString()}`);
+            
+            interface EventResponse {
+                data?: Event[];
+                total?: number;
+            }
+            const res = await apiService.get<EventResponse | Event[]>(`/events/my-events?${p.toString()}`);
             const list = Array.isArray(res) ? res : res?.data || [];
+            const returnedTotal = !Array.isArray(res) && res?.total !== undefined ? res.total : list.length;
+            
             setEvents(list);
-            setTotal((res as any)?.total ?? list.length);
+            setTotal(returnedTotal);
         } catch {
-            toastService.error('فشل تحميل الفعاليات');
+            toastService.error(t('events.error_loading', 'فشل تحميل الفعاليات'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('هل أنت متأكد من حذف هذه الفعالية؟')) return;
+        if (!confirm(t('events.confirm_delete', 'هل أنت متأكد من حذف هذه الفعالية؟'))) return;
         try {
             await apiService.delete(`/events/${id}`);
             setEvents(prev => prev.filter(e => e.id !== id));
-            toastService.success('تم حذف الفعالية');
+            toastService.success(t('events.delete_success', 'تم حذف الفعالية'));
         } catch {
-            toastService.error('فشل حذف الفعالية');
+            toastService.error(t('events.error_deleting', 'فشل حذف الفعالية'));
         }
     };
 
@@ -76,8 +89,8 @@ const EventsListPage = () => {
                         </button>
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-xl font-bold text-gray-900">فعالياتي</h1>
-                                <p className="text-xs text-gray-500">{total} فعالية</p>
+                                <h1 className="text-xl font-bold text-gray-900">{t('events.title', 'فعالياتي')}</h1>
+                                <p className="text-xs text-gray-500">{t('events.total_events', '{{count}} فعالية', { count: total })}</p>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
@@ -85,14 +98,14 @@ const EventsListPage = () => {
                                     className="h-9 px-3 rounded-xl bg-bglight text-gray-600 text-xs font-bold flex items-center gap-1 hover:bg-gray-200 transition-colors"
                                 >
                                     <i className={`fa-solid fa-sort-${sortOrder === 'asc' ? 'up' : 'down'} text-xs`}></i>
-                                    {sortOrder === 'asc' ? 'الأقرب' : 'الأبعد'}
+                                    {sortOrder === 'asc' ? t('events.sort.closest', 'الأقرب') : t('events.sort.furthest', 'الأبعد')}
                                 </button>
                                 <Link
                                     to="/client/events/new"
                                     className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-purple text-white text-sm font-bold shadow-md"
                                 >
                                     <i className="fa-solid fa-plus"></i>
-                                    جديدة
+                                    {t('events.new_event', 'جديدة')}
                                 </Link>
                             </div>
                         </div>
@@ -102,7 +115,7 @@ const EventsListPage = () => {
 
             {/* Filters */}
             <div className="px-5 py-3 flex gap-2 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
-                <button onClick={() => setFilterType('all')} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterType === 'all' ? 'bg-primary text-white' : 'bg-white text-gray-600 shadow-sm'}`}>الكل</button>
+                <button onClick={() => setFilterType('all')} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterType === 'all' ? 'bg-primary text-white' : 'bg-white text-gray-600 shadow-sm'}`}>{t('common.all', 'الكل')}</button>
                 {Object.entries(eventTypeMap).map(([k, v]) => (
                     <button key={k} onClick={() => setFilterType(filterType === k ? 'all' : k)} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterType === k ? 'bg-primary text-white' : 'bg-white text-gray-600 shadow-sm'}`}>{v}</button>
                 ))}
@@ -110,7 +123,7 @@ const EventsListPage = () => {
             <div className="px-5 pb-2 flex gap-2 overflow-x-auto scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                 {(['all', 'planning', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const).map(s => (
                     <button key={s} onClick={() => setFilterStatus(s)} className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap flex-shrink-0 transition-all ${filterStatus === s ? 'bg-gray-700 text-white' : 'bg-white text-gray-600 shadow-sm'}`}>
-                        {s === 'all' ? 'كل الحالات' : statusMap[s]?.label || s}
+                        {s === 'all' ? t('events.all_statuses', 'كل الحالات') : statusMap[s as keyof typeof statusMap]?.label || s}
                     </button>
                 ))}
             </div>
@@ -130,20 +143,20 @@ const EventsListPage = () => {
                         <div className="w-20 h-20 rounded-full bg-purple-100 flex items-center justify-center mb-4">
                             <i className="fa-solid fa-calendar-days text-primary text-3xl"></i>
                         </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">لا توجد فعاليات بعد</h3>
-                        <p className="text-sm text-gray-500 mb-6">ابدأ بإنشاء فعاليتك الأولى الآن</p>
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('events.no_events', 'لا توجد فعاليات بعد')}</h3>
+                        <p className="text-sm text-gray-500 mb-6">{t('events.start_creating', 'ابدأ بإنشاء فعاليتك الأولى الآن')}</p>
                         <Link
                             to="/client/events/create"
                             className="px-8 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg"
                         >
-                            إنشاء فعالية جديدة
+                            {t('events.create_new', 'إنشاء فعالية جديدة')}
                         </Link>
                     </div>
                 ) : (
                     <div className="space-y-4">
                         {events
                             .map(event => {
-                                const st = statusMap[event.status] || { label: event.status, cls: 'bg-gray-100 text-gray-700' };
+                                const st = statusMap[event.status as keyof typeof statusMap] || { label: event.status, cls: 'bg-gray-100 text-gray-700' };
                                 const daysLeft = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                                 return (
                                     <div key={event.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -168,13 +181,13 @@ const EventsListPage = () => {
                                                 {event.guest_count && (
                                                     <span className="flex items-center gap-1">
                                                         <i className="fa-solid fa-users text-primary"></i>
-                                                        {event.guest_count} ضيف
+                                                        {t('events.guests_count', '{{count}} ضيف', { count: event.guest_count })}
                                                     </span>
                                                 )}
                                                 {event.budget && (
                                                     <span className="flex items-center gap-1">
                                                         <i className="fa-solid fa-wallet text-primary"></i>
-                                                        {event.budget.toLocaleString()} ر.ق
+                                                        {event.budget.toLocaleString()} {t('common.currency', 'ر.ق')}
                                                     </span>
                                                 )}
                                             </div>
@@ -191,13 +204,13 @@ const EventsListPage = () => {
                                                         {budgets.length > 0 && (
                                                             <span className="flex items-center gap-1 bg-green-50 text-green-700 px-2 py-1 rounded-lg font-bold">
                                                                 <i className="fa-solid fa-coins text-[10px]"></i>
-                                                                {spent.toLocaleString()} ر.ق مصروف
+                                                                {spent.toLocaleString()} {t('events.spent', 'ر.ق مصروف')}
                                                             </span>
                                                         )}
                                                         {tasks.length > 0 && (
                                                             <span className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded-lg font-bold">
                                                                 <i className="fa-solid fa-check-square text-[10px]"></i>
-                                                                {completedTasks}/{tasks.length} مهام
+                                                                {completedTasks}/{tasks.length} {t('events.tasks', 'مهام')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -208,14 +221,14 @@ const EventsListPage = () => {
                                                 <div className="mt-3 flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2">
                                                     <i className="fa-solid fa-clock text-amber-500 text-xs"></i>
                                                     <span className="text-xs font-bold text-amber-700">
-                                                        {daysLeft} يوم متبقي
+                                                        {t('events.days_left', '{{count}} يوم متبقي', { count: daysLeft })}
                                                     </span>
                                                 </div>
                                             )}
                                             {daysLeft <= 0 && event.status !== 'completed' && event.status !== 'cancelled' && (
                                                 <div className="mt-3 flex items-center gap-2 bg-red-50 rounded-xl px-3 py-2">
                                                     <i className="fa-solid fa-exclamation-circle text-red-500 text-xs"></i>
-                                                    <span className="text-xs font-bold text-red-700">انتهى التاريخ</span>
+                                                    <span className="text-xs font-bold text-red-700">{t('events.date_passed', 'انتهى التاريخ')}</span>
                                                 </div>
                                             )}
                                         </Link>
@@ -226,7 +239,7 @@ const EventsListPage = () => {
                                                 className="flex-1 py-3 text-center text-sm font-bold text-primary hover:bg-purple-50 transition-colors"
                                             >
                                                 <i className="fa-solid fa-eye ms-1"></i>
-                                                إدارة
+                                                {t('common.manage', 'إدارة')}
                                             </Link>
                                             <div className="w-px bg-gray-100"></div>
                                             <Link
@@ -234,7 +247,7 @@ const EventsListPage = () => {
                                                 className="flex-1 py-3 text-center text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors"
                                             >
                                                 <i className="fa-solid fa-plus ms-1"></i>
-                                                إضافة خدمة
+                                                {t('events.add_service', 'إضافة خدمة')}
                                             </Link>
                                             <div className="w-px bg-gray-100"></div>
                                             <button
@@ -242,7 +255,7 @@ const EventsListPage = () => {
                                                 className="flex-1 py-3 text-center text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
                                             >
                                                 <i className="fa-solid fa-trash ms-1"></i>
-                                                حذف
+                                                {t('common.delete', 'حذف')}
                                             </button>
                                         </div>
                                     </div>

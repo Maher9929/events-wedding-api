@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
+import type { Review } from '../services/reviews.service';
 import { toastService } from '../services/toast.service';
 
 const AdminReviewsPage = () => {
@@ -15,7 +16,7 @@ const AdminReviewsPage = () => {
     const loadReviews = async () => {
         setLoading(true);
         try {
-            const data: any = await apiService.get('/reviews');
+            const data = await apiService.get<{ data?: Review[] } | Review[]>('/reviews');
             const list = Array.isArray(data) ? data : data?.data || [];
             setReviews(list);
         } catch (error) {

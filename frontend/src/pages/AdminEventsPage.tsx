@@ -17,7 +17,7 @@ const AdminEventsPage = () => {
     const loadEvents = async () => {
         setLoading(true);
         try {
-            const data: any = await apiService.get('/events');
+            const data = await apiService.get<{ data?: Event[] } | Event[]>('/events');
             const list = Array.isArray(data) ? data : data?.data || [];
             setEvents(list);
         } catch (error) {

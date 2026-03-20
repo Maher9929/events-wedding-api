@@ -18,11 +18,11 @@ const AdminCommissionsPage = () => {
     const loadBookings = async () => {
         setLoading(true);
         try {
-            const data: any = await apiService.get('/bookings');
+            const data = await apiService.get<{ data?: Booking[] }>('/bookings');
             const list = Array.isArray(data) ? data : data?.data || [];
             setBookings(list);
         } catch (error) {
-            console.error('Failed to load bookings:', error);
+            console.error(t('admin_commissions.error_loading', 'Failed to load bookings:'), error);
         } finally {
             setLoading(false);
         }
@@ -45,11 +45,11 @@ const AdminCommissionsPage = () => {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">إدارة العمولات</h1>
-                    <p className="text-gray-500">إدارة ومتابعة عمولات المنصة على الحجوزات</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('admin_commissions.title', 'إدارة العمولات')}</h1>
+                    <p className="text-gray-500">{t('admin_commissions.subtitle', 'إدارة ومتابعة عمولات المنصة على الحجوزات')}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">نسبة العمولة:</span>
+                    <span className="text-xs text-gray-500">{t('admin_commissions.commission_rate', 'نسبة العمولة:')}</span>
                     <span className="px-3 py-1.5 rounded-xl bg-primary text-white text-sm font-bold">{(COMMISSION_RATE * 100).toFixed(0)}%</span>
                 </div>
             </div>
@@ -61,51 +61,51 @@ const AdminCommissionsPage = () => {
                         <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
                             <i className="fa-solid fa-coins text-green-600"></i>
                         </div>
-                        <span className="text-sm text-gray-500">العمولات المحصّلة</span>
+                        <span className="text-sm text-gray-500">{t('admin_commissions.collected_commissions', 'العمولات المحصّلة')}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-green-600">{totalCommissions.toLocaleString()} ر.ق</h3>
-                    <p className="text-xs text-gray-400 mt-1">من {paidBookings.length} حجز مدفوع</p>
+                    <h3 className="text-2xl font-bold text-green-600">{totalCommissions.toLocaleString()} {t('common.currency', 'ر.ق')}</h3>
+                    <p className="text-xs text-gray-400 mt-1">{t('admin_commissions.from_paid_bookings', 'من {{count}} حجز مدفوع', { count: paidBookings.length })}</p>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-yellow-100 flex items-center justify-center">
                             <i className="fa-solid fa-clock text-yellow-600"></i>
                         </div>
-                        <span className="text-sm text-gray-500">عمولات معلّقة</span>
+                        <span className="text-sm text-gray-500">{t('admin_commissions.pending_commissions', 'عمولات معلّقة')}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-yellow-600">{pendingCommissions.toLocaleString()} ر.ق</h3>
-                    <p className="text-xs text-gray-400 mt-1">بانتظار الدفع</p>
+                    <h3 className="text-2xl font-bold text-yellow-600">{pendingCommissions.toLocaleString()} {t('common.currency', 'ر.ق')}</h3>
+                    <p className="text-xs text-gray-400 mt-1">{t('admin_commissions.waiting_payment', 'بانتظار الدفع')}</p>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
                             <i className="fa-solid fa-money-bill-trend-up text-blue-600"></i>
                         </div>
-                        <span className="text-sm text-gray-500">إجمالي المعاملات</span>
+                        <span className="text-sm text-gray-500">{t('admin_commissions.total_transactions', 'إجمالي المعاملات')}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-blue-600">{totalRevenue.toLocaleString()} ر.ق</h3>
-                    <p className="text-xs text-gray-400 mt-1">{bookings.length} معاملة</p>
+                    <h3 className="text-2xl font-bold text-blue-600">{totalRevenue.toLocaleString()} {t('common.currency', 'ر.ق')}</h3>
+                    <p className="text-xs text-gray-400 mt-1">{t('admin_commissions.transactions_count', '{{count}} معاملة', { count: bookings.length })}</p>
                 </div>
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
                             <i className="fa-solid fa-chart-pie text-purple-600"></i>
                         </div>
-                        <span className="text-sm text-gray-500">إيرادات الموردين</span>
+                        <span className="text-sm text-gray-500">{t('admin_commissions.provider_revenue', 'إيرادات الموردين')}</span>
                     </div>
-                    <h3 className="text-2xl font-bold text-purple-600">{(paidRevenue - totalCommissions).toLocaleString()} ر.ق</h3>
-                    <p className="text-xs text-gray-400 mt-1">بعد خصم العمولات</p>
+                    <h3 className="text-2xl font-bold text-purple-600">{(paidRevenue - totalCommissions).toLocaleString()} {t('common.currency', 'ر.ق')}</h3>
+                    <p className="text-xs text-gray-400 mt-1">{t('admin_commissions.after_commission', 'بعد خصم العمولات')}</p>
                 </div>
             </div>
 
             {/* Commission Progress */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">توزيع الإيرادات</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-4">{t('admin_commissions.revenue_distribution', 'توزيع الإيرادات')}</h3>
                 <div className="space-y-3">
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-gray-600">عمولة المنصة ({(COMMISSION_RATE * 100).toFixed(0)}%)</span>
-                            <span className="text-sm font-bold text-primary">{totalCommissions.toLocaleString()} ر.ق</span>
+                            <span className="text-sm text-gray-600">{t('admin_commissions.platform_commission_label', 'عمولة المنصة ({{rate}}%)', { rate: (COMMISSION_RATE * 100).toFixed(0) })}</span>
+                            <span className="text-sm font-bold text-primary">{totalCommissions.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-3">
                             <div className="bg-primary h-3 rounded-full transition-all" style={{ width: `${COMMISSION_RATE * 100}%` }}></div>
@@ -113,8 +113,8 @@ const AdminCommissionsPage = () => {
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-gray-600">حصة الموردين ({((1 - COMMISSION_RATE) * 100).toFixed(0)}%)</span>
-                            <span className="text-sm font-bold text-green-600">{(paidRevenue - totalCommissions).toLocaleString()} ر.ق</span>
+                            <span className="text-sm text-gray-600">{t('admin_commissions.provider_share_label', 'حصة الموردين ({{rate}}%)', { rate: ((1 - COMMISSION_RATE) * 100).toFixed(0) })}</span>
+                            <span className="text-sm font-bold text-green-600">{(paidRevenue - totalCommissions).toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-3">
                             <div className="bg-green-500 h-3 rounded-full transition-all" style={{ width: `${(1 - COMMISSION_RATE) * 100}%` }}></div>
@@ -126,7 +126,7 @@ const AdminCommissionsPage = () => {
             {/* Transactions Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-gray-100">
-                    <h3 className="font-bold text-gray-900">تفاصيل المعاملات</h3>
+                    <h3 className="font-bold text-gray-900">{t('admin_commissions.transaction_details', 'تفاصيل المعاملات')}</h3>
                     <div className="flex gap-2">
                         {['all', 'fully_paid', 'deposit_paid', 'pending', 'refunded'].map(s => (
                             <button
@@ -136,7 +136,7 @@ const AdminCommissionsPage = () => {
                                     ? 'bg-primary text-white'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                             >
-                                {s === 'all' ? 'الكل' : s === 'fully_paid' ? 'مدفوع' : s === 'deposit_paid' ? 'عربون' : s === 'pending' ? 'معلّق' : 'مسترد'}
+                                {s === 'all' ? t('common.all', 'الكل') : s === 'fully_paid' ? t('payment.statuses.fully_paid', 'مدفوع') : s === 'deposit_paid' ? t('payment.statuses.deposit_paid', 'عربون') : s === 'pending' ? t('payment.statuses.pending', 'معلّق') : t('payment.statuses.refunded', 'مسترد')}
                             </button>
                         ))}
                     </div>
@@ -145,12 +145,12 @@ const AdminCommissionsPage = () => {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-sm">
                             <tr>
-                                <th className="px-6 py-3">الحجز</th>
-                                <th className="px-6 py-3">المبلغ</th>
-                                <th className="px-6 py-3">العمولة</th>
-                                <th className="px-6 py-3">حصة المورد</th>
-                                <th className="px-6 py-3">حالة الدفع</th>
-                                <th className="px-6 py-3">التاريخ</th>
+                                <th className="px-6 py-3">{t('admin_commissions.table.booking', 'الحجز')}</th>
+                                <th className="px-6 py-3">{t('admin_commissions.table.amount', 'المبلغ')}</th>
+                                <th className="px-6 py-3">{t('admin_commissions.table.commission', 'العمولة')}</th>
+                                <th className="px-6 py-3">{t('admin_commissions.table.provider_share', 'حصة المورد')}</th>
+                                <th className="px-6 py-3">{t('admin_commissions.table.payment_status', 'حالة الدفع')}</th>
+                                <th className="px-6 py-3">{t('admin_commissions.table.date', 'التاريخ')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
@@ -167,7 +167,7 @@ const AdminCommissionsPage = () => {
                                 ))
                             ) : filteredBookings.length === 0 ? (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500">{t('common.no_results')}</td>
+                                    <td colSpan={6} className="px-6 py-10 text-center text-gray-500">{t('common.no_results', 'لا توجد نتائج')}</td>
                                 </tr>
                             ) : (
                                 filteredBookings.map(booking => {
@@ -179,13 +179,13 @@ const AdminCommissionsPage = () => {
                                                 <span className="font-mono text-xs text-gray-600">{booking.id.substring(0, 8)}...</span>
                                             </td>
                                             <td className="px-6 py-4 font-bold text-gray-900">
-                                                {(booking.amount || 0).toLocaleString()} ر.ق
+                                                {(booking.amount || 0).toLocaleString()} {t('common.currency', 'ر.ق')}
                                             </td>
                                             <td className="px-6 py-4 font-bold text-primary">
-                                                {commission.toLocaleString()} ر.ق
+                                                {commission.toLocaleString()} {t('common.currency', 'ر.ق')}
                                             </td>
                                             <td className="px-6 py-4 font-bold text-green-600">
-                                                {providerShare.toLocaleString()} ر.ق
+                                                {providerShare.toLocaleString()} {t('common.currency', 'ر.ق')}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 rounded-lg text-xs font-bold ${booking.payment_status === 'fully_paid' ? 'bg-green-100 text-green-700' :
@@ -193,9 +193,9 @@ const AdminCommissionsPage = () => {
                                                             booking.payment_status === 'refunded' ? 'bg-red-100 text-red-700' :
                                                                 'bg-yellow-100 text-yellow-700'
                                                     }`}>
-                                                    {booking.payment_status === 'fully_paid' ? 'مدفوع بالكامل' :
-                                                        booking.payment_status === 'deposit_paid' ? 'عربون مدفوع' :
-                                                            booking.payment_status === 'refunded' ? 'مسترد' : 'معلّق'}
+                                                    {booking.payment_status === 'fully_paid' ? t('payment.statuses.fully_paid_full', 'مدفوع بالكامل') :
+                                                        booking.payment_status === 'deposit_paid' ? t('payment.statuses.deposit_paid_full', 'عربون مدفوع') :
+                                                            booking.payment_status === 'refunded' ? t('payment.statuses.refunded', 'مسترد') : t('payment.statuses.pending', 'معلّق')}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">

@@ -261,15 +261,15 @@ export class ModerationService {
     await this.supabase.from('notifications').insert({
       user_id: entityId,
       type: 'moderation_warning',
-      title: 'Avertisse de modération',
-      message: notes || 'Votre contenu a reçu un avertisse de modération.',
+      title: 'Avertissement de modération',
+      message: notes || 'Votre contenu a reçu un avertissement de modération.',
       created_at: new Date().toISOString(),
     });
   }
 
   async getKycPending() {
     const { data, error } = await this.supabase
-      .from('kyc_documents')
+      .from('provider_kyc_documents')
       .select(
         `
                 *,
@@ -278,7 +278,7 @@ export class ModerationService {
             `,
       )
       .eq('status', 'pending')
-      .order('submitted_at', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (error) throw new BadRequestException(error.message);
     return data || [];
@@ -291,7 +291,7 @@ export class ModerationService {
     reviewerId?: string,
   ) {
     const { data, error } = await this.supabase
-      .from('kyc_documents')
+      .from('provider_kyc_documents')
       .update({
         status,
         reviewer_notes: notes,
@@ -307,7 +307,7 @@ export class ModerationService {
     // If approved, update provider verification status
     if (status === 'approved') {
       const { data: document } = await this.supabase
-        .from('kyc_documents')
+        .from('provider_kyc_documents')
         .select('provider_id')
         .eq('id', documentId)
         .single();
@@ -336,10 +336,10 @@ export class ModerationService {
           new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
         ),
       this.supabase
-        .from('kyc_documents')
-        .select('status, submitted_at')
+        .from('provider_kyc_documents')
+        .select('status, created_at')
         .gte(
-          'submitted_at',
+          'created_at',
           new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
         ),
       this.supabase
