@@ -83,8 +83,13 @@ const ProviderServicesPage = () => {
                 toastService.success(t('provider.services.create_success', 'تم إنشاء الخدمة بنجاح'));
             }
             setShowForm(false);
-        } catch {
-            toastService.error(editingService ? t('provider.services.update_failed', 'فشل تحديث الخدمة') : t('provider.services.create_failed', 'فشل إنشاء الخدمة'));
+        } catch (error: any) {
+            if (error?.message?.includes('provider profile') || error?.message?.includes('Forbidden')) {
+                toastService.error(t('provider.services.profile_required', 'يجب إعداد ملفك الشخصي (Pro) أولاً قبل إضافة خدمات'));
+                setTimeout(() => window.location.href = '/provider/profile', 1500);
+            } else {
+                toastService.error(editingService ? t('provider.services.update_failed', 'فشل تحديث الخدمة') : t('provider.services.create_failed', 'فشل إنشاء الخدمة'));
+            }
         } finally {
             setSaving(false);
         }

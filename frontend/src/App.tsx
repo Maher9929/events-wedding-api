@@ -75,7 +75,7 @@ function App() {
 
           {/* Protected Client Routes */}
           <Route path="/client" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['client']}>
               <ClientLayout />
             </ProtectedRoute>
           }>
@@ -97,7 +97,7 @@ function App() {
 
           {/* Protected Provider Routes */}
           <Route path="/provider" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['provider']}>
               <ProviderLayout />
             </ProtectedRoute>
           }>
@@ -117,7 +117,7 @@ function App() {
 
           {/* Protected Admin Routes */}
           <Route path="/admin" element={
-            <ProtectedRoute>
+            <ProtectedRoute roles={['admin']}>
               <AdminLayout />
             </ProtectedRoute>
           }>
