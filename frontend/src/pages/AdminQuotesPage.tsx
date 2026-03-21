@@ -49,7 +49,7 @@ const AdminQuotesPage = () => {
     const loadQuotes = async () => {
         setLoading(true);
         try {
-            const endpoint = statusFilter === 'all' ? '/quotes' : `/quotes?status=${statusFilter}`;
+            const endpoint = statusFilter === 'all' ? '/quotes/admin' : `/quotes/admin?status=${statusFilter}`;
             const res = await apiService.get<{ data?: Quote[] } | Quote[]>(endpoint);
             const list = Array.isArray(res) ? res : res?.data || [];
             setQuotes(list);

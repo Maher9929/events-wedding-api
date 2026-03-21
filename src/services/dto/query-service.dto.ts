@@ -26,7 +26,7 @@ export class QueryServiceDto {
   price_type?: 'fixed' | 'hourly' | 'package' | 'custom';
 
   @Transform(({ value }) =>
-    value !== undefined ? parseFloat(value) : undefined,
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
   )
   @IsNumber()
   @Min(0)
@@ -34,7 +34,7 @@ export class QueryServiceDto {
   min_price?: number;
 
   @Transform(({ value }) =>
-    value !== undefined ? parseFloat(value) : undefined,
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
   )
   @IsNumber()
   @Min(0)
@@ -42,7 +42,7 @@ export class QueryServiceDto {
   max_price?: number;
 
   @Transform(({ value }) =>
-    value !== undefined ? parseFloat(value) : undefined,
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
   )
   @IsNumber()
   @Min(0)
@@ -71,13 +71,13 @@ export class QueryServiceDto {
   @IsOptional()
   is_featured?: boolean;
 
-  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
+  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
   @IsNumber()
   @Min(0)
   @IsOptional()
   limit?: number;
 
-  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
+  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -96,7 +96,7 @@ export class QueryServiceDto {
   available_date?: string;
 
   @Transform(({ value }) =>
-    value !== undefined ? parseFloat(value) : undefined,
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
   )
   @IsNumber()
   @Min(0)
@@ -107,13 +107,13 @@ export class QueryServiceDto {
   @IsOptional()
   category?: string;
 
-  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
+  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
   @IsNumber()
   @Min(0)
   @IsOptional()
   min_capacity?: number;
 
-  @Transform(({ value }) => (value !== undefined ? parseInt(value) : undefined))
+  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
   @IsNumber()
   @Min(0)
   @IsOptional()
