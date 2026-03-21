@@ -26,6 +26,7 @@ export interface ServiceItem {
   id: string;
   title: string;
   description: string;
+  price_type?: 'fixed' | 'hourly' | 'package' | 'custom';
   base_price: number;
   duration_minutes?: number;
   location_type?: 'onsite' | 'online' | 'both';

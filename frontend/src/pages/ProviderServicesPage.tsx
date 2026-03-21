@@ -19,6 +19,7 @@ const ProviderServicesPage = () => {
         description: '',
         base_price: 0,
         category_id: '',
+        price_type: 'fixed' as 'fixed' | 'hourly' | 'package' | 'custom',
         is_active: true,
     });
 
@@ -46,7 +47,7 @@ const ProviderServicesPage = () => {
 
     const openNewForm = () => {
         setEditingService(null);
-        setFormData({ title: '', description: '', base_price: 0, category_id: '', is_active: true });
+        setFormData({ title: '', description: '', base_price: 0, category_id: '', price_type: 'fixed', is_active: true });
         setShowForm(true);
     };
 
@@ -57,6 +58,7 @@ const ProviderServicesPage = () => {
             description: service.description || '',
             base_price: service.base_price,
             category_id: service.category_id || '',
+            price_type: (service.price_type || 'fixed') as 'fixed' | 'hourly' | 'package' | 'custom',
             is_active: service.is_active !== false,
         });
         setShowForm(true);
@@ -298,7 +300,20 @@ const ProviderServicesPage = () => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider.services.price_type', 'نوع السعر')}</label>
+                                    <select
+                                        value={formData.price_type}
+                                        onChange={e => setFormData(prev => ({ ...prev, price_type: e.target.value as any }))}
+                                        className="w-full h-11 border border-gray-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
+                                    >
+                                        <option value="fixed">{t('provider.services.fixed', 'ثابت')}</option>
+                                        <option value="hourly">{t('provider.services.hourly', 'بالساعة')}</option>
+                                        <option value="package">{t('provider.services.package', 'باقة')}</option>
+                                        <option value="custom">{t('provider.services.custom', 'مخصص')}</option>
+                                    </select>
+                                </div>
                                 <div>
                                     <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider.services.base_price', 'السعر الأساسي')} ({t('common.currency', 'ر.ق')}) *</label>
                                     <input
