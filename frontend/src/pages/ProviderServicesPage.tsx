@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { servicesService } from '../services/services.service';
 import { categoriesService } from '../services/categories.service';
+import { uploadService } from '../services/upload.service';
 import { toastService } from '../services/toast.service';
 import type { ServiceItem, Category } from '../services/api';
 import { getThumbnailUrl } from '../utils/image.utils';
@@ -14,6 +15,11 @@ const ProviderServicesPage = () => {
     const [showForm, setShowForm] = useState(false);
     const [editingService, setEditingService] = useState<ServiceItem | null>(null);
     const [saving, setSaving] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+    const [existingImages, setExistingImages] = useState<string[]>([]);
+    const [uploadingPhotos, setUploadingPhotos] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -48,6 +54,9 @@ const ProviderServicesPage = () => {
     const openNewForm = () => {
         setEditingService(null);
         setFormData({ title: '', description: '', base_price: 0, category_id: '', price_type: 'fixed', is_active: true });
+        setSelectedFiles([]);
+        setPreviewUrls([]);
+        setExistingImages([]);
         setShowForm(true);
     };
 
@@ -61,7 +70,34 @@ const ProviderServicesPage = () => {
             price_type: (service.price_type || 'fixed') as 'fixed' | 'hourly' | 'package' | 'custom',
             is_active: service.is_active !== false,
         });
+        setSelectedFiles([]);
+        setPreviewUrls([]);
+        setExistingImages(service.images || []);
         setShowForm(true);
+    };
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        const totalCount = selectedFiles.length + existingImages.length + files.length;
+        if (totalCount > 5) {
+            toastService.error(t('provider.services.max_photos', 'الحد الأقصى 5 صور لكل خدمة'));
+            return;
+        }
+        const newFiles = [...selectedFiles, ...files];
+        setSelectedFiles(newFiles);
+        const newPreviews = files.map(f => URL.createObjectURL(f));
+        setPreviewUrls(prev => [...prev, ...newPreviews]);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
+    const removeNewPhoto = (index: number) => {
+        URL.revokeObjectURL(previewUrls[index]);
+        setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+        setPreviewUrls(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const removeExistingPhoto = (index: number) => {
+        setExistingImages(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleSave = async () => {
@@ -71,17 +107,38 @@ const ProviderServicesPage = () => {
         }
         setSaving(true);
         try {
+            // Upload new photos first
+            let uploadedImageUrls: string[] = [...existingImages];
+            if (selectedFiles.length > 0) {
+                setUploadingPhotos(true);
+                try {
+                    const results = await uploadService.uploadMultiple(selectedFiles, 'attachments', 'services');
+                    uploadedImageUrls = [...uploadedImageUrls, ...results.map(r => r.url)];
+                } catch {
+                    toastService.error(t('provider.services.photo_upload_failed', 'فشل رفع بعض الصور'));
+                } finally {
+                    setUploadingPhotos(false);
+                }
+            }
+
+            const payload = { ...formData, images: uploadedImageUrls };
+
             if (editingService) {
-                const updated = await servicesService.update(editingService.id, formData);
+                const updated = await servicesService.update(editingService.id, payload);
                 const updatedData = (updated as any)?.data || updated;
-                setServices(prev => prev.map(s => s.id === editingService.id ? { ...s, ...updatedData, ...formData } : s));
+                setServices(prev => prev.map(s => s.id === editingService.id ? { ...s, ...updatedData, ...payload } : s));
                 toastService.success(t('provider.services.update_success', 'تم تحديث الخدمة بنجاح'));
             } else {
-                const created = await servicesService.create(formData);
+                const created = await servicesService.create(payload);
                 const createdData = (created as any)?.data || created;
                 if (createdData?.id) setServices(prev => [createdData, ...prev]);
                 toastService.success(t('provider.services.create_success', 'تم إنشاء الخدمة بنجاح'));
             }
+            // Cleanup previews
+            previewUrls.forEach(u => URL.revokeObjectURL(u));
+            setSelectedFiles([]);
+            setPreviewUrls([]);
+            setExistingImages([]);
             setShowForm(false);
         } catch (error: any) {
             if (error?.message?.includes('provider profile') || error?.message?.includes('Forbidden')) {
@@ -345,6 +402,66 @@ const ProviderServicesPage = () => {
                                 </div>
                             </div>
 
+                            {/* Photo Upload Section */}
+                            <div>
+                                <label className="text-sm font-bold text-gray-700 block mb-1.5">
+                                    <i className="fa-solid fa-images me-1"></i>
+                                    {t('provider.services.photos', 'صور الخدمة')} ({existingImages.length + selectedFiles.length}/5)
+                                </label>
+
+                                {/* Existing + Preview Grid */}
+                                {(existingImages.length > 0 || previewUrls.length > 0) && (
+                                    <div className="grid grid-cols-3 gap-2 mb-3">
+                                        {existingImages.map((img, i) => (
+                                            <div key={`existing-${i}`} className="relative group rounded-xl overflow-hidden h-24 border border-gray-200">
+                                                <img src={getThumbnailUrl(img)} alt="" className="w-full h-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeExistingPhoto(i)}
+                                                    className="absolute top-1 left-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <i className="fa-solid fa-times"></i>
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {previewUrls.map((url, i) => (
+                                            <div key={`new-${i}`} className="relative group rounded-xl overflow-hidden h-24 border-2 border-primary/30">
+                                                <img src={url} alt="" className="w-full h-full object-cover" />
+                                                <div className="absolute top-1 right-1 px-1.5 py-0.5 bg-primary text-white rounded text-[9px] font-bold">NEW</div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeNewPhoto(i)}
+                                                    className="absolute top-1 left-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <i className="fa-solid fa-times"></i>
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Upload Button */}
+                                {(existingImages.length + selectedFiles.length) < 5 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-1"
+                                    >
+                                        <i className="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                                        <span className="text-xs font-bold">{t('provider.services.add_photos', 'إضافة صور')}</span>
+                                        <span className="text-[10px]">{t('provider.services.photo_formats', 'JPG, PNG, WEBP — حتى 5 ميغا')}</span>
+                                    </button>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    multiple
+                                    onChange={handleFileSelect}
+                                    className="hidden"
+                                />
+                            </div>
+
                             <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-3">
                                 <input
                                     type="checkbox"
@@ -366,7 +483,7 @@ const ProviderServicesPage = () => {
                                 className="flex-1 h-11 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {saving ? (
-                                    <><i className="fa-solid fa-spinner fa-spin"></i> {t('common.saving', 'جاري الحفظ...')}</>
+                                    <><i className="fa-solid fa-spinner fa-spin"></i> {uploadingPhotos ? t('provider.services.uploading_photos', 'جاري رفع الصور...') : t('common.saving', 'جاري الحفظ...')}</>
                                 ) : (
                                     <><i className="fa-solid fa-check"></i> {editingService ? t('common.update', 'تحديث') : t('common.create', 'إنشاء')}</>
                                 )}
