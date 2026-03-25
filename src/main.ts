@@ -4,6 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as Sentry from '@sentry/node';
+import helmet from 'helmet';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 // Initialize Sentry (no-op if SENTRY_DSN is not set)
@@ -18,14 +19,33 @@ if (process.env.SENTRY_DSN) {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
 
-  // Activer CORS pour localhost, 127.0.0.1 et les origines configurées via ALLOWED_ORIGINS
+  // Security: HTTP headers (XSS, clickjacking, MIME sniffing)
+  app.use(helmet());
+
+  // CORS: only allow known origins (localhost dev + configured domains)
   const extraOrigins = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
 
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:3000',
+    ...extraOrigins,
+  ];
+
   app.enableCors({
-    origin: (origin, callback) => callback(null, true), // Reflection origin
+    origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, mobile apps, curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type,Accept,Authorization,Bypass-Tunnel-Reminder',
@@ -36,7 +56,7 @@ async function bootstrap() {
     new ValidationPipe({
       transform: true,
       whitelist: true,
-      forbidNonWhitelisted: false,
+      forbidNonWhitelisted: true,
     }),
   );
 
