@@ -1,0 +1,436 @@
+[
+  {
+    "description": "  En tant qu'utilisateur de la plateforme Dousha\n  Je veux pouvoir m'inscrire et me connecter\n  Afin d'accéder aux fonctionnalités de la marketplace",
+    "elements": [
+      {
+        "description": "",
+        "id": "authentification-des-utilisateurs;inscription-d'un-nouveau-client",
+        "keyword": "Scenario",
+        "line": 6,
+        "name": "Inscription d'un nouveau client",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "failed",
+              "duration": 30158406799,
+              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "je suis sur la page d'inscription",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:30"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 8,
+            "name": "je remplis le formulaire avec un email \"test_client@dousha.com\" et mot de passe \"Test1234!\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:44"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 9,
+            "name": "je sélectionne le rôle \"client\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:52"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "je clique sur le bouton d'inscription",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:56"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 11,
+            "name": "je devrais être redirigé vers le dashboard client",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:72"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "je devrais voir un message de bienvenue",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:84"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 241599
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 172100
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "authentification-des-utilisateurs;connexion-d'un-utilisateur-existant",
+        "keyword": "Scenario",
+        "line": 14,
+        "name": "Connexion d'un utilisateur existant",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "failed",
+              "duration": 30184099600,
+              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 15,
+            "name": "je suis sur la page de connexion",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:35"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 16,
+            "name": "je saisis l'email \"client@test.com\" et le mot de passe \"Test1234!\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:60"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 17,
+            "name": "je clique sur le bouton de connexion",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:68"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 18,
+            "name": "je devrais être redirigé vers le dashboard approprié",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:78"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 19,
+            "name": "le token JWT devrait être stocké dans le localStorage",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:90"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 257600
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 159099
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "authentification-des-utilisateurs;connexion-avec-des-identifiants-incorrects",
+        "keyword": "Scenario",
+        "line": 21,
+        "name": "Connexion avec des identifiants incorrects",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "failed",
+              "duration": 30154241300,
+              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 22,
+            "name": "je suis sur la page de connexion",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:35"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 23,
+            "name": "je saisis l'email \"client@test.com\" et le mot de passe \"mauvais_mot_de_passe\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:60"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 24,
+            "name": "je clique sur le bouton de connexion",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:68"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 25,
+            "name": "je devrais voir un message d'erreur d'authentification",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:95"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 26,
+            "name": "je devrais rester sur la page de connexion",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:106"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 121899
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 300600
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "authentification-des-utilisateurs;accès-protégé-sans-authentification",
+        "keyword": "Scenario",
+        "line": 28,
+        "name": "Accès protégé sans authentification",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "failed",
+              "duration": 30161419399,
+              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
+            }
+          },
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 29,
+            "name": "je ne suis pas connecté",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:40"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 30,
+            "name": "j'essaie d'accéder à la page \"/client/dashboard\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:111"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 31,
+            "name": "je devrais être redirigé vers la page de connexion",
+            "match": {
+              "location": "test\\features\\step-definitions\\auth.steps.ts:115"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 130600
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 100800
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "authentification-des-utilisateurs",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Authentification des utilisateurs",
+    "tags": [],
+    "uri": "test\\features\\auth.feature"
+  }
+]

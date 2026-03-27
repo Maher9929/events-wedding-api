@@ -1,40 +1,33 @@
 import { Given, When, Then } from '@cucumber/cucumber';
+import { By } from 'selenium-webdriver';
 import { strict as assert } from 'assert';
 import {
-  navigateTo,
-  waitForElement,
-  clickElement,
-  typeInto,
-  getText,
-  getCurrentUrl,
-  executeScript,
-  waitForUrlContains,
-  elementExists,
-} from '../helpers/browser';
+  navigateTo, waitForElement, clickElement, typeInto,
+  getBodyText, getCurrentUrl, waitForUrlContains, elementExists,
+} from './hooks';
 
-// ──────────────────────────────────────────────
-// Services Steps
-// ──────────────────────────────────────────────
+// ── Services Steps ──────────────────────────────
+
 Given("je suis sur la page d'accueil", async function () {
-  await navigateTo('/');
-  await waitForElement('body');
+  await navigateTo(this, '/');
+  await waitForElement(this, 'body');
 });
 
 Given('je suis sur la page des services', async function () {
-  await navigateTo('/services');
-  await waitForElement('body');
+  await navigateTo(this, '/services');
+  await waitForElement(this, 'body');
 });
 
 Given('je suis connecté en tant que prestataire', async function () {
-  await navigateTo('/auth/login');
-  await typeInto('input[type="email"]', 'provider@test.com');
-  await typeInto('input[type="password"]', 'Test1234!');
-  await clickElement('button[type="submit"]');
-  await waitForUrlContains('/provider');
+  await navigateTo(this, '/auth/login');
+  await typeInto(this, 'input[type="email"]', 'provider@test.com');
+  await typeInto(this, 'input[type="password"]', 'Test1234!');
+  await clickElement(this, 'button[type="submit"]');
+  await waitForUrlContains(this, '/provider');
 });
 
 Given('je suis sur la page {string}', async function (page: string) {
-  const pageMap: Record<string, string> = {
+  const map: Record<string, string> = {
     'Mes services': '/provider/services',
     'Mes événements': '/client/events',
     'Utilisateurs': '/admin/users',
@@ -42,106 +35,83 @@ Given('je suis sur la page {string}', async function (page: string) {
     'Modération': '/admin/moderation',
     "Logs d'audit": '/admin/audit-logs',
   };
-  await navigateTo(pageMap[page] || '/');
+  await navigateTo(this, map[page] || '/');
 });
 
 When('je clique sur {string}', async function (text: string) {
-  const driver = (await import('../helpers/browser')).getDriver;
-  const d = await driver();
-  // Try to find by text content
-  const elements = await d.findElements({ xpath: `//*[contains(text(), "${text}")]` });
-  if (elements.length > 0) {
-    await elements[0].click();
-  } else {
-    // Try button
-    await clickElement(`button`);
-  }
+  const els = await this.driver.findElements(By.xpath(`//*[contains(text(), "${text}")]`));
+  if (els.length > 0) { await els[0].click(); }
+  else { await clickElement(this, 'button'); }
 });
 
 Then('je devrais voir la liste des services disponibles', async function () {
-  const body = await getText('body');
-  assert(body.length > 100, 'La page devrait contenir une liste de services');
+  const body = await getBodyText(this);
+  assert(body.length > 100);
 });
 
 Then('chaque service devrait afficher un titre, un prix et une catégorie', async function () {
-  // Services should have price displayed
-  const body = await getText('body');
-  assert(body.length > 0, 'Les services devraient avoir des informations affichées');
+  const body = await getBodyText(this);
+  assert(body.length > 0);
 });
 
-When('je filtre par catégorie {string}', async function (_category: string) {
-  // Click on category filter
-  const exists = await elementExists('select, [data-filter="category"]');
-  if (exists) {
-    await clickElement('select, [data-filter="category"]');
-  }
+When('je filtre par catégorie {string}', async function (_cat: string) {
+  if (await elementExists(this, 'select')) { await clickElement(this, 'select'); }
 });
 
 Then('je devrais voir uniquement les services de type traiteur', async function () {
-  // Verify filtered results
-  const body = await getText('body');
-  assert(body.length > 0, 'Des résultats filtrés devraient être affichés');
+  const body = await getBodyText(this);
+  assert(body.length > 0);
 });
 
 Then('le compteur de résultats devrait se mettre à jour', async function () {
-  // Result count should be visible
-  const body = await getText('body');
-  assert(body.length > 0, 'Le compteur devrait être visible');
+  const body = await getBodyText(this);
+  assert(body.length > 0);
 });
 
-When('je remplis le titre {string}', async function (title: string) {
-  await typeInto('input[placeholder*="اسم"], input[name="title"]', title);
+When('je remplis le titre {string}', async function (t: string) {
+  await typeInto(this, 'input[name="title"]', t);
 });
 
-When('je remplis le prix {string}', async function (price: string) {
-  await typeInto('input[type="number"], input[name="price"]', price);
+When('je remplis le prix {string}', async function (p: string) {
+  await typeInto(this, 'input[type="number"], input[name="price"]', p);
 });
 
-When('je sélectionne le type de prix {string}', async function (_priceType: string) {
-  const exists = await elementExists('select[name="price_type"]');
-  if (exists) {
-    await clickElement('select[name="price_type"]');
+When('je sélectionne le type de prix {string}', async function (_pt: string) {
+  if (await elementExists(this, 'select[name="price_type"]')) {
+    await clickElement(this, 'select[name="price_type"]');
   }
 });
 
-When('je sélectionne la catégorie {string}', async function (_category: string) {
-  const exists = await elementExists('select');
-  if (exists) {
-    await clickElement('select');
-  }
+When('je sélectionne la catégorie {string}', async function (_c: string) {
+  if (await elementExists(this, 'select')) { await clickElement(this, 'select'); }
 });
 
 Then('le service devrait apparaître dans ma liste', async function () {
-  const body = await getText('body');
-  assert(body.length > 0, 'Le service devrait être dans la liste');
+  const body = await getBodyText(this);
+  assert(body.length > 0);
 });
 
 Then('je devrais voir un message de succès', async function () {
-  try {
-    await waitForElement('.Toastify__toast--success, [role="alert"]');
-  } catch {
-    // Toast may have disappeared quickly
-  }
+  try { await waitForElement(this, '.Toastify__toast--success, [role="alert"]'); } catch {}
 });
 
 When('je clique sur un service', async function () {
-  const exists = await elementExists('[class*="card"], [class*="service"]');
-  if (exists) {
-    await clickElement('[class*="card"], [class*="service"]');
+  if (await elementExists(this, '[class*="card"]')) {
+    await clickElement(this, '[class*="card"]');
   }
 });
 
 Then('je devrais voir les détails complets du service', async function () {
-  const body = await getText('body');
-  assert(body.length > 100, 'Les détails du service devraient être affichés');
+  const body = await getBodyText(this);
+  assert(body.length > 100);
 });
 
-Then('je devrais voir le bouton {string}', async function (text: string) {
-  const body = await getText('body');
-  assert(body.length > 0, `Le bouton "${text}" devrait être visible`);
+Then('je devrais voir le bouton {string}', async function (_t: string) {
+  const body = await getBodyText(this);
+  assert(body.length > 0);
 });
 
 Then('je devrais voir les avis et la note moyenne', async function () {
-  const body = await getText('body');
-  assert(body.length > 0, 'Les avis devraient être visibles');
+  const body = await getBodyText(this);
+  assert(body.length > 0);
 });
