@@ -42,7 +42,7 @@ const MainLayout = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <LanguageSwitcher />
-                    <Link to={user?.role === 'provider' ? '/provider/notifications' : user?.role === 'admin' ? '/admin/notifications' : '/client/notifications'} className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:text-primary transition-colors">
+                    <Link to={user?.role === 'provider' ? '/provider/notifications' : user?.role === 'admin' ? '/admin/notifications' : '/client/notifications'} className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-500 hover:text-primary transition-colors" aria-label={t('common.notifications')}>
                         <i className="fa-solid fa-bell"></i>
                     </Link>
                 </div>
@@ -53,12 +53,12 @@ const MainLayout = () => {
 
             {/* Legal Links */}
             <div className="px-5 py-4 mb-20 text-center">
-                <div className="flex items-center justify-center gap-4 text-xs text-gray-400">
-                    <Link to="/terms" className="hover:text-primary">{t('common.footer.terms')}</Link>
+                <div className="flex items-center justify-center gap-4 text-xs text-gray-500">
+                    <Link to="/legal?section=terms" className="hover:text-primary">{t('common.footer.terms')}</Link>
                     <span>|</span>
-                    <Link to="/privacy" className="hover:text-primary">{t('common.footer.privacy')}</Link>
+                    <Link to="/legal?section=privacy" className="hover:text-primary">{t('common.footer.privacy')}</Link>
                 </div>
-                <p className="text-xs text-gray-300 mt-2">© 2026 DOUSHA - {t('home.hero.title')}</p>
+                <p className="text-xs text-gray-500 mt-2">© 2026 DOUSHA - {t('home.hero.title')}</p>
             </div>
 
             {/* Bottom Nav */}

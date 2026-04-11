@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { messagesService } from '../../services/messages.service';
 import { authService } from '../../services/auth.service';
 import { uploadService } from '../../services/upload.service';
@@ -11,6 +12,7 @@ interface ChatWindowProps {
 }
 
 const ChatWindow = ({ conversationId }: ChatWindowProps) => {
+    const { t, i18n } = useTranslation();
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(false);
@@ -18,13 +20,14 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
     const [attachments, setAttachments] = useState<{ url: string; name: string; type: string }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const currentUser = authService.getCurrentUser();
+    const locale = i18n.language?.startsWith('ar') ? 'ar-EG' : i18n.language?.startsWith('en') ? 'en-US' : 'fr-FR';
 
     useEffect(() => {
         if (conversationId) {
             setLoading(true);
             messagesService.getMessages(conversationId)
-                .then(data => { if (Array.isArray(data)) setMessages(data); })
-                .catch(() => { })
+                .then((data) => { if (Array.isArray(data)) setMessages(data); })
+                .catch(() => undefined)
                 .finally(() => setLoading(false));
         }
     }, [conversationId]);
@@ -41,12 +44,12 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
                 newAttachments.push({
                     url: result.url,
                     name: file.name,
-                    type: file.type.startsWith('image/') ? 'image' : 'document'
+                    type: file.type.startsWith('image/') ? 'image' : 'document',
                 });
             }
-            setAttachments(prev => [...prev, ...newAttachments]);
-        } catch (error) {
-            toast.error('Erreur lors du téléchargement de la pièce jointe');
+            setAttachments((prev) => [...prev, ...newAttachments]);
+        } catch {
+            toast.error(t('messages.errors.upload', 'Failed to upload attachment'));
         } finally {
             setUploading(false);
             if (fileInputRef.current) fileInputRef.current.value = '';
@@ -54,23 +57,23 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
     };
 
     const removeAttachment = (index: number) => {
-        setAttachments(prev => prev.filter((_, i) => i !== index));
+        setAttachments((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleSend = async () => {
         if ((!newMessage.trim() && attachments.length === 0) || !conversationId) return;
         try {
             const sent = await messagesService.sendMessage({
-                recipient_id: conversationId, // Fallback if no convo id
+                recipient_id: conversationId,
                 content: newMessage,
                 conversation_id: conversationId,
-                attachments: attachments.length > 0 ? attachments : undefined
+                attachments: attachments.length > 0 ? attachments : undefined,
             });
-            if (sent) setMessages(prev => [...prev, sent]);
+            if (sent) setMessages((prev) => [...prev, sent]);
             setNewMessage('');
             setAttachments([]);
-        } catch (err) {
-            toast.error('Erreur lors de l\'envoi de la رسالة');
+        } catch {
+            toast.error(t('messages.errors.send', 'Failed to send message'));
         }
     };
 
@@ -78,44 +81,42 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
         return (
             <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 text-gray-400">
                 <i className="fa-regular fa-comments text-6xl mb-4 opacity-20"></i>
-                <p>اختر محادثة لبدء المراسلة</p>
+                <p>{t('messages.select_conversation', 'Choose a conversation to start messaging')}</p>
             </div>
         );
     }
 
     return (
         <div className="flex-1 flex flex-col h-full bg-gray-50">
-            {/* Header */}
             <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-primary font-bold">
                         <i className="fa-solid fa-user"></i>
                     </div>
                     <div>
-                        <h3 className="font-bold text-gray-900">محادثة</h3>
+                        <h3 className="font-bold text-gray-900">{t('messages.conversation_title', 'Conversation')}</h3>
                         <span className="text-xs text-green-500 flex items-center gap-1">
                             <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            متصل الآن
+                            {t('messages.online_now', 'Online now')}
                         </span>
                     </div>
                 </div>
             </div>
 
-            {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {loading && <p className="text-center text-gray-400 text-sm">جاري التحميل...</p>}
+                {loading && <p className="text-center text-gray-400 text-sm">{t('common.loading', 'Loading...')}</p>}
                 {!loading && messages.length === 0 && (
-                    <p className="text-center text-gray-400 text-sm">لا توجد رسائل بعد. ابدأ المحادثة!</p>
+                    <p className="text-center text-gray-400 text-sm">{t('messages.empty_chat', 'No messages yet. Start the conversation!')}</p>
                 )}
-                {messages.map((msg: any) => {
+                {messages.map((msg) => {
                     const isMe = msg.sender_id === currentUser?.id;
-                    const senderProfile = (msg as any).sender;
+                    const senderProfile = msg.sender;
                     return (
                         <div key={msg.id} className={`flex gap-2 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                             {!isMe && (
                                 <div className="flex-shrink-0 mt-auto mb-1">
                                     {senderProfile?.avatar_url ? (
-                                        <img src={senderProfile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shadow-sm" />
+                                        <img loading="lazy" src={senderProfile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover shadow-sm" />
                                     ) : (
                                         <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-primary text-xs font-bold">
                                             {senderProfile?.full_name?.charAt(0).toUpperCase() || '?'}
@@ -123,17 +124,14 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
                                     )}
                                 </div>
                             )}
-                            <div className={`max-w-[70%] rounded-2xl p-4 ${isMe
-                                ? 'bg-primary text-white rounded-br-none'
-                                : 'bg-white text-gray-800 shadow-sm rounded-bl-none border border-gray-100'
-                                }`}>
+                            <div className={`max-w-[70%] rounded-2xl p-4 ${isMe ? 'bg-primary text-white rounded-br-none' : 'bg-white text-gray-800 shadow-sm rounded-bl-none border border-gray-100'}`}>
                                 {!isMe && senderProfile?.full_name && (
                                     <span className="text-[10px] font-bold block mb-1 text-primary">{senderProfile.full_name}</span>
                                 )}
                                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                                 {msg.attachments && msg.attachments.length > 0 && (
                                     <div className="mt-2 space-y-1">
-                                        {msg.attachments.map((file: any, idx: number) => (
+                                        {msg.attachments.map((file: { url?: string; name?: string; type?: string }, idx: number) => (
                                             <a
                                                 key={idx}
                                                 href={file.url}
@@ -148,7 +146,7 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
                                     </div>
                                 )}
                                 <span className={`text-[10px] block mt-1 ${isMe ? 'text-purple-200' : 'text-gray-400'}`}>
-                                    {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                    {new Date(msg.created_at).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
                         </div>
@@ -156,7 +154,6 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
                 })}
             </div>
 
-            {/* Input Area */}
             <div className="bg-white border-t border-gray-200 p-4">
                 {attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -172,19 +169,8 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
                     </div>
                 )}
                 <div className="flex items-end gap-2">
-                    <input
-                        type="file"
-                        multiple
-                        ref={fileInputRef}
-                        className="hidden"
-                        onChange={handleFileSelect}
-                        disabled={uploading}
-                    />
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-purple-50 transition-colors flex-shrink-0 disabled:opacity-50"
-                    >
+                    <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileSelect} disabled={uploading} />
+                    <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-12 h-12 rounded-full flex items-center justify-center text-gray-400 hover:text-primary hover:bg-purple-50 transition-colors flex-shrink-0 disabled:opacity-50">
                         <Paperclip className="w-5 h-5" />
                     </button>
                     <textarea
@@ -193,23 +179,15 @@ const ChatWindow = ({ conversationId }: ChatWindowProps) => {
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
-                                handleSend();
+                                void handleSend();
                             }
                         }}
-                        placeholder="اكتب رسالتك... (اضغط Enter للإرسال)"
+                        placeholder={t('messages.input_placeholder', 'Write your message... (press Enter to send)')}
                         className="flex-1 max-h-32 min-h-[48px] bg-gray-50 rounded-2xl py-3 px-5 focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                         rows={1}
                     />
-                    <button
-                        onClick={handleSend}
-                        disabled={uploading || (!newMessage.trim() && attachments.length === 0)}
-                        className="w-12 h-12 rounded-full gradient-purple flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex-shrink-0 disabled:opacity-50 disabled:transform-none"
-                    >
-                        {uploading ? (
-                            <i className="fa-solid fa-spinner fa-spin"></i>
-                        ) : (
-                            <i className="fa-solid fa-paper-plane"></i>
-                        )}
+                    <button onClick={() => void handleSend()} disabled={uploading || (!newMessage.trim() && attachments.length === 0)} className="w-12 h-12 rounded-full gradient-purple flex items-center justify-center text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex-shrink-0 disabled:opacity-50 disabled:transform-none">
+                        {uploading ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-paper-plane"></i>}
                     </button>
                 </div>
             </div>

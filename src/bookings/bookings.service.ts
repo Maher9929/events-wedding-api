@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Logger,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -14,10 +15,12 @@ import {
 import { Booking } from './entities/booking.entity';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import { AuditLogService } from '../common/audit-log.service';
 
 @Injectable()
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
+  private readonly commissionRate = 0.1;
 
   private stripe: Stripe;
 
@@ -25,29 +28,331 @@ export class BookingsService {
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
     private configService: ConfigService,
+    private readonly auditLogService: AuditLogService,
   ) {
     this.stripe = new Stripe(
       this.configService.get<string>('STRIPE_SECRET_KEY') || '',
       {
-        apiVersion: '2023-10-16' as any,
+        apiVersion: '2026-01-28.clover',
       },
     );
   }
 
-  async create(clientId: string, dto: CreateBookingDto): Promise<Booking> {
-    // Resolve provider_id: if it's a provider table ID, get the user_id
-    let resolvedProviderId = dto.provider_id;
-    const { data: providerUser } = await this.supabase
+  private async getProviderContext(userId: string): Promise<{
+    userId: string;
+    providerId: string | null;
+  }> {
+    const { data: provider } = await this.supabase
       .from('providers')
-      .select('user_id')
-      .eq('id', dto.provider_id)
-      .single();
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (providerUser) {
-      resolvedProviderId = providerUser.user_id;
+    return {
+      userId,
+      providerId: provider?.id || null,
+    };
+  }
+
+  private async assertProviderScope(
+    providerId: string,
+    userId: string,
+  ): Promise<void> {
+    const context = await this.getProviderContext(userId);
+    if (providerId !== context.userId && providerId !== context.providerId) {
+      throw new ForbiddenException(
+        'You can only access bookings for your own provider profile',
+      );
+    }
+  }
+
+  private async canAccessBooking(
+    booking: Booking,
+    userId: string,
+  ): Promise<boolean> {
+    const context = await this.getProviderContext(userId);
+    return (
+      booking.client_id === context.userId ||
+      booking.provider_id === context.userId ||
+      (context.providerId !== null &&
+        booking.provider_id === context.providerId)
+    );
+  }
+
+  private async resolveProviderAndService(dto: CreateBookingDto) {
+    const { data: providerRecord } = await this.supabase
+      .from('providers')
+      .select('id, user_id')
+      .eq('id', dto.provider_id)
+      .maybeSingle();
+
+    if (!providerRecord) {
+      throw new NotFoundException('Provider not found');
     }
 
+    let serviceRecord: {
+      id: string;
+      provider_id: string;
+      base_price: number | null;
+      cancellation_policy?:
+        | string
+        | { notice_days?: number; refund_percentage?: number };
+    } | null = null;
+
+    if (dto.service_id) {
+      const { data: service } = await this.supabase
+        .from('services')
+        .select('id, provider_id, base_price, cancellation_policy')
+        .eq('id', dto.service_id)
+        .maybeSingle();
+
+      if (!service) {
+        throw new NotFoundException('Service not found');
+      }
+
+      if (service.provider_id !== providerRecord.id) {
+        throw new BadRequestException(
+          'The selected service does not belong to this provider',
+        );
+      }
+
+      serviceRecord = service;
+    }
+
+    return {
+      provider: providerRecord,
+      service: serviceRecord,
+    };
+  }
+
+  private buildDayRange(bookingDate: string) {
+    const date = new Date(bookingDate);
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    return {
+      startIso: start.toISOString(),
+      endIso: end.toISOString(),
+      dayKey: start.toISOString().slice(0, 10),
+    };
+  }
+
+  private normalizeTime(time?: string): number | null {
+    if (!time) {
+      return null;
+    }
+
+    const [hours, minutes] = time.split(':').map((part) => Number(part));
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return null;
+    }
+
+    return hours * 60 + minutes;
+  }
+
+  private hasTimeOverlap(
+    requestedStart?: string,
+    requestedEnd?: string,
+    existingStart?: string,
+    existingEnd?: string,
+  ): boolean {
+    const reqStart = this.normalizeTime(requestedStart);
+    const reqEnd = this.normalizeTime(requestedEnd);
+    const existingStartMinutes = this.normalizeTime(existingStart);
+    const existingEndMinutes = this.normalizeTime(existingEnd);
+
+    if (
+      reqStart === null ||
+      reqEnd === null ||
+      existingStartMinutes === null ||
+      existingEndMinutes === null
+    ) {
+      return true;
+    }
+
+    return reqStart < existingEndMinutes && existingStartMinutes < reqEnd;
+  }
+
+  private getCancellationNoticeDays(
+    cancellationPolicy?: string | { notice_days?: number },
+  ): number {
+    if (
+      cancellationPolicy &&
+      typeof cancellationPolicy === 'object' &&
+      Number.isFinite(cancellationPolicy.notice_days)
+    ) {
+      return Number(cancellationPolicy.notice_days);
+    }
+
+    return 7;
+  }
+
+  private async getDefaultRefundPolicyId(): Promise<string | null> {
+    const { data: policy } = await this.supabase
+      .from('refund_policies')
+      .select('id')
+      .eq('is_default', true)
+      .maybeSingle();
+
+    return policy?.id || null;
+  }
+
+  private async validateQuoteForBooking(
+    clientId: string,
+    dto: CreateBookingDto,
+    providerUserId: string,
+  ): Promise<void> {
+    if (!dto.quote_id) {
+      return;
+    }
+
+    const { data: quote } = await this.supabase
+      .from('quotes')
+      .select('id, client_id, provider_id, status, total_amount')
+      .eq('id', dto.quote_id)
+      .maybeSingle();
+
+    if (!quote) {
+      throw new NotFoundException('Quote not found');
+    }
+
+    if (quote.client_id !== clientId) {
+      throw new ForbiddenException(
+        'You can only convert your own quote into a booking',
+      );
+    }
+
+    if (quote.provider_id !== providerUserId) {
+      throw new BadRequestException(
+        'The selected quote does not belong to this provider',
+      );
+    }
+
+    if (quote.status !== 'accepted') {
+      throw new BadRequestException(
+        'Only accepted quotes can be converted into bookings',
+      );
+    }
+
+    if (!dto.amount) {
+      dto.amount = Number(quote.total_amount || 0);
+    }
+  }
+
+  private async assertProviderAvailability(
+    providerId: string,
+    bookingDate: string,
+    startTime?: string,
+    endTime?: string,
+  ): Promise<void> {
+    const eventDate = new Date(bookingDate);
+    if (Number.isNaN(eventDate.getTime())) {
+      throw new BadRequestException('Invalid booking date');
+    }
+
+    if (eventDate <= new Date()) {
+      throw new BadRequestException('Booking date must be in the future');
+    }
+
+    if (startTime && endTime) {
+      const startMinutes = this.normalizeTime(startTime);
+      const endMinutes = this.normalizeTime(endTime);
+      if (
+        startMinutes === null ||
+        endMinutes === null ||
+        startMinutes >= endMinutes
+      ) {
+        throw new BadRequestException('Invalid booking time range');
+      }
+    }
+
+    const { dayKey, startIso, endIso } = this.buildDayRange(bookingDate);
+
+    const { data: availabilities, error: availabilityError } =
+      await this.supabase
+        .from('provider_availabilities')
+        .select('start_time, end_time, is_blocked, reason')
+        .eq('provider_id', providerId)
+        .eq('date', dayKey);
+
+    if (availabilityError) {
+      throw new BadRequestException(availabilityError.message);
+    }
+
+    const blockingSlot = (availabilities || []).find((slot) => {
+      if (!slot.is_blocked) {
+        return false;
+      }
+
+      return this.hasTimeOverlap(
+        startTime,
+        endTime,
+        slot.start_time,
+        slot.end_time,
+      );
+    });
+
+    if (blockingSlot) {
+      throw new ConflictException(
+        blockingSlot.reason ||
+          'Provider is not available for the selected date and time',
+      );
+    }
+
+    const { data: existingBookings, error: bookingError } = await this.supabase
+      .from('bookings')
+      .select('id, start_time, end_time, status')
+      .eq('provider_id', providerId)
+      .gte('booking_date', startIso)
+      .lt('booking_date', endIso)
+      .in('status', ['pending', 'confirmed', 'completed']);
+
+    if (bookingError) {
+      throw new BadRequestException(bookingError.message);
+    }
+
+    const conflictingBooking = (existingBookings || []).find((booking) =>
+      this.hasTimeOverlap(
+        startTime,
+        endTime,
+        booking.start_time,
+        booking.end_time,
+      ),
+    );
+
+    if (conflictingBooking) {
+      throw new ConflictException(
+        'Provider already has another booking on this date/time',
+      );
+    }
+  }
+
+  async create(clientId: string, dto: CreateBookingDto): Promise<Booking> {
+    const { provider, service } = await this.resolveProviderAndService(dto);
+    const resolvedProviderId = provider.id;
+    const providerNotificationUserId = provider.user_id;
+
+    await this.validateQuoteForBooking(
+      clientId,
+      dto,
+      providerNotificationUserId,
+    );
+    await this.assertProviderAvailability(
+      resolvedProviderId,
+      dto.booking_date,
+      dto.start_time,
+      dto.end_time,
+    );
+
     let finalAmount = dto.amount;
+    if (!finalAmount && service?.base_price) {
+      finalAmount = Number(service.base_price);
+    }
+
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      throw new BadRequestException('Booking amount must be greater than zero');
+    }
     // Apply promo code if provided
     if (dto.promo_code_id) {
       const { data: promo } = await this.supabase
@@ -66,6 +371,43 @@ export class BookingsService {
       }
     }
 
+    const platformFee =
+      dto.platform_fee !== undefined
+        ? Number(dto.platform_fee)
+        : Number((finalAmount * this.commissionRate).toFixed(2));
+    const depositAmount =
+      dto.deposit_amount !== undefined
+        ? Number(dto.deposit_amount)
+        : Number((finalAmount * 0.2).toFixed(2));
+    const balanceAmount =
+      dto.balance_amount !== undefined
+        ? Number(dto.balance_amount)
+        : Number((finalAmount - depositAmount).toFixed(2));
+
+    if (depositAmount < 0 || balanceAmount < 0) {
+      throw new BadRequestException('Booking payment amounts are invalid');
+    }
+
+    if (
+      Number((depositAmount + balanceAmount).toFixed(2)) !==
+      Number(finalAmount.toFixed(2))
+    ) {
+      throw new BadRequestException(
+        'Deposit and balance amounts must match the total booking amount',
+      );
+    }
+
+    const noticeDays = this.getCancellationNoticeDays(
+      service?.cancellation_policy,
+    );
+    const cancellationDeadline = new Date(dto.booking_date);
+    cancellationDeadline.setDate(cancellationDeadline.getDate() - noticeDays);
+
+    const autoRefundDeadline = new Date(dto.booking_date);
+    autoRefundDeadline.setDate(autoRefundDeadline.getDate() - 3);
+
+    const refundPolicyId = await this.getDefaultRefundPolicyId();
+
     const { data, error } = await this.supabase
       .from('bookings')
       .insert({
@@ -73,6 +415,9 @@ export class BookingsService {
         provider_id: resolvedProviderId,
         service_id: dto.service_id,
         amount: finalAmount,
+        deposit_amount: depositAmount,
+        balance_amount: balanceAmount,
+        platform_fee: platformFee,
         status: 'pending',
         payment_status: 'pending',
         notes: dto.notes,
@@ -82,6 +427,13 @@ export class BookingsService {
         booking_date: dto.booking_date,
         start_time: dto.start_time,
         end_time: dto.end_time,
+        cancellation_deadline: cancellationDeadline.toISOString(),
+        auto_refund_deadline: autoRefundDeadline.toISOString(),
+        refund_policy_id: refundPolicyId,
+        deposit_percentage:
+          finalAmount > 0
+            ? Number(((depositAmount / finalAmount) * 100).toFixed(2))
+            : 0,
       })
       .select()
       .single();
@@ -93,9 +445,29 @@ export class BookingsService {
       throw new BadRequestException(error.message);
     }
 
+    await this.upsertCommissionRecord({
+      bookingId: data.id,
+      providerUserId: providerNotificationUserId,
+      grossAmount: finalAmount,
+      paymentStatus: 'pending',
+    });
+
+    await this.auditLogService.log(
+      clientId,
+      'booking_create',
+      'bookings',
+      data.id,
+      {
+        amount: finalAmount,
+        provider_id: resolvedProviderId,
+        provider_user_id: providerNotificationUserId,
+        service_id: dto.service_id,
+      },
+    );
+
     // Create in-app notification for provider
     await this.createNotification(
-      resolvedProviderId,
+      providerNotificationUserId,
       'booking_request',
       'طلب حجز جديد',
       `لديك طلب حجز جديد بانتظار موافقتك`,
@@ -136,16 +508,60 @@ export class BookingsService {
     }
   }
 
-  async findOne(id: string, userId?: string): Promise<Booking> {
-    let query = this.supabase.from('bookings').select('*').eq('id', id);
+  private async upsertCommissionRecord(params: {
+    bookingId: string;
+    providerUserId: string;
+    grossAmount: number;
+    paymentStatus?: string;
+    notes?: string;
+  }): Promise<void> {
+    const commissionAmount = Number(
+      (params.grossAmount * this.commissionRate).toFixed(2),
+    );
+    const netPayout = Number(
+      (params.grossAmount - commissionAmount).toFixed(2),
+    );
+    const status =
+      params.paymentStatus === 'fully_paid'
+        ? 'paid'
+        : params.paymentStatus === 'refunded'
+          ? 'cancelled'
+          : 'pending';
 
-    if (userId) {
-      query = query.or(`client_id.eq.${userId},provider_id.eq.${userId}`);
+    try {
+      await this.supabase.from('commissions').upsert(
+        {
+          booking_id: params.bookingId,
+          provider_id: params.providerUserId,
+          gross_amount: params.grossAmount,
+          commission_rate: this.commissionRate,
+          commission_amount: commissionAmount,
+          net_payout: netPayout,
+          status,
+          paid_at: status === 'paid' ? new Date().toISOString() : null,
+          notes: params.notes || null,
+        },
+        { onConflict: 'booking_id' },
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Failed to upsert commission for booking ${params.bookingId}: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
     }
+  }
 
-    const { data, error } = await query.single();
+  async findOne(id: string, userId?: string): Promise<Booking> {
+    const { data, error } = await this.supabase
+      .from('bookings')
+      .select('*')
+      .eq('id', id)
+      .single();
 
     if (error || !data) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    if (userId && !(await this.canAccessBooking(data, userId))) {
       throw new NotFoundException('Booking not found');
     }
 
@@ -159,27 +575,64 @@ export class BookingsService {
   ): Promise<Booking> {
     const booking = await this.findOne(id, userId);
 
-    // Check if user is authorized to update this booking
-    if (booking.client_id !== userId && booking.provider_id !== userId) {
-      throw new ForbiddenException('You can only update your own bookings');
-    }
+    const providerContext = await this.getProviderContext(userId);
+    const isClient = booking.client_id === userId;
+    const isProvider =
+      booking.provider_id === userId ||
+      booking.provider_id === providerContext.providerId;
 
     // Only provider can confirm/reject booking
-    if (
-      ['confirmed', 'rejected'].includes(dto.status) &&
-      booking.provider_id !== userId
-    ) {
+    if (['confirmed', 'rejected'].includes(dto.status) && !isProvider) {
       throw new ForbiddenException(
         'Only provider can confirm or reject booking',
       );
     }
 
     // Only client can cancel booking
-    if (dto.status === 'cancelled' && booking.client_id !== userId) {
+    if (dto.status === 'cancelled' && !isClient) {
       throw new ForbiddenException('Only client can cancel booking');
     }
 
-    const updateData: any = {
+    if (dto.status === 'completed' && !isProvider) {
+      throw new ForbiddenException('Only provider can complete booking');
+    }
+
+    if (
+      ['cancelled', 'completed', 'rejected'].includes(booking.status) &&
+      booking.status !== dto.status
+    ) {
+      throw new BadRequestException(
+        `Booking is already ${booking.status} and cannot be updated`,
+      );
+    }
+
+    if (dto.status === 'confirmed' && booking.status !== 'pending') {
+      throw new BadRequestException('Only pending bookings can be confirmed');
+    }
+
+    if (dto.status === 'rejected' && booking.status !== 'pending') {
+      throw new BadRequestException('Only pending bookings can be rejected');
+    }
+
+    if (dto.status === 'completed' && booking.status !== 'confirmed') {
+      throw new BadRequestException('Only confirmed bookings can be completed');
+    }
+
+    if (dto.status === 'cancelled') {
+      if (!dto.cancellation_reason?.trim()) {
+        throw new BadRequestException(
+          'Cancellation reason is required when cancelling a booking',
+        );
+      }
+
+      if (new Date(booking.booking_date) <= new Date()) {
+        throw new BadRequestException(
+          'Past or ongoing bookings cannot be cancelled',
+        );
+      }
+    }
+
+    const updateData: Record<string, unknown> = {
       status: dto.status,
       updated_at: new Date().toISOString(),
     };
@@ -189,8 +642,16 @@ export class BookingsService {
       updateData.cancelled_at = new Date().toISOString();
     }
 
-    if ((dto as any).refund) {
+    if ('refund' in dto && (dto as Record<string, unknown>).refund) {
       updateData.payment_status = 'refunded';
+    }
+
+    if (dto.provider_notes) {
+      updateData.provider_notes = dto.provider_notes;
+    }
+
+    if (dto.client_notes) {
+      updateData.client_notes = dto.client_notes;
     }
 
     const { data, error } = await this.supabase
@@ -205,9 +666,8 @@ export class BookingsService {
     }
 
     // Notify the other party about status change
-    const notifyUserId =
-      booking.client_id === userId ? booking.provider_id : booking.client_id;
-    const statusMessages: any = {
+    const notifyUserId = isClient ? booking.provider_id : booking.client_id;
+    const statusMessages: Record<string, { title: string; message: string }> = {
       confirmed: {
         title: 'تم تأكيد الحجز',
         message: 'تم تأكيد طلب الحجز بنجاح',
@@ -225,6 +685,28 @@ export class BookingsService {
         notif.message,
         id,
       );
+    }
+
+    if (dto.status === 'cancelled') {
+      await this.supabase
+        .from('commissions')
+        .update({ status: 'cancelled', notes: dto.cancellation_reason || null })
+        .eq('booking_id', id);
+    }
+
+    const auditAction =
+      dto.status === 'confirmed'
+        ? 'booking_confirm'
+        : dto.status === 'cancelled'
+          ? 'booking_cancel'
+          : dto.status === 'completed'
+            ? 'booking_complete'
+            : null;
+    if (auditAction) {
+      await this.auditLogService.log(userId, auditAction, 'bookings', id, {
+        status: dto.status,
+        cancellation_reason: dto.cancellation_reason,
+      });
     }
 
     return data;
@@ -306,6 +788,33 @@ export class BookingsService {
       bookingId,
     );
 
+    const { data: providerRecord } = await this.supabase
+      .from('providers')
+      .select('user_id')
+      .eq('id', booking.provider_id)
+      .maybeSingle();
+
+    await this.upsertCommissionRecord({
+      bookingId,
+      providerUserId: providerRecord?.user_id || booking.provider_id,
+      grossAmount: Number(booking.amount || 0),
+      paymentStatus: newPaymentStatus,
+      notes: `Updated after ${paymentType} payment`,
+    });
+
+    await this.auditLogService.log(
+      booking.client_id,
+      'payment_confirmed',
+      'payments',
+      paymentIntentId,
+      {
+        booking_id: bookingId,
+        payment_type: paymentType,
+        amount,
+        payment_status: newPaymentStatus,
+      },
+    );
+
     return updatedBooking;
   }
 
@@ -360,17 +869,13 @@ export class BookingsService {
 
   async confirmMockPayment(
     bookingId: string,
+    userId: string,
     paymentIntentId: string,
     paymentType: string,
   ): Promise<void> {
-    const booking = await this.supabase
-      .from('bookings')
-      .select('amount')
-      .eq('id', bookingId)
-      .single();
-    if (!booking.data) throw new NotFoundException('Booking not found');
+    const booking = await this.findOne(bookingId, userId);
 
-    let amount = booking.data.amount;
+    let amount = booking.amount;
     if (paymentType === 'deposit') amount *= 0.3;
     else if (paymentType === 'balance') amount *= 0.7;
 
@@ -378,7 +883,7 @@ export class BookingsService {
       bookingId,
       paymentIntentId,
       amount,
-      paymentType as any,
+      paymentType as 'deposit' | 'balance' | 'full',
     );
   }
 
@@ -485,6 +990,7 @@ export class BookingsService {
 
   async findByProvider(
     providerId: string,
+    userId?: string,
     status?: string,
     paymentStatus?: string,
     limit?: number,
@@ -492,6 +998,10 @@ export class BookingsService {
     search?: string,
     sortOrder?: string,
   ): Promise<{ data: Booking[]; total: number }> {
+    if (userId) {
+      await this.assertProviderScope(providerId, userId);
+    }
+
     let query = this.supabase
       .from('bookings')
       .select('*', { count: 'exact' })
@@ -523,7 +1033,21 @@ export class BookingsService {
     return { data: data || [], total: count || 0 };
   }
 
-  async getStats(providerId: string): Promise<any> {
+  async getStats(
+    providerId: string,
+    userId?: string,
+  ): Promise<{
+    total_bookings: number;
+    completed_bookings: number;
+    pending_bookings: number;
+    confirmed_bookings: number;
+    cancelled_bookings: number;
+    total_revenue: number;
+  }> {
+    if (userId) {
+      await this.assertProviderScope(providerId, userId);
+    }
+
     const { data, error } = await this.supabase
       .from('bookings')
       .select('*')
@@ -553,7 +1077,15 @@ export class BookingsService {
     };
   }
 
-  async getAdminStats(): Promise<any> {
+  async getAdminStats(): Promise<{
+    total_bookings: number;
+    completed: number;
+    pending: number;
+    confirmed: number;
+    cancelled: number;
+    total_revenue: number;
+    monthly_revenue: { month: string; revenue: number }[];
+  }> {
     const { data, error } = await this.supabase.from('bookings').select('*');
 
     if (error) {

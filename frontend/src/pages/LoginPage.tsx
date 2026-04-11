@@ -39,8 +39,8 @@ const LoginPage = () => {
             if (role === 'provider') navigate('/provider/dashboard');
             else if (role === 'admin') navigate('/admin/dashboard');
             else navigate('/client/dashboard');
-        } catch (err: any) {
-            const errorMsg = err.message || t('auth.login.error');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : t('auth.login.error');
             setError(errorMsg);
             toastService.error(errorMsg);
         } finally {

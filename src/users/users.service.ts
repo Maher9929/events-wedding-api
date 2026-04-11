@@ -3,23 +3,37 @@ import {
   ConflictException,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
   Inject,
+  Logger,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { JwtService } from '@nestjs/jwt';
+import { randomUUID } from 'crypto';
 import { CreateUserDto, UserRole } from './dto/create-user.dto';
 import { LoginDto, RegisterDto, AuthResponseDto } from './dto/auth.dto';
 import { UserProfile } from './entities/user.entity';
+import { AuditLogService } from '../common/audit-log.service';
+import { AuthCacheService } from '../auth/auth-cache.service';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
     private readonly jwtService: JwtService,
+    private readonly auditLogService: AuditLogService,
+    private readonly authCache: AuthCacheService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+    const requestedRole =
+      registerDto.role === UserRole.PROVIDER
+        ? UserRole.PROVIDER
+        : UserRole.CLIENT;
+
     // Check if user already exists
     const { data: existingUser } = await this.supabase
       .from('user_profiles')
@@ -39,67 +53,55 @@ export class UsersService {
       });
 
     if (authError) {
-      throw new Error(authError.message);
+      throw new BadRequestException(authError.message);
     }
 
     if (!authData.user) {
-      throw new Error('Failed to create user');
+      throw new BadRequestException('Failed to create user');
     }
 
-    // Retry fetching the profile created by the DB trigger (up to 3 x 500ms)
-    let profile: any = null;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const result = await this.supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', authData.user.id)
-        .single();
-      profile = result.data;
-      if (profile) break;
-    }
+    const userId = authData.user.id;
 
-    // If trigger didn't create it, create it manually
-    if (!profile) {
-      const { data: manualProfile, error: manualError } = await this.supabase
-        .from('user_profiles')
-        .insert({
-          id: authData.user.id,
+    // Upsert profile — handles both cases:
+    // 1. DB trigger already created it → update with full_name/phone/role
+    // 2. Trigger hasn't fired yet → insert it directly
+    // Small delay to let the trigger fire first (avoids conflict)
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const { data: profile, error: profileError } = await this.supabase
+      .from('user_profiles')
+      .upsert(
+        {
+          id: userId,
           email: registerDto.email,
           full_name: registerDto.full_name || null,
           phone: registerDto.phone || null,
-          role: registerDto.role || 'client',
-        })
-        .select()
-        .single();
+          role: requestedRole,
+        },
+        { onConflict: 'id' },
+      )
+      .select()
+      .single();
 
-      if (manualError || !manualProfile) {
-        throw new Error(
-          'Failed to create user profile. Please contact support.',
-        );
-      }
-      profile = manualProfile;
-    }
-
-    // Update additional profile info if provided
-    if (registerDto.full_name || registerDto.phone || registerDto.role) {
-      const { data: updatedProfile } = await this.supabase
-        .from('user_profiles')
-        .update({
-          full_name: registerDto.full_name || null,
-          phone: registerDto.phone || null,
-          role: registerDto.role || 'client',
-        })
-        .eq('id', authData.user.id)
-        .select()
-        .single();
-
-      if (updatedProfile) {
-        Object.assign(profile, updatedProfile);
-      }
+    if (profileError || !profile) {
+      this.logger.error(`Failed to upsert user profile: ${profileError?.message}`);
+      throw new BadRequestException(
+        'Failed to create user profile. Please contact support.',
+      );
     }
 
     const token = await this.generateToken(profile);
+
+    await this.auditLogService.log(
+      profile.id,
+      'user_register',
+      'users',
+      profile.id,
+      {
+        role: profile.role,
+        email: profile.email,
+      },
+    );
 
     return {
       access_token: token,
@@ -150,6 +152,16 @@ export class UsersService {
 
     const token = await this.generateToken(profile, providerId);
 
+    await this.auditLogService.log(
+      profile.id,
+      'user_login',
+      'users',
+      profile.id,
+      {
+        role: profile.role,
+      },
+    );
+
     return {
       access_token: token,
       user: {
@@ -181,7 +193,7 @@ export class UsersService {
       });
 
     if (authError) {
-      throw new Error(authError.message);
+      throw new BadRequestException(authError.message);
     }
 
     // Create user profile
@@ -198,7 +210,7 @@ export class UsersService {
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data;
@@ -233,7 +245,7 @@ export class UsersService {
     const { data, error, count } = await queryBuilder;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return { data: data || [], total: count || 0 };
@@ -279,12 +291,11 @@ export class UsersService {
       'avatar_url',
       'language',
       'timezone',
-      'is_banned',
     ];
-    const safeData: Record<string, any> = {};
+    const safeData: Record<string, unknown> = {};
     for (const key of allowedFields) {
       if (key in updateData) {
-        safeData[key] = (updateData as any)[key];
+        safeData[key] = (updateData as Record<string, unknown>)[key];
       }
     }
 
@@ -345,14 +356,33 @@ export class UsersService {
     };
   }
 
+  /**
+   * Logout: blacklist the current token so it can't be reused.
+   */
+  async logout(jti: string | undefined, userId: string): Promise<void> {
+    if (jti) {
+      this.authCache.blacklistToken(jti);
+    }
+    this.authCache.invalidateUser(userId);
+
+    await this.auditLogService.log(
+      userId,
+      'user_logout',
+      'users',
+      userId,
+      {},
+    );
+  }
+
   private async generateToken(
     user: UserProfile,
     providerId: string | null = null,
   ): Promise<string> {
-    const payload: any = {
+    const payload: Record<string, string> = {
       sub: user.id,
       email: user.email,
       role: user.role,
+      jti: randomUUID(),
     };
 
     if (providerId) {

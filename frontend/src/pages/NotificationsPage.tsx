@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notificationsService, type Notification } from '../services/notifications.service';
 import { toastService } from '../services/toast.service';
 import { authService } from '../services/auth.service';
 import { useTranslation } from 'react-i18next';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
+import Pagination from '../components/common/Pagination';
 
 const typeConfig: Record<string, { icon: string; color: string; bg: string }> = {
     booking: { icon: 'fa-calendar-check', color: 'text-green-600', bg: 'bg-green-100' },
@@ -30,14 +32,15 @@ const NotificationsPage = () => {
     const [page, setPage] = useState(0);
     const [total, setTotal] = useState(0);
     const currentUser = authService.getCurrentUser();
+    const { confirm: confirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
     useEffect(() => {
-        document.title = `${t('common.notifications')} | DOUSHA`;
+        document.title = `${t('common.notifications_label', 'الإشعارات')} | DOUSHA`;
     }, [t]);
 
     useEffect(() => { setPage(0); }, [filter]);
 
-    const loadNotifications = () => {
+    const loadNotifications = useCallback(() => {
         setLoading(true);
         const p = new URLSearchParams();
         p.set('limit', String(PAGE_SIZE));
@@ -47,18 +50,18 @@ const NotificationsPage = () => {
         else if (filter === 'message') p.set('type', 'message');
 
         notificationsService.getNotifications(p)
-            .then((data: any) => {
+            .then((data: Notification[] | { data?: Notification[]; total?: number }) => {
                 const list = Array.isArray(data) ? data : data?.data || [];
                 setNotifications(list);
-                setTotal((data as any)?.total ?? list.length);
+                setTotal(!Array.isArray(data) ? data?.total ?? list.length : list.length);
             })
             .catch(() => toastService.error(t('notifications.error_loading') || 'فشل تحميل الإشعارات'))
             .finally(() => setLoading(false));
-    };
+    }, [filter, page, t]);
 
     useEffect(() => {
         loadNotifications();
-    }, [page, filter]);
+    }, [loadNotifications]);
 
     useEffect(() => {
         if (!currentUser?.id) return;
@@ -79,7 +82,9 @@ const NotificationsPage = () => {
             setNotifications(prev =>
                 prev.map(n => n.id === id ? { ...n, is_read: true } : n)
             );
-        } catch { /* silent */ }
+        } catch (_error) {
+            toastService.error(t('notifications.error_mark_read', 'فشل تحديث الإشعار'));
+        }
     };
 
     const markAllAsRead = async () => {
@@ -88,7 +93,7 @@ const NotificationsPage = () => {
             await notificationsService.markAllAsRead();
             setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
             toastService.success(t('notifications.mark_all_success') || 'تم تحديد الكل كمقروء');
-        } catch {
+        } catch (_error) {
             toastService.error(t('notifications.mark_all_error') || 'فشل تحديث الإشعارات');
         } finally {
             setMarkingAll(false);
@@ -101,16 +106,24 @@ const NotificationsPage = () => {
             await notificationsService.deleteNotification(id);
             setNotifications(prev => prev.filter(n => n.id !== id));
             setTotal(t => t - 1);
-        } catch { /* silent */ }
+        } catch (_error) {
+            toastService.error(t('notifications.error_delete', 'فشل حذف الإشعار'));
+        }
     };
 
     const deleteAllRead = async () => {
-        if (!confirm(t('notifications.confirm_delete_all') || 'حذف جميع الإشعارات المقروءة؟')) return;
+        const ok = await confirmDialog({
+            title: t('notifications.confirm_delete_all_title', 'Delete Read Notifications'),
+            message: t('notifications.confirm_delete_all', 'Are you sure you want to delete all read notifications?'),
+            confirmLabel: t('common.delete', 'Delete'),
+            cancelLabel: t('common.cancel', 'Cancel'),
+        });
+        if (!ok) return;
         try {
             await notificationsService.deleteAllRead();
             setNotifications(prev => prev.filter(n => !n.is_read));
             toastService.success(t('notifications.delete_success') || 'تم حذف الإشعارات المقروءة');
-        } catch {
+        } catch (_error) {
             toastService.error(t('notifications.delete_error') || 'فشل حذف الإشعارات');
         }
     };
@@ -151,7 +164,7 @@ const NotificationsPage = () => {
                             <i className="fa-solid fa-arrow-right text-gray-700"></i>
                         </button>
                         <div>
-                            <h1 className="text-xl font-bold text-gray-900">{t('common.notifications') || 'الإشعارات'}</h1>
+                            <h1 className="text-xl font-bold text-gray-900">{t('common.notifications_label', 'الإشعارات')}</h1>
                             {unreadCount > 0 && (
                                 <p className="text-xs text-primary font-bold">{unreadCount} {t('notifications.unread') || 'غير مقروء'}</p>
                             )}
@@ -164,7 +177,7 @@ const NotificationsPage = () => {
                                 disabled={markingAll}
                                 className="text-sm font-bold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
                             >
-                                {markingAll ? 'جاري...' : 'تحديد الكل'}
+                                {markingAll ? t('notifications.marking') : t('notifications.mark_all')}
                             </button>
                         )}
                         {notifications.some(n => n.is_read) && (
@@ -173,7 +186,7 @@ const NotificationsPage = () => {
                                 className="text-xs font-bold text-red-400 hover:text-red-600 transition-colors"
                             >
                                 <i className="fa-solid fa-trash ms-1"></i>
-                                حذف المقروءة
+                                {t('notifications.delete_read')}
                             </button>
                         )}
                     </div>
@@ -233,9 +246,9 @@ const NotificationsPage = () => {
                         const d = new Date(date);
                         const today = new Date();
                         const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-                        if (d.toDateString() === today.toDateString()) return 'اليوم';
-                        if (d.toDateString() === yesterday.toDateString()) return 'أمس';
-                        return d.toLocaleDateString('ar-EG', { weekday: 'long', month: 'short', day: 'numeric' });
+                        if (d.toDateString() === today.toDateString()) return t('notifications.dates.today');
+                        if (d.toDateString() === yesterday.toDateString()) return t('notifications.dates.yesterday');
+                        return d.toLocaleDateString(t('common.date_locale'), { weekday: 'long', month: 'short', day: 'numeric' });
                     };
                     const groups: { label: string; items: Notification[] }[] = [];
                     filtered.forEach(n => {
@@ -292,27 +305,14 @@ const NotificationsPage = () => {
                     );
                 })()}
 
-                {/* Pagination */}
-                {total > PAGE_SIZE && (
-                    <div className="flex items-center justify-center gap-3 pt-4 pb-2">
-                        <button
-                            onClick={() => setPage(p => Math.max(0, p - 1))}
-                            disabled={page === 0}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                        >
-                            <i className="fa-solid fa-chevron-right text-sm"></i>
-                        </button>
-                        <span className="text-sm font-bold text-gray-700">{page + 1} / {Math.ceil(total / PAGE_SIZE)}</span>
-                        <button
-                            onClick={() => setPage(p => p + 1)}
-                            disabled={(page + 1) * PAGE_SIZE >= total}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                        >
-                            <i className="fa-solid fa-chevron-left text-sm"></i>
-                        </button>
-                    </div>
-                )}
+                <Pagination
+                    page={page}
+                    total={total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                />
             </main>
+            <ConfirmDialogComponent />
         </div>
     );
 };

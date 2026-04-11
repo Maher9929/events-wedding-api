@@ -1,16 +1,85 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+  <meta name="description"
+    content="DOUSHA – منصة حجز خدمات الأعراس والمناسبات في قطر. احجز مصورين، قاعات، بوفيهات، ديكور وأكثر بأسعار تنافسية. Book wedding & event services in Qatar." />
+  <meta name="theme-color" content="#8B4FFF" />
+
+  <!-- Critical inline CSS for instant FCP -->
+  <style>
+    body {
+      margin: 0;
+      background: #F7F7FA;
+      font-family: 'Tajawal', system-ui, sans-serif;
+    }
+
+    #root:empty {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    #root:empty::before {
+      content: '';
+      display: block;
+      height: 60px;
+      background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    #root:empty::after {
+      content: '';
+      display: block;
+      margin: 24px auto;
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e5e7eb;
+      border-top-color: #8B4FFF;
+      border-radius: 50%;
+      animation: sp .7s linear infinite;
+    }
+
+    @keyframes sp {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+
+  <!-- Preconnect to critical origins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://images.unsplash.com" />
+
+  <!-- Preload LCP hero image for early discovery -->
+  <link rel="preload" as="image"
+    href="https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=40&fm=webp"
+    fetchpriority="high" />
+
+  <!-- Google Fonts: non-render-blocking with swap -->
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap"
+    crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet"
+    media="print" onload="this.media='all'" />
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet" />
+  </noscript>
+
+  <!-- Font Awesome: non-render-blocking deferred load -->
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    crossorigin="anonymous" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <title>Events & Wedding Marketplace</title>
+    crossorigin="anonymous" referrerpolicy="no-referrer" media="print" onload="this.media='all'" />
+  <noscript>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      crossorigin="anonymous" referrerpolicy="no-referrer" />
+  </noscript>
+
+  <title>DOUSHA | Events & Wedding Marketplace</title>
 </head>
 
 <body>

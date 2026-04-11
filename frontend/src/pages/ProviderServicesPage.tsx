@@ -6,9 +6,10 @@ import { uploadService } from '../services/upload.service';
 import { toastService } from '../services/toast.service';
 import type { ServiceItem, Category } from '../services/api';
 import { getThumbnailUrl } from '../utils/image.utils';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
 
 const ProviderServicesPage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,6 +21,7 @@ const ProviderServicesPage = () => {
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [uploadingPhotos, setUploadingPhotos] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -40,12 +42,12 @@ const ProviderServicesPage = () => {
                 servicesService.getMyServices(),
                 categoriesService.getAll(),
             ]);
-            const servicesList = Array.isArray(servicesData) ? servicesData : (servicesData as any)?.data || [];
-            setServices(servicesList);
-            const catsList = Array.isArray(catsData) ? catsData : (catsData as any)?.data || [];
-            setCategories(catsList);
-        } catch {
-            toastService.error(t('provider.services.load_failed', 'فشل تحميل الخدمات'));
+            const svcList = Array.isArray(servicesData) ? servicesData : (servicesData as { data?: ServiceItem[] })?.data || [];
+            setServices(svcList);
+            const catList = Array.isArray(catsData) ? catsData : (catsData as { data?: Category[] })?.data || [];
+            setCategories(catList);
+        } catch (_error) {
+            toastService.error(t('provider_services.load_failed', 'فشل تحميل الخدمات'));
         } finally {
             setLoading(false);
         }
@@ -80,7 +82,7 @@ const ProviderServicesPage = () => {
         const files = Array.from(e.target.files || []);
         const totalCount = selectedFiles.length + existingImages.length + files.length;
         if (totalCount > 5) {
-            toastService.error(t('provider.services.max_photos', 'الحد الأقصى 5 صور لكل خدمة'));
+            toastService.error(t('provider_services.max_photos', 'الحد الأقصى 5 صور لكل خدمة'));
             return;
         }
         const newFiles = [...selectedFiles, ...files];
@@ -101,8 +103,8 @@ const ProviderServicesPage = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.title.trim() || formData.base_price <= 0) {
-            toastService.error(t('provider.services.fill_required', 'الرجاء ملء جميع الحقول المطلوبة'));
+        if (!formData.title.trim() || formData.base_price <= 0 || !formData.category_id) {
+            toastService.error(t('provider_services.fill_required', 'الرجاء ملء جميع الحقول المطلوبة (العنوان، السعر، الفئة)'));
             return;
         }
         setSaving(true);
@@ -114,8 +116,8 @@ const ProviderServicesPage = () => {
                 try {
                     const results = await uploadService.uploadMultiple(selectedFiles, 'attachments', 'services');
                     uploadedImageUrls = [...uploadedImageUrls, ...results.map(r => r.url)];
-                } catch {
-                    toastService.error(t('provider.services.photo_upload_failed', 'فشل رفع بعض الصور'));
+                } catch (_error) {
+                    toastService.error(t('provider_services.photo_upload_failed', 'فشل رفع بعض الصور'));
                 } finally {
                     setUploadingPhotos(false);
                 }
@@ -125,14 +127,12 @@ const ProviderServicesPage = () => {
 
             if (editingService) {
                 const updated = await servicesService.update(editingService.id, payload);
-                const updatedData = (updated as any)?.data || updated;
-                setServices(prev => prev.map(s => s.id === editingService.id ? { ...s, ...updatedData, ...payload } : s));
-                toastService.success(t('provider.services.update_success', 'تم تحديث الخدمة بنجاح'));
+                setServices(prev => prev.map(s => s.id === editingService.id ? { ...s, ...updated, ...payload } : s));
+                toastService.success(t('provider_services.update_success', 'تم تحديث الخدمة بنجاح'));
             } else {
                 const created = await servicesService.create(payload);
-                const createdData = (created as any)?.data || created;
-                if (createdData?.id) setServices(prev => [createdData, ...prev]);
-                toastService.success(t('provider.services.create_success', 'تم إنشاء الخدمة بنجاح'));
+                if (created?.id) setServices(prev => [created, ...prev]);
+                toastService.success(t('provider_services.create_success', 'تم إنشاء الخدمة بنجاح'));
             }
             // Cleanup previews
             previewUrls.forEach(u => URL.revokeObjectURL(u));
@@ -140,12 +140,13 @@ const ProviderServicesPage = () => {
             setPreviewUrls([]);
             setExistingImages([]);
             setShowForm(false);
-        } catch (error: any) {
-            if (error?.message?.includes('provider profile') || error?.message?.includes('Forbidden')) {
-                toastService.error(t('provider.services.profile_required', 'يجب إعداد ملفك الشخصي (Pro) أولاً قبل إضافة خدمات'));
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : '';
+            if (msg.includes('provider profile') || msg.includes('Forbidden')) {
+                toastService.error(t('provider_services.profile_required', 'يجب إعداد ملفك الشخصي (Pro) أولاً قبل إضافة خدمات'));
                 setTimeout(() => window.location.href = '/provider/profile', 1500);
             } else {
-                toastService.error(editingService ? t('provider.services.update_failed', 'فشل تحديث الخدمة') : t('provider.services.create_failed', 'فشل إنشاء الخدمة'));
+                toastService.error(editingService ? t('provider_services.update_failed', 'فشل تحديث الخدمة') : t('provider_services.create_failed', 'فشل إنشاء الخدمة'));
             }
         } finally {
             setSaving(false);
@@ -153,13 +154,19 @@ const ProviderServicesPage = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm(t('provider.services.confirm_delete', 'هل أنت متأكد من حذف هذه الخدمة؟'))) return;
+        const ok = await confirm({
+            title: t('provider_services.confirm_delete', 'Delete Service'),
+            message: t('provider_services.confirm_delete_msg', 'Are you sure you want to delete this service? This action cannot be undone.'),
+            confirmLabel: t('common.delete', 'Delete'),
+            cancelLabel: t('common.cancel', 'Cancel'),
+        });
+        if (!ok) return;
         try {
             await servicesService.remove(id);
             setServices(prev => prev.filter(s => s.id !== id));
-            toastService.success(t('provider.services.delete_success', 'تم حذف الخدمة'));
-        } catch {
-            toastService.error(t('provider.services.delete_failed', 'فشل حذف الخدمة'));
+            toastService.success(t('provider_services.delete_success', 'تم حذف الخدمة'));
+        } catch (_error) {
+            toastService.error(t('provider_services.delete_failed', 'فشل حذف الخدمة'));
         }
     };
 
@@ -167,9 +174,9 @@ const ProviderServicesPage = () => {
         try {
             await servicesService.update(service.id, { is_active: !service.is_active });
             setServices(prev => prev.map(s => s.id === service.id ? { ...s, is_active: !s.is_active } : s));
-            toastService.success(service.is_active ? t('provider.services.paused', 'تم إيقاف الخدمة') : t('provider.services.activated', 'تم تفعيل الخدمة'));
-        } catch {
-            toastService.error(t('provider.services.toggle_failed', 'فشل تحديث حالة الخدمة'));
+            toastService.success(service.is_active ? t('provider_services.paused', 'تم إيقاف الخدمة') : t('provider_services.activated', 'تم تفعيل الخدمة'));
+        } catch (_error) {
+            toastService.error(t('provider_services.toggle_failed', 'فشل تحديث حالة الخدمة'));
         }
     };
 
@@ -177,19 +184,19 @@ const ProviderServicesPage = () => {
     const totalRevenue = services.reduce((sum, s) => sum + (s.base_price || 0), 0);
 
     return (
-        <div className="space-y-6" dir="rtl">
+        <div className="space-y-6" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{t('provider.services.my_services', 'خدماتي')}</h1>
-                    <p className="text-gray-500">{t('provider.services.manage_desc', 'إدارة الخدمات التي تقدمها للعملاء')}</p>
+                    <h1 className="text-2xl font-bold text-gray-900">{t('provider.my_services', 'خدماتي')}</h1>
+                    <p className="text-gray-500">{t('provider_services.manage_desc', 'إدارة الخدمات التي تقدمها للعملاء')}</p>
                 </div>
                 <button
                     onClick={openNewForm}
                     className="px-5 py-2.5 rounded-xl bg-primary text-white font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md"
                 >
                     <i className="fa-solid fa-plus"></i>
-                    {t('provider.services.add_new', 'إضافة خدمة جديدة')}
+                    {t('provider_services.add_new', 'إضافة خدمة جديدة')}
                 </button>
             </div>
 
@@ -202,7 +209,7 @@ const ProviderServicesPage = () => {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-gray-900">{services.length}</p>
-                            <p className="text-xs text-gray-500">{t('provider.services.total_services', 'إجمالي الخدمات')}</p>
+                            <p className="text-xs text-gray-500">{t('provider_services.total_services', 'إجمالي الخدمات')}</p>
                         </div>
                     </div>
                 </div>
@@ -213,7 +220,7 @@ const ProviderServicesPage = () => {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-green-600">{activeCount}</p>
-                            <p className="text-xs text-gray-500">{t('provider.services.active_services', 'خدمات نشطة')}</p>
+                            <p className="text-xs text-gray-500">{t('provider_services.active_services', 'خدمات نشطة')}</p>
                         </div>
                     </div>
                 </div>
@@ -224,7 +231,7 @@ const ProviderServicesPage = () => {
                         </div>
                         <div>
                             <p className="text-2xl font-bold text-purple-600">{totalRevenue.toLocaleString()} {t('common.currency', 'ر.ق')}</p>
-                            <p className="text-xs text-gray-500">{t('provider.services.total_value', 'إجمالي الأسعار')}</p>
+                            <p className="text-xs text-gray-500">{t('provider_services.total_value', 'إجمالي الأسعار')}</p>
                         </div>
                     </div>
                 </div>
@@ -246,11 +253,11 @@ const ProviderServicesPage = () => {
                     <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <i className="fa-solid fa-box-open text-gray-400 text-3xl"></i>
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('provider.services.no_services', 'لم تضف أي خدمات بعد')}</h3>
-                    <p className="text-sm text-gray-500 mb-6">{t('provider.services.start_adding', 'ابدأ بإضافة خدمتك الأولى لجذب العملاء')}</p>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">{t('provider_services.no_services', 'لم تضف أي خدمات بعد')}</h3>
+                    <p className="text-sm text-gray-500 mb-6">{t('provider_services.start_adding', 'ابدأ بإضافة خدمتك الأولى لجذب العملاء')}</p>
                     <button onClick={openNewForm} className="px-6 py-3 rounded-xl bg-primary text-white font-bold shadow-md hover:bg-primary/90 transition-colors">
                         <i className="fa-solid fa-plus me-2"></i>
-                        {t('provider.services.add', 'إضافة خدمة')}
+                        {t('provider_services.add', 'إضافة خدمة')}
                     </button>
                 </div>
             ) : (
@@ -260,7 +267,7 @@ const ProviderServicesPage = () => {
                             {/* Image */}
                             <div className="h-40 bg-gray-100 relative overflow-hidden">
                                 {service.images?.[0] ? (
-                                    <img src={getThumbnailUrl(service.images[0])} alt={service.title} className="w-full h-full object-cover" />
+                                    <img src={getThumbnailUrl(service.images[0])} alt={service.title} className="w-full h-full object-cover" loading="lazy" />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
                                         <i className="fa-solid fa-image text-gray-300 text-4xl"></i>
@@ -332,7 +339,7 @@ const ProviderServicesPage = () => {
                     <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto">
                         <div className="flex items-center justify-between mb-5">
                             <h3 className="font-bold text-lg text-gray-900">
-                                {editingService ? t('provider.services.edit_title', 'تعديل الخدمة') : t('provider.services.add_new', 'إضافة خدمة جديدة')}
+                                {editingService ? t('provider_services.edit_title', 'تعديل الخدمة') : t('provider_services.add_new', 'إضافة خدمة جديدة')}
                             </h3>
                             <button onClick={() => setShowForm(false)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
                                 <i className="fa-solid fa-times text-sm"></i>
@@ -341,22 +348,22 @@ const ProviderServicesPage = () => {
 
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider.services.service_name', 'اسم الخدمة *')}</label>
+                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider_services.service_name', 'اسم الخدمة *')}</label>
                                 <input
                                     type="text"
                                     value={formData.title}
                                     onChange={e => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                                    placeholder={t('provider.services.name_placeholder', 'مثال: تصوير حفلات زواج')}
+                                    placeholder={t('provider_services.name_placeholder', 'مثال: تصوير حفلات زواج')}
                                     className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 />
                             </div>
 
                             <div>
-                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider.services.service_description', 'الوصف')}</label>
+                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider_services.service_description', 'الوصف')}</label>
                                 <textarea
                                     value={formData.description}
                                     onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                                    placeholder={t('provider.services.desc_placeholder', 'وصف تفصيلي للخدمة...')}
+                                    placeholder={t('provider_services.desc_placeholder', 'وصف تفصيلي للخدمة...')}
                                     rows={3}
                                     className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                                 />
@@ -364,20 +371,20 @@ const ProviderServicesPage = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
-                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider.services.price_type', 'نوع السعر')}</label>
+                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider_services.price_type', 'نوع السعر')}</label>
                                     <select
                                         value={formData.price_type}
-                                        onChange={e => setFormData(prev => ({ ...prev, price_type: e.target.value as any }))}
+                                        onChange={e => setFormData(prev => ({ ...prev, price_type: e.target.value as 'fixed' | 'hourly' | 'package' | 'custom' }))}
                                         className="w-full h-11 border border-gray-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
                                     >
-                                        <option value="fixed">{t('provider.services.fixed', 'ثابت')}</option>
-                                        <option value="hourly">{t('provider.services.hourly', 'بالساعة')}</option>
-                                        <option value="package">{t('provider.services.package', 'باقة')}</option>
-                                        <option value="custom">{t('provider.services.custom', 'مخصص')}</option>
+                                        <option value="fixed">{t('provider_services.fixed', 'ثابت')}</option>
+                                        <option value="hourly">{t('provider_services.hourly', 'بالساعة')}</option>
+                                        <option value="package">{t('provider_services.package', 'باقة')}</option>
+                                        <option value="custom">{t('provider_services.custom', 'مخصص')}</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider.services.base_price', 'السعر الأساسي')} ({t('common.currency', 'ر.ق')}) *</label>
+                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider_services.base_price', 'السعر الأساسي')} ({t('common.currency', 'ر.ق')}) *</label>
                                     <input
                                         type="number"
                                         value={formData.base_price || ''}
@@ -388,13 +395,13 @@ const ProviderServicesPage = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('provider.services.category', 'الفئة')}</label>
+                                    <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('common.category', 'الفئة')}</label>
                                     <select
                                         value={formData.category_id}
                                         onChange={e => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
                                         className="w-full h-11 border border-gray-200 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 bg-white"
                                     >
-                                        <option value="">{t('provider.services.choose_category', 'اختر الفئة')}</option>
+                                        <option value="">{t('provider_services.choose_category', 'اختر الفئة')}</option>
                                         {categories.map(cat => (
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
@@ -406,7 +413,7 @@ const ProviderServicesPage = () => {
                             <div>
                                 <label className="text-sm font-bold text-gray-700 block mb-1.5">
                                     <i className="fa-solid fa-images me-1"></i>
-                                    {t('provider.services.photos', 'صور الخدمة')} ({existingImages.length + selectedFiles.length}/5)
+                                    {t('provider_services.photos', 'صور الخدمة')} ({existingImages.length + selectedFiles.length}/5)
                                 </label>
 
                                 {/* Existing + Preview Grid */}
@@ -426,8 +433,10 @@ const ProviderServicesPage = () => {
                                         ))}
                                         {previewUrls.map((url, i) => (
                                             <div key={`new-${i}`} className="relative group rounded-xl overflow-hidden h-24 border-2 border-primary/30">
-                                                <img src={url} alt="" className="w-full h-full object-cover" />
-                                                <div className="absolute top-1 right-1 px-1.5 py-0.5 bg-primary text-white rounded text-[9px] font-bold">NEW</div>
+                                                <img src={url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                                <div className="absolute top-1 right-1 px-1.5 py-0.5 bg-primary text-white rounded text-[9px] font-bold">
+                                                    {t('provider_services.new_badge', 'New')}
+                                                </div>
                                                 <button
                                                     type="button"
                                                     onClick={() => removeNewPhoto(i)}
@@ -448,8 +457,8 @@ const ProviderServicesPage = () => {
                                         className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 hover:border-primary hover:text-primary transition-colors flex flex-col items-center gap-1"
                                     >
                                         <i className="fa-solid fa-cloud-arrow-up text-2xl"></i>
-                                        <span className="text-xs font-bold">{t('provider.services.add_photos', 'إضافة صور')}</span>
-                                        <span className="text-[10px]">{t('provider.services.photo_formats', 'JPG, PNG, WEBP — حتى 5 ميغا')}</span>
+                                        <span className="text-xs font-bold">{t('provider_services.add_photos', 'إضافة صور')}</span>
+                                        <span className="text-[10px]">{t('provider_services.photo_formats', 'JPG, PNG, WEBP — حتى 5 ميغا')}</span>
                                     </button>
                                 )}
                                 <input
@@ -471,7 +480,7 @@ const ProviderServicesPage = () => {
                                     className="w-4 h-4 rounded accent-primary cursor-pointer"
                                 />
                                 <label htmlFor="is_active" className="text-sm text-gray-700 font-bold cursor-pointer">
-                                    {t('provider.services.publish_now', 'نشر الخدمة فوراً')}
+                                    {t('provider_services.publish_now', 'نشر الخدمة فوراً')}
                                 </label>
                             </div>
                         </div>
@@ -483,7 +492,7 @@ const ProviderServicesPage = () => {
                                 className="flex-1 h-11 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                                 {saving ? (
-                                    <><i className="fa-solid fa-spinner fa-spin"></i> {uploadingPhotos ? t('provider.services.uploading_photos', 'جاري رفع الصور...') : t('common.saving', 'جاري الحفظ...')}</>
+                                    <><i className="fa-solid fa-spinner fa-spin"></i> {uploadingPhotos ? t('provider_services.uploading_photos', 'جاري رفع الصور...') : t('common.saving', 'جاري الحفظ...')}</>
                                 ) : (
                                     <><i className="fa-solid fa-check"></i> {editingService ? t('common.update', 'تحديث') : t('common.create', 'إنشاء')}</>
                                 )}
@@ -498,8 +507,10 @@ const ProviderServicesPage = () => {
                     </div>
                 </div>
             )}
+            <ConfirmDialogComponent />
         </div>
     );
 };
 
 export default ProviderServicesPage;
+

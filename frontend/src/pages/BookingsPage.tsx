@@ -3,6 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { bookingsService, type Booking } from '../services/bookings.service';
 import { toastService } from '../services/toast.service';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
+import StatusBadge from '../components/common/StatusBadge';
+import EmptyState from '../components/common/EmptyState';
+import Pagination from '../components/common/Pagination';
 
 const BookingsPage = () => {
     const { t } = useTranslation();
@@ -15,13 +19,9 @@ const BookingsPage = () => {
     const [total, setTotal] = useState(0);
     const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
     const [cancelling, setCancelling] = useState<string | null>(null);
+    const { confirm: confirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
-    const statusMap: Record<string, { label: string; cls: string }> = {
-        pending: { label: t('bookings.status.pending'), cls: 'bg-yellow-100 text-yellow-700' },
-        confirmed: { label: t('bookings.status.confirmed'), cls: 'bg-green-100 text-green-700' },
-        cancelled: { label: t('bookings.status.cancelled'), cls: 'bg-red-100 text-red-700' },
-        completed: { label: t('bookings.status.completed'), cls: 'bg-blue-100 text-blue-700' },
-    };
+
 
     useEffect(() => { setPage(0); }, [filter, search, sortOrder]);
 
@@ -39,11 +39,11 @@ const BookingsPage = () => {
             p.set('sort_order', sortOrder);
             p.set('limit', String(10));
             p.set('offset', String(page * 10));
-            const res: any = await bookingsService.getMyBookings(`?${p.toString()}`);
+            const res = await bookingsService.getMyBookings(`?${p.toString()}`) as Booking[] | { data?: Booking[]; total?: number };
             const list = Array.isArray(res) ? res : res?.data || [];
             setBookings(list);
-            setTotal((res as any)?.total ?? list.length);
-        } catch {
+            setTotal(!Array.isArray(res) ? res?.total ?? list.length : list.length);
+        } catch (_error) {
             toastService.error(t('bookings.error_loading'));
         } finally {
             setLoading(false);
@@ -51,13 +51,20 @@ const BookingsPage = () => {
     };
 
     const handleCancel = async (id: string) => {
-        if (!confirm(t('bookings.confirm_cancel'))) return;
+        const ok = await confirmDialog({
+            title: t('bookings.confirm_cancel_title', 'Cancel Booking'),
+            message: t('bookings.confirm_cancel', 'Are you sure you want to cancel this booking?'),
+            variant: 'warning',
+            confirmLabel: t('bookings.cancel', 'Cancel Booking'),
+            cancelLabel: t('common.back', 'Go Back'),
+        });
+        if (!ok) return;
         setCancelling(id);
         try {
             await bookingsService.updateStatus(id, { status: 'cancelled' });
             setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'cancelled' } : b));
             toastService.success(t('bookings.cancel_success'));
-        } catch {
+        } catch (_error) {
             toastService.error(t('bookings.cancel_error'));
         } finally {
             setCancelling(null);
@@ -74,7 +81,7 @@ const BookingsPage = () => {
                         <i className="fa-solid fa-arrow-right text-gray-700"></i>
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-gray-900">حجوزاتي</h1>
+                        <h1 className="text-xl font-bold text-gray-900">{t('bookings.title')}</h1>
                         <p className="text-xs text-gray-500">{total} {t('bookings.count_label')}</p>
                     </div>
                 </div>
@@ -137,20 +144,15 @@ const BookingsPage = () => {
                         ))}
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                            <i className="fa-solid fa-calendar-xmark text-gray-400 text-3xl"></i>
-                        </div>
-                        <h3 className="text-lg font-bold text-gray-900 mb-2">{t('bookings.no_bookings')}</h3>
-                        <p className="text-sm text-gray-500 mb-6">{t('bookings.no_bookings_desc')}</p>
-                        <Link to="/services" className="px-8 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg">
-                            {t('bookings.explore_services')}
-                        </Link>
-                    </div>
+                    <EmptyState
+                        icon="fa-calendar-xmark"
+                        title={t('bookings.no_bookings')}
+                        description={t('bookings.no_bookings_desc')}
+                        action={{ label: t('bookings.explore_services'), onClick: () => navigate('/services') }}
+                    />
                 ) : (
                     <div className="space-y-4">
                         {filtered.map(booking => {
-                            const st = statusMap[booking.status] || { label: booking.status, cls: 'bg-gray-100 text-gray-700' };
                             const canCancel = booking.status === 'pending' || booking.status === 'confirmed';
                             const balanceAmount = Number(booking.balance_amount ?? booking.amount ?? 0);
                             const isPartiallyPaid = booking.payment_status === 'pending' && balanceAmount > 0 && balanceAmount < Number(booking.amount || 0);
@@ -164,10 +166,10 @@ const BookingsPage = () => {
                                                         <i className="fa-solid fa-calendar text-primary text-sm"></i>
                                                     </div>
                                                     <div>
-                                                        {(booking as any).services?.title && (
-                                                            <p className="font-bold text-gray-900 text-sm">{(booking as any).services.title}</p>
+                                                        {booking.services?.title && (
+                                                            <p className="font-bold text-gray-900 text-sm">{booking.services.title}</p>
                                                         )}
-                                                        <p className={`${(booking as any).services?.title ? 'text-xs text-gray-400' : 'font-bold text-gray-900 text-sm'}`}>
+                                                        <p className={`${booking.services?.title ? 'text-xs text-gray-400' : 'font-bold text-gray-900 text-sm'}`}>
                                                             {new Date(booking.booking_date).toLocaleDateString()}
                                                         </p>
                                                         <p className="text-xs text-gray-400">
@@ -176,9 +178,7 @@ const BookingsPage = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <span className={`text-xs px-2.5 py-1 rounded-xl font-bold flex-shrink-0 ${st.cls}`}>
-                                                {st.label}
-                                            </span>
+                                            <StatusBadge status={booking.status} />
                                         </div>
 
                                         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
@@ -236,27 +236,14 @@ const BookingsPage = () => {
                     </div>
                 )}
 
-                {/* Pagination */}
-                {total > 10 && (
-                    <div className="flex items-center justify-center gap-3 pt-4 pb-2">
-                        <button
-                            onClick={() => setPage(p => Math.max(0, p - 1))}
-                            disabled={page === 0}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                        >
-                            <i className="fa-solid fa-chevron-left text-sm"></i>
-                        </button>
-                        <span className="text-sm font-bold text-gray-700">{page + 1} / {Math.ceil(total / 10)}</span>
-                        <button
-                            onClick={() => setPage(p => p + 1)}
-                            disabled={(page + 1) * 10 >= total}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                        >
-                            <i className="fa-solid fa-chevron-right text-sm"></i>
-                        </button>
-                    </div>
-                )}
-            </main>
+                <Pagination
+                    page={page}
+                    total={total}
+                    pageSize={10}
+                    onPageChange={setPage}
+                />
+        </main>
+            <ConfirmDialogComponent />
         </div>
     );
 };

@@ -6,10 +6,8 @@ import {
   IsObject,
   Min,
   Max,
-  ValidateNested,
   IsArray,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class CreateProviderDto {
   @IsString()

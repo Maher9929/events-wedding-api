@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Booking } from '../services/api';
-
-const COMMISSION_RATE = 0.10; // 10% platform commission
+import { toastService } from '../services/toast.service';
 
 const AdminCommissionsPage = () => {
     const { t } = useTranslation();
@@ -11,35 +10,42 @@ const AdminCommissionsPage = () => {
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
 
-    useEffect(() => {
-        loadBookings();
-    }, []);
-
-    const loadBookings = async () => {
+    const loadBookings = useCallback(async () => {
         setLoading(true);
         try {
             const data = await apiService.get<{ data?: Booking[] }>('/bookings');
             const list = Array.isArray(data) ? data : data?.data || [];
             setBookings(list);
-        } catch (error) {
-            console.error(t('admin_commissions.error_loading', 'Failed to load bookings:'), error);
+        } catch (_error) {
+            toastService.error(t('admin_commissions.error_loading', 'فشل تحميل الحجوزات'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        void loadBookings();
+    }, [loadBookings]);
 
     const filteredBookings = bookings.filter(b => {
         if (filterStatus === 'all') return true;
         return b.payment_status === filterStatus;
     });
 
+    const getCommission = (booking: Booking) => Number(booking.platform_fee ?? 0);
+    const getCommissionRate = (booking: Booking) => {
+        const amount = Number(booking.amount || 0);
+        return amount > 0 ? getCommission(booking) / amount : 0;
+    };
+
     const totalRevenue = bookings.reduce((sum, b) => sum + (b.amount || 0), 0);
     const paidBookings = bookings.filter(b => b.payment_status === 'fully_paid' || b.payment_status === 'deposit_paid');
     const paidRevenue = paidBookings.reduce((sum, b) => sum + (b.amount || 0), 0);
-    const totalCommissions = paidRevenue * COMMISSION_RATE;
+    const totalCommissions = paidBookings.reduce((sum, b) => sum + getCommission(b), 0);
     const pendingCommissions = bookings
         .filter(b => b.payment_status === 'pending')
-        .reduce((sum, b) => sum + ((b.amount || 0) * COMMISSION_RATE), 0);
+        .reduce((sum, b) => sum + getCommission(b), 0);
+    const averageCommissionRate = paidRevenue > 0 ? totalCommissions / paidRevenue : 0;
 
     return (
         <div className="space-y-6">
@@ -50,7 +56,7 @@ const AdminCommissionsPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="text-xs text-gray-500">{t('admin_commissions.commission_rate', 'نسبة العمولة:')}</span>
-                    <span className="px-3 py-1.5 rounded-xl bg-primary text-white text-sm font-bold">{(COMMISSION_RATE * 100).toFixed(0)}%</span>
+                    <span className="px-3 py-1.5 rounded-xl bg-primary text-white text-sm font-bold">{(averageCommissionRate * 100).toFixed(1)}%</span>
                 </div>
             </div>
 
@@ -104,20 +110,20 @@ const AdminCommissionsPage = () => {
                 <div className="space-y-3">
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-gray-600">{t('admin_commissions.platform_commission_label', 'عمولة المنصة ({{rate}}%)', { rate: (COMMISSION_RATE * 100).toFixed(0) })}</span>
+                            <span className="text-sm text-gray-600">{t('admin_commissions.platform_commission_label', 'عمولة المنصة ({{rate}}%)', { rate: (averageCommissionRate * 100).toFixed(1) })}</span>
                             <span className="text-sm font-bold text-primary">{totalCommissions.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-3">
-                            <div className="bg-primary h-3 rounded-full transition-all" style={{ width: `${COMMISSION_RATE * 100}%` }}></div>
+                            <div className="bg-primary h-3 rounded-full transition-all" style={{ width: `${Math.min(averageCommissionRate * 100, 100)}%` }}></div>
                         </div>
                     </div>
                     <div>
                         <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm text-gray-600">{t('admin_commissions.provider_share_label', 'حصة الموردين ({{rate}}%)', { rate: ((1 - COMMISSION_RATE) * 100).toFixed(0) })}</span>
+                            <span className="text-sm text-gray-600">{t('admin_commissions.provider_share_label', 'حصة الموردين ({{rate}}%)', { rate: ((1 - averageCommissionRate) * 100).toFixed(1) })}</span>
                             <span className="text-sm font-bold text-green-600">{(paidRevenue - totalCommissions).toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                         </div>
                         <div className="w-full bg-gray-100 rounded-full h-3">
-                            <div className="bg-green-500 h-3 rounded-full transition-all" style={{ width: `${(1 - COMMISSION_RATE) * 100}%` }}></div>
+                            <div className="bg-green-500 h-3 rounded-full transition-all" style={{ width: `${Math.max((1 - averageCommissionRate) * 100, 0)}%` }}></div>
                         </div>
                     </div>
                 </div>
@@ -171,8 +177,9 @@ const AdminCommissionsPage = () => {
                                 </tr>
                             ) : (
                                 filteredBookings.map(booking => {
-                                    const commission = (booking.amount || 0) * COMMISSION_RATE;
+                                    const commission = getCommission(booking);
                                     const providerShare = (booking.amount || 0) - commission;
+                                    const commissionRate = getCommissionRate(booking);
                                     return (
                                         <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4">
@@ -183,6 +190,7 @@ const AdminCommissionsPage = () => {
                                             </td>
                                             <td className="px-6 py-4 font-bold text-primary">
                                                 {commission.toLocaleString()} {t('common.currency', 'ر.ق')}
+                                                <div className="text-xs font-normal text-gray-400">{(commissionRate * 100).toFixed(1)}%</div>
                                             </td>
                                             <td className="px-6 py-4 font-bold text-green-600">
                                                 {providerShare.toLocaleString()} {t('common.currency', 'ر.ق')}
@@ -199,7 +207,7 @@ const AdminCommissionsPage = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">
-                                                {new Date(booking.created_at).toLocaleDateString('ar-EG')}
+                                                {new Date(booking.created_at).toLocaleDateString(t('common.date_locale', 'ar-EG'))}
                                             </td>
                                         </tr>
                                     );

@@ -1,40 +1,60 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Event } from '../services/api';
 import { toastService } from '../services/toast.service';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
+import StatusBadge from '../components/common/StatusBadge';
+import Pagination from '../components/common/Pagination';
 
 const AdminEventsPage = () => {
     const { t } = useTranslation();
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(0);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+    const PAGE_SIZE = 10;
 
-    useEffect(() => {
-        loadEvents();
-    }, []);
-
-    const loadEvents = async () => {
+    const loadEvents = useCallback(async () => {
         setLoading(true);
         try {
             const data = await apiService.get<{ data?: Event[] } | Event[]>('/events');
             const list = Array.isArray(data) ? data : data?.data || [];
             setEvents(list);
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_loading'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        void loadEvents();
+    }, [loadEvents]);
+
+    useEffect(() => {
+        setPage(0);
+    }, [searchTerm]);
 
     const handleDeleteEvent = async (eventId: string) => {
-        if (!window.confirm(t('common.admin.confirm_delete_event') || 'Are you sure you want to delete this event?')) return;
+        const ok = await confirm({
+            title: t('common.admin.confirm_delete_event', 'Delete Event'),
+            message: t('common.admin.confirm_delete_event_msg', 'Are you sure you want to delete this event? This action cannot be undone.'),
+            confirmLabel: t('common.delete', 'Delete'),
+            cancelLabel: t('common.cancel', 'Cancel'),
+        });
+        if (!ok) return;
+        setDeletingId(eventId);
         try {
-            await apiService.delete(`/events/${eventId}`);
+            await apiService.delete(`/events/id/${eventId}`);
             setEvents(prev => prev.filter(e => e.id !== eventId));
             toastService.success(t('common.admin.success_delete'));
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_deleting'));
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -42,6 +62,7 @@ const AdminEventsPage = () => {
         e.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.event_type?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const paginatedEvents = filteredEvents.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     return (
         <div className="space-y-6">
@@ -90,21 +111,15 @@ const AdminEventsPage = () => {
                                     <td colSpan={5} className="px-6 py-10 text-center text-gray-500">{t('common.no_results')}</td>
                                 </tr>
                             ) : (
-                                filteredEvents.map(event => (
+                                paginatedEvents.map(event => (
                                     <tr key={event.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-gray-800">{event.title}</div>
-                                            <div className="text-xs text-gray-400">#{(event as any).id.substring(0, 8).toUpperCase()}</div>
+                                            <div className="text-xs text-gray-400">#{event.id.substring(0, 8).toUpperCase()}</div>
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">{event.event_type}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${event.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                                    event.status === 'planning' ? 'bg-blue-100 text-blue-700' :
-                                                        event.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                                            'bg-yellow-100 text-yellow-700'
-                                                }`}>
-                                                {event.status}
-                                            </span>
+                                            <StatusBadge status={event.status} />
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-500">
                                             {new Date(event.event_date).toLocaleDateString()}
@@ -112,10 +127,11 @@ const AdminEventsPage = () => {
                                         <td className="px-6 py-4 text-center">
                                             <button
                                                 onClick={() => handleDeleteEvent(event.id)}
-                                                className="text-red-400 hover:text-red-600 transition-colors p-2"
+                                                disabled={deletingId === event.id}
+                                                className="text-red-400 hover:text-red-600 transition-colors p-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                                 title={t('common.delete')}
                                             >
-                                                <i className="fa-solid fa-trash-can"></i>
+                                                <i className={`fa-solid ${deletingId === event.id ? 'fa-spinner fa-spin' : 'fa-trash-can'}`}></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -125,6 +141,13 @@ const AdminEventsPage = () => {
                     </table>
                 </div>
             </div>
+            <Pagination
+                page={page}
+                total={filteredEvents.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+            />
+            <ConfirmDialogComponent />
         </div>
     );
 };

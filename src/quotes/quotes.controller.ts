@@ -65,22 +65,26 @@ export class QuotesController {
     );
   }
 
-  @Get(':id')
+  @Get('id/:id')
   findOne(@Request() req, @Param('id') id: string) {
     return this.quotesService.findOne(id, req.user.id);
   }
 
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   create(@Request() req, @Body() createQuoteDto: CreateQuoteDto) {
     return this.quotesService.create(req.user.id, createQuoteDto);
   }
 
-  @Patch(':id/send')
+  @Patch('id/:id/send')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   send(@Request() req, @Param('id') id: string) {
     return this.quotesService.send(id, req.user.id);
   }
 
-  @Patch(':id/status')
+  @Patch('id/:id/status')
   updateStatus(
     @Request() req,
     @Param('id') id: string,
@@ -89,7 +93,7 @@ export class QuotesController {
     return this.quotesService.updateStatus(id, req.user.id, status);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Request() req, @Param('id') id: string) {
     return this.quotesService.remove(id, req.user.id);
@@ -97,6 +101,8 @@ export class QuotesController {
 
   // Quote Request endpoints
   @Post('request')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
   createQuoteRequest(
     @Request() req,
     @Body() createQuoteRequestDto: CreateQuoteRequestDto,
@@ -108,6 +114,8 @@ export class QuotesController {
   }
 
   @Get('request')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.CLIENT, UserRole.ADMIN)
   findQuoteRequests(@Request() req, @Query('status') status?: string) {
     return this.quotesService.findQuoteRequests(req.user.id, status);
   }

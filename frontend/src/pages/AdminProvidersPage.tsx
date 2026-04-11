@@ -1,38 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Provider } from '../services/api';
 import { toastService } from '../services/toast.service';
+import Pagination from '../components/common/Pagination';
 
 const AdminProvidersPage = () => {
     const { t } = useTranslation();
     const [providers, setProviders] = useState<Provider[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(0);
+    const PAGE_SIZE = 10;
 
-    useEffect(() => {
-        loadProviders();
-    }, []);
-
-    const loadProviders = async () => {
+    const loadProviders = useCallback(async () => {
         setLoading(true);
         try {
             const data = await apiService.get<{ data?: Provider[] } | Provider[]>('/providers');
             const list = Array.isArray(data) ? data : data?.data || [];
             setProviders(list);
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_loading'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        void loadProviders();
+    }, [loadProviders]);
+
+    useEffect(() => {
+        setPage(0);
+    }, [searchTerm]);
 
     const handleVerificationToggle = async (providerId: string, currentStatus: boolean) => {
         try {
-            await apiService.patch(`/providers/${providerId}/verify`, { isVerified: !currentStatus });
+            await apiService.patch(`/providers/id/${providerId}/verify`, { isVerified: !currentStatus });
             setProviders(prev => prev.map(p => p.id === providerId ? { ...p, is_verified: !currentStatus } : p));
             toastService.success(t('common.admin.success_update'));
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_updating'));
         }
     };
@@ -41,6 +48,7 @@ const AdminProvidersPage = () => {
         p.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.business_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const paginatedProviders = filteredProviders.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     return (
         <div className="space-y-6">
@@ -89,7 +97,7 @@ const AdminProvidersPage = () => {
                                     <td colSpan={5} className="px-6 py-10 text-center text-gray-500">{t('common.no_results')}</td>
                                 </tr>
                             ) : (
-                                filteredProviders.map(provider => (
+                                paginatedProviders.map(provider => (
                                     <tr key={provider.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-gray-800">{provider.company_name || provider.business_name}</div>
@@ -127,6 +135,13 @@ const AdminProvidersPage = () => {
                     </table>
                 </div>
             </div>
+
+            <Pagination
+                page={page}
+                total={filteredProviders.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+            />
         </div>
     );
 };

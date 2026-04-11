@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type Event } from '../services/api';
 import { bookingsService, type Booking } from '../services/bookings.service';
@@ -22,23 +22,16 @@ const ClientDashboard = () => {
     const [allEvents, setAllEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (isAuthenticated) {
-            fetchAllData();
-        } else {
-            setLoading(false);
-        }
-    }, [isAuthenticated]);
-
-    const fetchAllData = async () => {
+    const fetchAllData = useCallback(async () => {
         setLoading(true);
         try {
-            const [eventsData, bookingsData, _quotesData, convosData] = await Promise.all([
+            const [eventsData, bookingsData, quotesData, convosData] = await Promise.all([
                 eventsService.getMyEvents().catch(() => ({ data: [], total: 0 })),
                 bookingsService.getMyBookings().catch(() => ({ data: [], total: 0 })),
                 quotesService.getMyQuotes().catch(() => ({ data: [], total: 0 })),
                 messagesService.getConversations().catch(() => [])
             ]);
+            void quotesData;
 
             const eventsList = Array.isArray(eventsData) ? eventsData : (eventsData as { data?: Event[] })?.data || [];
             setEvents(eventsList);
@@ -50,13 +43,19 @@ const ClientDashboard = () => {
 
             setRecentMessages(convosData.slice(0, 3));
 
-        } catch (error: unknown) {
-            toastService.error(t('common.error_loading', 'فشل تحميل البيانات'));
-            console.error('Error fetching dashboard data:', error);
-        } finally {
+        } catch (_error) {
+            toastService.error(t('common.error_loading', 'فشل تحميل البيانات'));        } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            void fetchAllData();
+        } else {
+            setLoading(false);
+        }
+    }, [fetchAllData, isAuthenticated]);
 
     const sortedEvents = [...events].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
     const nextEvent = sortedEvents.length > 0
@@ -75,8 +74,8 @@ const ClientDashboard = () => {
             {/* Premium Hero Section */}
             <div className="relative w-full overflow-hidden bg-gray-900 rounded-3xl mb-6 shadow-2xl animate-scale-in">
                 <div className="absolute inset-0">
-                    <img 
-                        src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80" 
+                    <img loading="lazy" 
+                        src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=40&fm=webp" 
                         alt="Client Dashboard" 
                         className="w-full h-full object-cover opacity-30"
                     />
@@ -200,7 +199,7 @@ const ClientDashboard = () => {
                         >
                             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary flex-shrink-0 overflow-hidden">
                                 {convo.recipient_avatar ? (
-                                    <img src={convo.recipient_avatar} alt="" className="w-full h-full object-cover" />
+                                    <img loading="lazy" src={convo.recipient_avatar} alt="" className="w-full h-full object-cover" />
                                 ) : (
                                     convo.recipient_name?.charAt(0)
                                 )}
@@ -236,7 +235,7 @@ const ClientDashboard = () => {
                             completed: { text: t('bookings.status.completed', 'مكتمل'), cls: 'bg-blue-100 text-blue-700' },
                         };
                         const st = statusMap[booking.status] || { text: booking.status, cls: 'bg-gray-100 text-gray-700' };
-                        const serviceTitle = (booking as any).services?.title;
+                        const serviceTitle = booking.services?.title;
                         return (
                             <Link key={booking.id} to={`/client/bookings/${booking.id}`} className="glass-effect rounded-2xl p-4 shadow-premium flex items-center gap-4 card-hover">
                                 <div className="w-12 h-12 rounded-xl bg-bglight flex items-center justify-center text-primary flex-shrink-0">

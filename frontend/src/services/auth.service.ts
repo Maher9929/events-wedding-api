@@ -22,6 +22,11 @@ export const authService = {
   },
 
   logout(): void {
+    // Notify backend to blacklist the token (fire-and-forget)
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      apiService.post('/users/logout', {}).catch(() => { /* non-critical */ });
+    }
     localStorage.removeItem('access_token');
     localStorage.removeItem('user');
     window.location.href = '/';

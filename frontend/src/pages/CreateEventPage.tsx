@@ -6,7 +6,7 @@ import { apiService } from '../services/api';
 import { toastService } from '../services/toast.service';
 
 const CreateEventPage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
     const [loading, setLoading] = useState(false);
@@ -77,8 +77,8 @@ const CreateEventPage = () => {
             } else {
                 navigate('/client/dashboard');
             }
-        } catch (err: any) {
-            const errorMsg = err?.message || t('events.create.error', 'فشل في إنشاء الفعالية');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : t('events.create.error', 'فشل في إنشاء الفعالية');
             setError(errorMsg);
             toastService.error(errorMsg);
         } finally {
@@ -87,7 +87,7 @@ const CreateEventPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-bglight p-5" dir="rtl">
+        <div className="min-h-screen bg-bglight p-5" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             <div className="max-w-2xl mx-auto">
                 <button
                     onClick={() => navigate(-1)}

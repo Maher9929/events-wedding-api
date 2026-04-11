@@ -29,16 +29,16 @@ const QuoteRequestPage = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        apiService.get<Event[]>('/events/my-events')
-            .then(data => setEvents(Array.isArray(data) ? data : (data as any)?.data || []))
-            .catch(() => { });
+        apiService.get<Event[] | { data?: Event[] }>('/events/my-events')
+            .then(data => setEvents(Array.isArray(data) ? data : data?.data || []))
+            .catch(() => { /* events list is non-critical */ });
 
         categoriesService.getAll()
-            .then(data => {
-                const list = Array.isArray(data) ? data : (data as any)?.data || [];
+            .then((data: Category[] | { data?: Category[] }) => {
+                const list = Array.isArray(data) ? data : data?.data || [];
                 setCategories(list);
             })
-            .catch(() => { });
+            .catch(() => { /* categories list is non-critical */ });
     }, []);
 
     const addItem = () => {
@@ -94,7 +94,7 @@ const QuoteRequestPage = () => {
             await apiService.post('/quotes/request', payload);
             toastService.success(t('quote_request.success', 'تم إرسال طلب عرض السعر بنجاح'));
             navigate('/client/quotes');
-        } catch {
+        } catch (_error) {
             toastService.error(t('quote_request.error', 'حدث خطأ في إرسال الطلب'));
         } finally {
             setLoading(false);
@@ -125,7 +125,7 @@ const QuoteRequestPage = () => {
                                 <option value="">{t('quote_request.select_event', 'اختر فعالية')}</option>
                                 {events.map(ev => (
                                     <option key={ev.id} value={ev.id}>
-                                        {ev.title} - {new Date(ev.event_date).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'ar-EG')}
+                                        {ev.title} - {new Date(ev.event_date).toLocaleDateString(t('common.date_locale', 'ar-EG'))}
                                     </option>
                                 ))}
                             </select>

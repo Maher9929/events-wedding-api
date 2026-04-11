@@ -9,13 +9,13 @@ interface SEOProps {
 
 const SEO: React.FC<SEOProps> = ({
     title,
-    description = "منصة متكاملة لحجز خدمات المناسبات والأفراح بأسعار منافسة.",
+    description = "The ultimate platform for booking event services at competitive prices.",
     image = "/og-image.jpg",
     url = window.location.href
 }) => {
     useEffect(() => {
         // Basic Tags
-        document.title = `${title} | منصة المناسبات`;
+        document.title = `${title} | DOUSHA`;
 
         const setMetaTag = (name: string, content: string, isProperty = false) => {
             const attr = isProperty ? 'property' : 'name';

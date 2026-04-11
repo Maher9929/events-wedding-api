@@ -1,20 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Booking } from '../services/api';
 import { toastService } from '../services/toast.service';
+import StatusBadge from '../components/common/StatusBadge';
+import Pagination from '../components/common/Pagination';
 
 const AdminBookingsPage = () => {
     const { t } = useTranslation();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('all');
+    const [page, setPage] = useState(0);
+    const PAGE_SIZE = 10;
 
-    useEffect(() => {
-        loadBookings();
-    }, [statusFilter]);
-
-    const loadBookings = async () => {
+    const loadBookings = useCallback(async () => {
         setLoading(true);
         try {
             const endpoint = statusFilter === 'all' ? '/bookings' : `/bookings?status=${statusFilter}`;
@@ -22,22 +22,32 @@ const AdminBookingsPage = () => {
             const res = await apiService.get<BookingResponse | Booking[]>(endpoint);
             const list = Array.isArray(res) ? res : res?.data || [];
             setBookings(list);
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_loading', 'حدث خطأ أثناء التحميل'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter, t]);
+
+    useEffect(() => {
+        void loadBookings();
+    }, [loadBookings]);
+
+    useEffect(() => {
+        setPage(0);
+    }, [statusFilter]);
 
     const handleStatusUpdate = async (bookingId: string, newStatus: string) => {
         try {
-            await apiService.patch(`/bookings/${bookingId}/status`, { status: newStatus });
+            await apiService.patch(`/bookings/id/${bookingId}/status`, { status: newStatus });
             setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus as Booking['status'] } : b));
             toastService.success(t('common.admin.success_update', 'تم التحديث بنجاح'));
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_updating', 'فشل التحديث'));
         }
     };
+
+    const paginatedBookings = bookings.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     return (
         <div className="space-y-6">
@@ -111,8 +121,8 @@ const AdminBookingsPage = () => {
                                     <td colSpan={5} className="px-6 py-10 text-center text-gray-500">{t('common.no_results', 'لا توجد نتائج')}</td>
                                 </tr>
                             ) : (
-                                bookings.map(booking => {
-                                    const serviceTitle = (booking as any).services?.title || 'Service ID: ' + booking.service_id;
+                                paginatedBookings.map(booking => {
+                                    const serviceTitle = booking.services?.title || 'Service ID: ' + booking.service_id;
                                     return (
                                         <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4">
@@ -129,16 +139,7 @@ const AdminBookingsPage = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-xl text-xs font-bold ${booking.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                            booking.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-red-100 text-red-700'
-                                                    }`}>
-                                                    {booking.status === 'confirmed' ? t('bookings.status.confirmed', 'مؤكد') :
-                                                        booking.status === 'pending' ? t('bookings.status.pending', 'قيد الانتظار') :
-                                                            booking.status === 'completed' ? t('bookings.status.completed', 'مكتمل') :
-                                                                t('bookings.status.cancelled', 'ملغي')}
-                                                </span>
+                                                <StatusBadge status={booking.status} />
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">
                                                 {new Date(booking.created_at).toLocaleDateString()}
@@ -165,6 +166,13 @@ const AdminBookingsPage = () => {
                     </table>
                 </div>
             </div>
+
+            <Pagination
+                page={page}
+                total={bookings.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+            />
         </div>
     );
 };

@@ -33,6 +33,38 @@ export class EventsService {
     private readonly supabase: SupabaseClient,
   ) {}
 
+  private async assertEventOwnership(
+    eventId: string,
+    userId: string,
+  ): Promise<Event> {
+    const event = await this.findOne(eventId);
+    if (event.client_id !== userId) {
+      throw new ForbiddenException('You can only access your own events');
+    }
+    return event;
+  }
+
+  private async getEventIdFromChild(
+    table:
+      | 'event_budgets'
+      | 'event_tasks'
+      | 'event_timeline_items'
+      | 'event_guests',
+    childId: string,
+  ): Promise<string> {
+    const { data, error } = await this.supabase
+      .from(table)
+      .select('event_id')
+      .eq('id', childId)
+      .single();
+
+    if (error || !data?.event_id) {
+      throw new NotFoundException('Event item not found');
+    }
+
+    return data.event_id;
+  }
+
   async create(
     clientId: string,
     createEventDto: CreateEventDto,
@@ -154,7 +186,7 @@ export class EventsService {
     const { data, error, count } = await queryBuilder;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return {
@@ -224,7 +256,7 @@ export class EventsService {
     const { data, error, count } = await q;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return {
@@ -242,7 +274,7 @@ export class EventsService {
       .from('events')
       .select('event_type, status');
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
 
     const events = data || [];
     const by_type: Record<string, number> = {};
@@ -266,7 +298,7 @@ export class EventsService {
       .limit(limit);
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data || [];
@@ -284,7 +316,7 @@ export class EventsService {
       .limit(limit);
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data || [];
@@ -299,7 +331,7 @@ export class EventsService {
       .limit(limit);
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data || [];
@@ -310,11 +342,7 @@ export class EventsService {
     userId: string,
     updateEventDto: UpdateEventDto,
   ): Promise<Event> {
-    // Verify ownership
-    const event = await this.findOne(id);
-    if (event.client_id !== userId) {
-      throw new ForbiddenException('You can only update your own events');
-    }
+    await this.assertEventOwnership(id, userId);
 
     const { data, error } = await this.supabase
       .from('events')
@@ -341,6 +369,7 @@ export class EventsService {
 
   async updateStatus(
     id: string,
+    userId: string,
     status:
       | 'planning'
       | 'confirmed'
@@ -348,6 +377,8 @@ export class EventsService {
       | 'completed'
       | 'cancelled',
   ): Promise<Event> {
+    await this.assertEventOwnership(id, userId);
+
     const { data, error } = await this.supabase
       .from('events')
       .update({ status })
@@ -363,11 +394,7 @@ export class EventsService {
   }
 
   async remove(id: string, userId: string): Promise<void> {
-    // Verify ownership
-    const event = await this.findOne(id);
-    if (event.client_id !== userId) {
-      throw new ForbiddenException('You can only delete your own events');
-    }
+    await this.assertEventOwnership(id, userId);
 
     const { error } = await this.supabase.from('events').delete().eq('id', id);
 
@@ -377,21 +404,26 @@ export class EventsService {
   }
 
   // Budget Features
-  async getBudget(eventId: string): Promise<EventBudget[]> {
+  async getBudget(eventId: string, userId: string): Promise<EventBudget[]> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_budgets')
       .select('*')
       .eq('event_id', eventId)
       .order('created_at', { ascending: true });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
   async addBudgetItem(
     eventId: string,
+    userId: string,
     dto: CreateBudgetDto,
   ): Promise<EventBudget> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_budgets')
       .insert({ ...dto, event_id: eventId })
@@ -409,8 +441,12 @@ export class EventsService {
 
   async updateBudgetItem(
     id: string,
+    userId: string,
     dto: UpdateBudgetDto,
   ): Promise<EventBudget> {
+    const eventId = await this.getEventIdFromChild('event_budgets', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_budgets')
       .update(dto)
@@ -418,32 +454,43 @@ export class EventsService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
-  async removeBudgetItem(id: string): Promise<void> {
+  async removeBudgetItem(id: string, userId: string): Promise<void> {
+    const eventId = await this.getEventIdFromChild('event_budgets', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { error } = await this.supabase
       .from('event_budgets')
       .delete()
       .eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
   }
 
   // Checklist Features
-  async getTasks(eventId: string): Promise<EventTask[]> {
+  async getTasks(eventId: string, userId: string): Promise<EventTask[]> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_tasks')
       .select('*')
       .eq('event_id', eventId)
       .order('due_date', { ascending: true });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
-  async addTask(eventId: string, dto: CreateTaskDto): Promise<EventTask> {
+  async addTask(
+    eventId: string,
+    userId: string,
+    dto: CreateTaskDto,
+  ): Promise<EventTask> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_tasks')
       .insert({ ...dto, event_id: eventId })
@@ -459,7 +506,14 @@ export class EventsService {
     return data;
   }
 
-  async updateTask(id: string, dto: UpdateTaskDto): Promise<EventTask> {
+  async updateTask(
+    id: string,
+    userId: string,
+    dto: UpdateTaskDto,
+  ): Promise<EventTask> {
+    const eventId = await this.getEventIdFromChild('event_tasks', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_tasks')
       .update(dto)
@@ -467,35 +521,46 @@ export class EventsService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
-  async removeTask(id: string): Promise<void> {
+  async removeTask(id: string, userId: string): Promise<void> {
+    const eventId = await this.getEventIdFromChild('event_tasks', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { error } = await this.supabase
       .from('event_tasks')
       .delete()
       .eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
   }
 
   // Timeline Features
-  async getTimeline(eventId: string): Promise<EventTimelineItem[]> {
+  async getTimeline(
+    eventId: string,
+    userId: string,
+  ): Promise<EventTimelineItem[]> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_timeline_items')
       .select('*')
       .eq('event_id', eventId)
       .order('start_time', { ascending: true });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
   async addTimelineItem(
     eventId: string,
+    userId: string,
     dto: CreateTimelineItemDto,
   ): Promise<EventTimelineItem> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_timeline_items')
       .insert({ ...dto, event_id: eventId })
@@ -513,8 +578,12 @@ export class EventsService {
 
   async updateTimelineItem(
     id: string,
+    userId: string,
     dto: UpdateTimelineItemDto,
   ): Promise<EventTimelineItem> {
+    const eventId = await this.getEventIdFromChild('event_timeline_items', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_timeline_items')
       .update(dto)
@@ -522,44 +591,62 @@ export class EventsService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
-  async removeTimelineItem(id: string): Promise<void> {
+  async removeTimelineItem(id: string, userId: string): Promise<void> {
+    const eventId = await this.getEventIdFromChild('event_timeline_items', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { error } = await this.supabase
       .from('event_timeline_items')
       .delete()
       .eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
   }
 
   // ─── Guest Management ─────────────────────────────────────────────────────
 
-  async getGuests(eventId: string): Promise<any[]> {
+  async getGuests(eventId: string, userId: string): Promise<any[]> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_guests')
       .select('*')
       .eq('event_id', eventId)
       .order('created_at', { ascending: true });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
-  async addGuest(eventId: string, dto: CreateGuestDto): Promise<any> {
+  async addGuest(
+    eventId: string,
+    userId: string,
+    dto: CreateGuestDto,
+  ): Promise<any> {
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_guests')
       .insert({ ...dto, event_id: eventId })
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
-  async updateGuest(id: string, dto: UpdateGuestDto): Promise<any> {
+  async updateGuest(
+    id: string,
+    userId: string,
+    dto: UpdateGuestDto,
+  ): Promise<any> {
+    const eventId = await this.getEventIdFromChild('event_guests', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { data, error } = await this.supabase
       .from('event_guests')
       .update(dto)
@@ -567,26 +654,32 @@ export class EventsService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
-  async removeGuest(id: string): Promise<void> {
+  async removeGuest(id: string, userId: string): Promise<void> {
+    const eventId = await this.getEventIdFromChild('event_guests', id);
+    await this.assertEventOwnership(eventId, userId);
+
     const { error } = await this.supabase
       .from('event_guests')
       .delete()
       .eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
   }
 
-  async getGuestStats(eventId: string): Promise<{
+  async getGuestStats(
+    eventId: string,
+    userId: string,
+  ): Promise<{
     total: number;
     invited: number;
     confirmed: number;
     declined: number;
   }> {
-    const guests = await this.getGuests(eventId);
+    const guests = await this.getGuests(eventId, userId);
     return {
       total: guests.length,
       invited: guests.filter((g) => g.status === 'invited').length,

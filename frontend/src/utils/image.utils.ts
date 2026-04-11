@@ -11,41 +11,53 @@ interface ImageOptions {
     resize?: 'cover' | 'contain' | 'fill';
 }
 
+const normalizeSupabaseStorageUrl = (url: string): string => {
+    if (!url.includes('supabase.co/storage/v1/')) {
+        return url;
+    }
+
+    if (url.includes('/storage/v1/object/public/') || url.includes('/storage/v1/render/image/public/')) {
+        return url;
+    }
+
+    // Handle legacy/private-like URLs saved in DB such as:
+    // .../storage/v1/object/attachments/path/to/file.png
+    if (url.includes('/storage/v1/object/')) {
+        return url.replace('/storage/v1/object/', '/storage/v1/object/public/');
+    }
+
+    return url;
+};
+
 /**
  * Generates an optimized URL for a Supabase Storage object.
  * If the URL is not a Supabase URL, it returns the original URL.
  */
 export const getOptimizedImageUrl = (url: string | undefined, options: ImageOptions = {}): string => {
-    if (!url) return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&q=80';
+    if (!url) return 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200&q=60&fm=webp';
 
-    // Check if it's a Supabase Storage URL
-    if (!url.includes('supabase.co/storage/v1/render/image/public/') && !url.includes('/storage/v1/object/public/')) {
-        return url;
+    // For Unsplash URLs, apply width/quality/format params
+    if (url.includes('images.unsplash.com')) {
+        const u = new URL(url);
+        if (options.width) u.searchParams.set('w', String(options.width));
+        if (options.height) u.searchParams.set('h', String(options.height));
+        if (options.quality) u.searchParams.set('q', String(options.quality));
+        if (options.resize) u.searchParams.set('fit', options.resize === 'cover' ? 'crop' : options.resize);
+        u.searchParams.set('fm', options.format || 'webp');
+        u.searchParams.set('auto', 'format');
+        return u.toString();
     }
 
-    // Convert standard public URL to transformation URL if it's not already
-    // Standard: .../storage/v1/object/public/bucket/path/to/file.jpg
-    // Transform: .../storage/v1/render/image/public/bucket/path/to/file.jpg?width=...
+    const normalizedUrl = normalizeSupabaseStorageUrl(url);
 
-    let baseUrl = url;
-    if (url.includes('/storage/v1/object/public/')) {
-        baseUrl = url.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+    // Note: Image transformations (/render/image/) require Supabase Pro plan.
+    // On the Free plan, just return the normalized public URL directly.
+    // If render/image URL was somehow stored, convert back to object/public.
+    if (normalizedUrl.includes('/storage/v1/render/image/public/')) {
+        return normalizedUrl.replace('/storage/v1/render/image/public/', '/storage/v1/object/public/');
     }
 
-    const params = new URLSearchParams();
-    if (options.width) params.set('width', options.width.toString());
-    if (options.height) params.set('height', options.height.toString());
-    if (options.quality) params.set('quality', options.quality.toString());
-    if (options.format) params.set('format', options.format);
-    if (options.resize) params.set('resize', options.resize);
-
-    // Default format to WebP for optimization
-    if (!params.has('format')) {
-        params.set('format', 'webp');
-    }
-
-    const queryString = params.toString();
-    return queryString ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${queryString}` : baseUrl;
+    return normalizedUrl;
 };
 
 /**

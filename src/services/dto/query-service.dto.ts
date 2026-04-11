@@ -71,13 +71,17 @@ export class QueryServiceDto {
   @IsOptional()
   is_featured?: boolean;
 
-  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
+  @Transform(({ value }) =>
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
+  )
   @IsNumber()
   @Min(0)
   @IsOptional()
   limit?: number;
 
-  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
+  @Transform(({ value }) =>
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
+  )
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -107,13 +111,17 @@ export class QueryServiceDto {
   @IsOptional()
   category?: string;
 
-  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
+  @Transform(({ value }) =>
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
+  )
   @IsNumber()
   @Min(0)
   @IsOptional()
   min_capacity?: number;
 
-  @Transform(({ value }) => (value && !isNaN(Number(value)) ? Number(value) : undefined))
+  @Transform(({ value }) =>
+    value && !isNaN(Number(value)) ? Number(value) : undefined,
+  )
   @IsNumber()
   @Min(0)
   @IsOptional()

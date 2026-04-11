@@ -38,17 +38,30 @@ describe('UsersService', () => {
 
   describe('register', () => {
     it('should throw ConflictException if email already exists', async () => {
-      supabase.single.mockResolvedValueOnce({ data: { email: 'e@t.com' }, error: null });
+      supabase.single.mockResolvedValueOnce({
+        data: { email: 'e@t.com' },
+        error: null,
+      });
 
       await expect(
-        service.register({ email: 'e@t.com', password: 'P@ss1234', full_name: 'T', role: 'client' as any }),
+        service.register({
+          email: 'e@t.com',
+          password: 'P@ss1234',
+          full_name: 'T',
+          role: 'client' as any,
+        }),
       ).rejects.toThrow(ConflictException);
     });
   });
 
   describe('findOne', () => {
     it('should return a user when found', async () => {
-      const user = { id: '1', email: 't@t.com', full_name: 'Test', role: 'client' };
+      const user = {
+        id: '1',
+        email: 't@t.com',
+        full_name: 'Test',
+        role: 'client',
+      };
       supabase.single.mockResolvedValueOnce({ data: user, error: null });
 
       const result = await service.findOne('1');
@@ -56,7 +69,10 @@ describe('UsersService', () => {
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      supabase.single.mockResolvedValueOnce({ data: null, error: { message: 'not found' } });
+      supabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'not found' },
+      });
 
       await expect(service.findOne('x')).rejects.toThrow(NotFoundException);
     });

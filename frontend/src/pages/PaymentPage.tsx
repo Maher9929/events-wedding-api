@@ -32,7 +32,7 @@ const CheckoutForm = ({ bookingId, amount, paymentType, onSuccess }: { bookingId
 
     useEffect(() => {
         // Load booking details for professional display
-        apiService.get<Booking>(`/bookings/${bookingId}`)
+        apiService.get<Booking>(`/bookings/id/${bookingId}`)
             .then(data => setBooking(data))
             .catch(() => { });
     }, [bookingId]);
@@ -62,7 +62,7 @@ const CheckoutForm = ({ bookingId, amount, paymentType, onSuccess }: { bookingId
             } else if (paymentIntent?.status === 'succeeded') {
                 try {
                     await apiService.post(`/payments/confirm/${bookingId}`, { paymentIntentId: paymentIntent.id });
-                } catch { /* silent - status will be updated via webhook if available */ }
+                } catch (_error) { /* silent - status will be updated via webhook if available */ }
                 toastService.success(t('payment.success', 'تم الدفع بنجاح!'));
                 onSuccess();
             }
@@ -121,7 +121,7 @@ const CheckoutForm = ({ bookingId, amount, paymentType, onSuccess }: { bookingId
 
 const PaymentPage = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { bookingId: paramBookingId } = useParams();
     const [searchParams] = useSearchParams();
     const bookingId = paramBookingId || searchParams.get('booking_id') || '';
@@ -137,13 +137,11 @@ const PaymentPage = () => {
 
     useEffect(() => {
         if (!bookingId) return;
-        apiService.get<any>(`/payments/status/${bookingId}`)
-            .then((data: any) => {
-                const payload = data?.data || data;
-                const status = payload?.payment_status;
-                setPaymentStatus(status);
-                if (typeof payload?.balance_amount === 'number') setRemainingAmount(payload.balance_amount);
-                if (typeof payload?.amount === 'number') setBookingAmount(payload.amount);
+        apiService.get<{ payment_status?: string; balance_amount?: number; amount?: number }>(`/payments/status/${bookingId}`)
+            .then((data) => {
+                setPaymentStatus(data?.payment_status || null);
+                if (typeof data?.balance_amount === 'number') setRemainingAmount(data.balance_amount);
+                if (typeof data?.amount === 'number') setBookingAmount(data.amount);
             })
             .catch(() => { })
             .finally(() => setLoadingStatus(false));
@@ -169,7 +167,7 @@ const PaymentPage = () => {
 
     if (!stripeKey) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir="rtl">
+            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                 <div className="text-center">
                     <i className="fa-solid fa-triangle-exclamation text-4xl text-red-500 mb-4"></i>
                     <p className="text-gray-600 font-bold">{t('payment.stripe_missing', 'خدمة الدفع غير متوفرة حالياً')}</p>
@@ -183,7 +181,7 @@ const PaymentPage = () => {
 
     if (!bookingId) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir="rtl">
+            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                 <div className="text-center">
                     <i className="fa-solid fa-triangle-exclamation text-4xl text-yellow-500 mb-4"></i>
                     <p className="text-gray-600">{t('payment.invalid_data', 'بيانات الدفع غير صحيحة')}</p>
@@ -202,7 +200,7 @@ const PaymentPage = () => {
 
     if (paymentStatus === 'fully_paid' || effectiveRemaining <= 0) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir="rtl">
+            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                 <div className="text-center bg-white rounded-3xl p-10 shadow-sm max-w-sm mx-4">
                     <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <i className="fa-solid fa-check text-green-500 text-3xl"></i>
@@ -219,7 +217,7 @@ const PaymentPage = () => {
 
     if (payableAmount <= 0) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir="rtl">
+            <div className="min-h-screen flex items-center justify-center bg-bglight font-tajawal" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                 <div className="text-center">
                     <i className="fa-solid fa-triangle-exclamation text-4xl text-yellow-500 mb-4"></i>
                     <p className="text-gray-600">{t('payment.invalid_data', 'بيانات الدفع غير صحيحة')}</p>
@@ -229,7 +227,7 @@ const PaymentPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-bglight font-tajawal pb-10" dir="rtl">
+        <div className="min-h-screen bg-bglight font-tajawal pb-10" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             <div className="max-w-md mx-auto px-4 pt-8">
                 <div className="flex items-center gap-3 mb-6">
                     <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center">

@@ -1,5 +1,437 @@
 [
   {
+    "description": "  En tant qu'administrateur de Dousha\n  Je veux pouvoir gérer les utilisateurs, services et contenus\n  Afin d'assurer le bon fonctionnement de la marketplace",
+    "elements": [
+      {
+        "description": "",
+        "id": "administration-de-la-plateforme;tableau-de-bord-administrateur",
+        "keyword": "Scenario",
+        "line": 6,
+        "name": "Tableau de bord administrateur",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 1243445399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "je suis connecté en tant qu'admin",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:122"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 995698800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 8,
+            "name": "je vais sur le dashboard admin",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:128"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 169052300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 9,
+            "name": "je devrais voir les statistiques globales",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31046799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "je devrais voir le nombre total d'utilisateurs",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:138"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 49709299
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "je devrais voir le nombre de réservations",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:143"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15631499
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 62851900
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "administration-de-la-plateforme;gestion-des-utilisateurs",
+        "keyword": "Scenario",
+        "line": 13,
+        "name": "Gestion des utilisateurs",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 843462399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 14,
+            "name": "je suis connecté en tant qu'admin",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:122"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 989281699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 15,
+            "name": "je vais sur la page \"Utilisateurs\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 111137600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 16,
+            "name": "je devrais voir la liste de tous les utilisateurs",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:148"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28240100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 17,
+            "name": "chaque utilisateur devrait afficher son rôle et son statut",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:153"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 29171399
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 58295100
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "administration-de-la-plateforme;gestion-des-catégories",
+        "keyword": "Scenario",
+        "line": 19,
+        "name": "Gestion des catégories",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 787812799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 20,
+            "name": "je suis connecté en tant qu'admin",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:122"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 999377099
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "je vais sur la page \"Catégories\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 125130699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "je crée une nouvelle catégorie \"DJ & Animation\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:161"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 38377100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 23,
+            "name": "la catégorie devrait apparaître dans la liste",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:170"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14138999
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 60636000
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "administration-de-la-plateforme;modération-des-avis",
+        "keyword": "Scenario",
+        "line": 25,
+        "name": "Modération des avis",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 853965700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 26,
+            "name": "je suis connecté en tant qu'admin",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:122"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 974734800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 27,
+            "name": "je vais sur la page \"Modération\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 132547199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 28,
+            "name": "je devrais voir les contenus signalés",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:175"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 36294300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 29,
+            "name": "je supprime un avis inapproprié",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:180"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19803400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 30,
+            "name": "l'avis devrait être retiré de la plateforme",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:185"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14216000
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 61326000
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "administration-de-la-plateforme;consultation-des-logs-d'audit",
+        "keyword": "Scenario",
+        "line": 32,
+        "name": "Consultation des logs d'audit",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 791289300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 33,
+            "name": "je suis connecté en tant qu'admin",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:122"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1000549600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 34,
+            "name": "je vais sur la page \"Logs d'audit\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 106942699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 35,
+            "name": "je devrais voir l'historique des actions critiques",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:190"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37106200
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 36,
+            "name": "chaque entrée devrait contenir la date, l'utilisateur et l'action",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:195"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 13722899
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 58237500
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "administration-de-la-plateforme",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Administration de la plateforme",
+    "tags": [],
+    "uri": "test\\features\\admin.feature"
+  },
+  {
     "description": "  En tant qu'utilisateur de la plateforme Dousha\n  Je veux pouvoir m'inscrire et me connecter\n  Afin d'accéder aux fonctionnalités de la marketplace",
     "elements": [
       {
@@ -13,17 +445,8 @@
             "keyword": "Before",
             "hidden": true,
             "result": {
-              "status": "failed",
-              "duration": 30158406799,
-              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
-            }
-          },
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 914672199
             }
           },
           {
@@ -32,11 +455,11 @@
             "line": 7,
             "name": "je suis sur la page d'inscription",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:30"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:16"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1313685300
             }
           },
           {
@@ -45,11 +468,11 @@
             "line": 8,
             "name": "je remplis le formulaire avec un email \"test_client@dousha.com\" et mot de passe \"Test1234!\"",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:44"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:30"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 346972299
             }
           },
           {
@@ -58,11 +481,11 @@
             "line": 9,
             "name": "je sélectionne le rôle \"client\"",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:52"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:45"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 71895300
             }
           },
           {
@@ -71,11 +494,11 @@
             "line": 10,
             "name": "je clique sur le bouton d'inscription",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:56"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:53"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 411745699
             }
           },
           {
@@ -84,11 +507,11 @@
             "line": 11,
             "name": "je devrais être redirigé vers le dashboard client",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:72"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:90"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 19708299
             }
           },
           {
@@ -97,11 +520,11 @@
             "line": 12,
             "name": "je devrais voir un message de bienvenue",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:84"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:105"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 43504899
             }
           },
           {
@@ -109,15 +532,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 241599
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 172100
+              "duration": 67693899
             }
           }
         ],
@@ -135,17 +550,8 @@
             "keyword": "Before",
             "hidden": true,
             "result": {
-              "status": "failed",
-              "duration": 30184099600,
-              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
-            }
-          },
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1002335800
             }
           },
           {
@@ -154,11 +560,11 @@
             "line": 15,
             "name": "je suis sur la page de connexion",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:35"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:21"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1479153500
             }
           },
           {
@@ -167,11 +573,11 @@
             "line": 16,
             "name": "je saisis l'email \"client@test.com\" et le mot de passe \"Test1234!\"",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:60"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:63"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 282927700
             }
           },
           {
@@ -180,11 +586,11 @@
             "line": 17,
             "name": "je clique sur le bouton de connexion",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:68"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:77"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 530510299
             }
           },
           {
@@ -193,11 +599,11 @@
             "line": 18,
             "name": "je devrais être redirigé vers le dashboard approprié",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:78"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:99"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 36523000
             }
           },
           {
@@ -206,11 +612,11 @@
             "line": 19,
             "name": "le token JWT devrait être stocké dans le localStorage",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:90"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:110"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 20592299
             }
           },
           {
@@ -218,15 +624,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 257600
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 159099
+              "duration": 93622599
             }
           }
         ],
@@ -244,17 +642,8 @@
             "keyword": "Before",
             "hidden": true,
             "result": {
-              "status": "failed",
-              "duration": 30154241300,
-              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
-            }
-          },
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1013259999
             }
           },
           {
@@ -263,11 +652,11 @@
             "line": 22,
             "name": "je suis sur la page de connexion",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:35"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:21"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 1218371599
             }
           },
           {
@@ -276,11 +665,11 @@
             "line": 23,
             "name": "je saisis l'email \"client@test.com\" et le mot de passe \"mauvais_mot_de_passe\"",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:60"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:63"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 221841800
             }
           },
           {
@@ -289,11 +678,11 @@
             "line": 24,
             "name": "je clique sur le bouton de connexion",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:68"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:77"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 107942900
             }
           },
           {
@@ -302,11 +691,11 @@
             "line": 25,
             "name": "je devrais voir un message d'erreur d'authentification",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:95"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:121"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 12128000
             }
           },
           {
@@ -315,11 +704,11 @@
             "line": 26,
             "name": "je devrais rester sur la page de connexion",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:106"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:136"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 4752899
             }
           },
           {
@@ -327,15 +716,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 121899
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 300600
+              "duration": 84030499
             }
           }
         ],
@@ -353,17 +734,8 @@
             "keyword": "Before",
             "hidden": true,
             "result": {
-              "status": "failed",
-              "duration": 30161419399,
-              "error_message": "Error: function timed out, ensure the promise resolves within 30000 milliseconds\n    at Timeout.<anonymous> (C:\\Users\\maher\\Documents\\backend\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:588:17)\n    at processTimers (node:internal/timers:523:7)"
-            }
-          },
-          {
-            "keyword": "Before",
-            "hidden": true,
-            "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 961008900
             }
           },
           {
@@ -372,11 +744,11 @@
             "line": 29,
             "name": "je ne suis pas connecté",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:40"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:26"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 859580500
             }
           },
           {
@@ -385,11 +757,11 @@
             "line": 30,
             "name": "j'essaie d'accéder à la page \"/client/dashboard\"",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:111"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:141"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 152282100
             }
           },
           {
@@ -398,11 +770,11 @@
             "line": 31,
             "name": "je devrais être redirigé vers la page de connexion",
             "match": {
-              "location": "test\\features\\step-definitions\\auth.steps.ts:115"
+              "location": "test\\features\\step-definitions\\auth.steps.ts:145"
             },
             "result": {
-              "status": "skipped",
-              "duration": 0
+              "status": "passed",
+              "duration": 26029999
             }
           },
           {
@@ -410,15 +782,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 130600
-            }
-          },
-          {
-            "keyword": "After",
-            "hidden": true,
-            "result": {
-              "status": "passed",
-              "duration": 100800
+              "duration": 62884999
             }
           }
         ],
@@ -432,5 +796,1806 @@
     "name": "Authentification des utilisateurs",
     "tags": [],
     "uri": "test\\features\\auth.feature"
+  },
+  {
+    "description": "  En tant que client sur la plateforme Dousha\n  Je veux pouvoir réserver des services et payer en ligne\n  Afin d'organiser mon événement",
+    "elements": [
+      {
+        "description": "",
+        "id": "réservation-et-paiement;réservation-d'un-service",
+        "keyword": "Scenario",
+        "line": 6,
+        "name": "Réservation d'un service",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 991247999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1145262000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "je consulte le service \"Photographie Mariage\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:17"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 124337700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 9,
+            "name": "je clique sur \"Réserver\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 6474300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "je sélectionne la date \"2026-06-15\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:36"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 600886800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "je confirme la réservation",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:40"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 132451600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 12,
+            "name": "la réservation devrait être créée avec le statut \"pending\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:47"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 64748700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 13,
+            "name": "je devrais recevoir une notification de confirmation",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:56"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15451600
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 81309800
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "réservation-et-paiement;paiement-par-carte-bancaire-(stripe)",
+        "keyword": "Scenario",
+        "line": 15,
+        "name": "Paiement par carte bancaire (Stripe)",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 957933600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 16,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1069614999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 17,
+            "name": "j'ai une réservation en attente de paiement",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:23"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 99034700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 18,
+            "name": "je vais sur la page de paiement",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:61"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30443100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 19,
+            "name": "je saisis la carte de test \"4242424242424242\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16079999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "je saisis la date d'expiration \"12/30\" et le CVV \"123\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:75"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14518599
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "je clique sur \"Payer\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 373213700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "le paiement devrait être traité avec succès",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:85"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 23992099
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "le statut de la réservation devrait passer à \"fully_paid\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:90"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30063199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 24,
+            "name": "je devrais voir un reçu de paiement",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:99"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 37905100
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 70130000
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "réservation-et-paiement;paiement-avec-carte-refusée",
+        "keyword": "Scenario",
+        "line": 26,
+        "name": "Paiement avec carte refusée",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 871899499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 27,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1023527099
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "j'ai une réservation en attente de paiement",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:23"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 108444700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 29,
+            "name": "je vais sur la page de paiement",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:61"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34094599
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 30,
+            "name": "je saisis la carte de test \"4000000000000002\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:66"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15247199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 31,
+            "name": "je clique sur \"Payer\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 388846499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 32,
+            "name": "je devrais voir un message d'erreur \"Carte refusée\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:104"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 31220600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 33,
+            "name": "le statut de paiement devrait rester \"pending\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:113"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28400999
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 103089899
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "réservation-et-paiement;annulation-d'une-réservation",
+        "keyword": "Scenario",
+        "line": 35,
+        "name": "Annulation d'une réservation",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 945760699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 36,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 949752499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 37,
+            "name": "j'ai une réservation confirmée",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:31"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 102990100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 38,
+            "name": "je clique sur \"Annuler la réservation\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16068073499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 39,
+            "name": "je confirme l'annulation",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:122"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 47227400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 40,
+            "name": "le statut devrait passer à \"cancelled\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:127"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 24014100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 41,
+            "name": "le remboursement devrait être initié si le paiement a été effectué",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:133"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26513900
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 75056799
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "réservation-et-paiement",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Réservation et paiement",
+    "tags": [],
+    "uri": "test\\features\\booking-payment.feature"
+  },
+  {
+    "description": "  En tant que client organisateur sur Dousha\n  Je veux pouvoir créer et gérer mes événements\n  Afin de planifier chaque détail de mon mariage ou événement",
+    "elements": [
+      {
+        "description": "",
+        "id": "gestion-des-événements;création-d'un-événement",
+        "keyword": "Scenario",
+        "line": 6,
+        "name": "Création d'un événement",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 865134700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4852267200
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "je suis sur la page \"Mes événements\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 99201300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 9,
+            "name": "je clique sur \"Créer un événement\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 163395600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "je remplis le titre \"Mon Mariage\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:142"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 556746000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "je sélectionne le type \"wedding\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 95282200
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "je sélectionne la date \"2026-09-20\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:36"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 115213500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 13,
+            "name": "je remplis le budget \"50000\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 106447800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 14,
+            "name": "je remplis le nombre d'invités \"200\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:34"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 94802800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 15,
+            "name": "je clique sur \"Créer\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 94415500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 16,
+            "name": "l'événement devrait être créé avec succès",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:38"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 63608599
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 17,
+            "name": "je devrais être redirigé vers le tableau de bord de l'événement",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4217899
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 77192299
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "gestion-des-événements;gestion-de-la-checklist-d'un-événement",
+        "keyword": "Scenario",
+        "line": 19,
+        "name": "Gestion de la checklist d'un événement",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 816050699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 20,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1541227999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "j'ai un événement existant",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 112031399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 22,
+            "name": "je vais dans l'onglet \"Checklist\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:51"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 35421799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "j'ajoute une tâche \"Réserver le traiteur\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:57"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14496799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 24,
+            "name": "la tâche devrait apparaître dans la liste",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15016199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 25,
+            "name": "je marque la tâche comme complétée",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:68"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8008994900
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 26,
+            "name": "la progression devrait se mettre à jour",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:74"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30174200
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 72978700
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "gestion-des-événements;gestion-du-budget",
+        "keyword": "Scenario",
+        "line": 28,
+        "name": "Gestion du budget",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 853225000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 29,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 955730400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 30,
+            "name": "j'ai un événement existant",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 97834199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "je vais dans l'onglet \"Budget\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:51"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 30875400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 32,
+            "name": "j'ajoute une dépense \"Salle\" avec un montant estimé de \"15000\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:79"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14401400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 33,
+            "name": "la dépense devrait apparaître dans le suivi budgétaire",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:89"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16805300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 34,
+            "name": "le pourcentage budgétaire devrait se recalculer",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:97"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16223699
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 49687600
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "gestion-des-événements;gestion-de-la-liste-des-invités",
+        "keyword": "Scenario",
+        "line": 36,
+        "name": "Gestion de la liste des invités",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 794858800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 37,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 961193299
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 38,
+            "name": "j'ai un événement existant",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 97895600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 39,
+            "name": "je vais dans l'onglet \"Invités\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:51"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 32423399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 40,
+            "name": "j'ajoute un invité \"Ali Mohamed\" avec l'email \"ali@example.com\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:102"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14955200
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 41,
+            "name": "l'invité devrait apparaître dans la liste",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:112"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 14797899
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 42,
+            "name": "le compteur d'invités devrait s'incrémenter",
+            "match": {
+              "location": "test\\features\\step-definitions\\events-admin.steps.ts:117"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 15670400
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 53772299
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "gestion-des-événements",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Gestion des événements",
+    "tags": [],
+    "uri": "test\\features\\events.feature"
+  },
+  {
+    "description": "  En tant qu'utilisateur de la plateforme Dousha\n  Je veux pouvoir demander des devis et communiquer avec les prestataires\n  Afin de comparer les offres et organiser mon événement",
+    "elements": [
+      {
+        "description": "",
+        "id": "devis-et-messagerie;envoi-d'une-demande-de-devis",
+        "keyword": "Scenario",
+        "line": 6,
+        "name": "Envoi d'une demande de devis",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 828365999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1188422699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 8,
+            "name": "je consulte le service \"Décoration Florale\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:17"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 93161500
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 9,
+            "name": "je clique sur \"Demander un devis\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 85077899
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "je remplis le message \"Je souhaite un devis pour mon mariage le 20 septembre\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 803872999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "je spécifie la date souhaitée \"2026-09-20\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 115000899
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "je spécifie le nombre d'invités \"200\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8048948000
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 13,
+            "name": "je clique sur \"Envoyer\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8122016199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "la demande de devis devrait être envoyée avec succès",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:32"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8033460800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 15,
+            "name": "le prestataire devrait recevoir une notification",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:40"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 34381800
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 75092799
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "devis-et-messagerie;réponse-à-une-demande-de-devis-par-un-prestataire",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "Réponse à une demande de devis par un prestataire",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 863091599
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "je suis connecté en tant que prestataire",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:24"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1073243100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 19,
+            "name": "j'ai une demande de devis en attente",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 101116999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 20,
+            "name": "je consulte la demande de devis",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:50"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 22657699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "je remplis le montant \"8000\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:55"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8039640700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "j'ajoute un message de réponse \"Nous serions ravis de décorer votre mariage\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:61"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8056629400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "je clique sur \"Envoyer le devis\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16056646899
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 24,
+            "name": "le devis devrait être envoyé au client",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:67"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8012978100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 25,
+            "name": "le statut devrait passer à \"sent\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:127"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28711999
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 85328799
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "devis-et-messagerie;messagerie-entre-client-et-prestataire",
+        "keyword": "Scenario",
+        "line": 27,
+        "name": "Messagerie entre client et prestataire",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 860074399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 28,
+            "name": "je suis connecté en tant que client",
+            "match": {
+              "location": "test\\features\\step-definitions\\booking-payment.steps.ts:11"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1040426100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 29,
+            "name": "je vais sur la page \"Messages\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:92"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 97346399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 30,
+            "name": "j'envoie un message \"Bonjour, avez-vous des disponibilités en septembre ?\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:75"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8038289199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 31,
+            "name": "le message devrait être envoyé",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:82"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26486800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 32,
+            "name": "il devrait apparaître dans la conversation",
+            "match": {
+              "location": "test\\features\\step-definitions\\quotes-messaging.steps.ts:87"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17737999
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 70709200
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "devis-et-messagerie",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Devis et Messagerie",
+    "tags": [],
+    "uri": "test\\features\\quotes-messaging.feature"
+  },
+  {
+    "description": "  En tant que prestataire sur la plateforme Dousha\n  Je veux pouvoir créer et gérer mes services\n  Afin de proposer mes prestations aux clients",
+    "elements": [
+      {
+        "description": "",
+        "id": "gestion-des-services;affichage-du-catalogue-de-services",
+        "keyword": "Scenario",
+        "line": 6,
+        "name": "Affichage du catalogue de services",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 845142199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 7,
+            "name": "je suis sur la page d'accueil",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:14"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 970380200
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 8,
+            "name": "je clique sur \"Parcourir les services\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 136957199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 9,
+            "name": "je devrais voir la liste des services disponibles",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:109"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 33811900
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 10,
+            "name": "chaque service devrait afficher un titre, un prix et une catégorie",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:114"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 17058799
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 58902499
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "gestion-des-services;recherche-et-filtrage-des-services",
+        "keyword": "Scenario",
+        "line": 12,
+        "name": "Recherche et filtrage des services",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 821665899
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 13,
+            "name": "je suis sur la page des services",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 897736100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 14,
+            "name": "je filtre par catégorie \"Traiteur\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:122"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8030373599
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 15,
+            "name": "je devrais voir uniquement les services de type traiteur",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:129"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 38597100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 16,
+            "name": "le compteur de résultats devrait se mettre à jour",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:137"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 28312399
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 73796100
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "gestion-des-services;création-d'un-service-par-un-prestataire",
+        "keyword": "Scenario",
+        "line": 18,
+        "name": "Création d'un service par un prestataire",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 785320999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 19,
+            "name": "je suis connecté en tant que prestataire",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:24"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 952342300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 20,
+            "name": "je suis sur la page \"Mes services\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 115387199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 21,
+            "name": "je clique sur \"Ajouter un service\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 399812400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 22,
+            "name": "je remplis le titre \"Photographie Mariage Premium\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:142"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8062846199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "je remplis le prix \"5000\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:148"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8066229299
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 24,
+            "name": "je sélectionne le type de prix \"package\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:154"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8022497100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 25,
+            "name": "je sélectionne la catégorie \"Photographie\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:164"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 8053288700
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 26,
+            "name": "je clique sur \"Créer\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:43"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 108221699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 27,
+            "name": "le service devrait apparaître dans ma liste",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:171"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 59395300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "je devrais voir un message de succès",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:176"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 16227000
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 159896300
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "gestion-des-services;consultation-d'un-service-détaillé",
+        "keyword": "Scenario",
+        "line": 30,
+        "name": "Consultation d'un service détaillé",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 1178365799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 31,
+            "name": "je suis sur la page des services",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:19"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1627487800
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 32,
+            "name": "je clique sur un service",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:184"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 676225100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 33,
+            "name": "je devrais voir les détails complets du service",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:196"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 67837900
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 34,
+            "name": "je devrais voir le bouton \"Demander un devis\"",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:201"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 154708100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 35,
+            "name": "je devrais voir les avis et la note moyenne",
+            "match": {
+              "location": "test\\features\\step-definitions\\services.steps.ts:210"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 55084800
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 68657700
+            }
+          }
+        ],
+        "tags": [],
+        "type": "scenario"
+      }
+    ],
+    "id": "gestion-des-services",
+    "line": 1,
+    "keyword": "Feature",
+    "name": "Gestion des services",
+    "tags": [],
+    "uri": "test\\features\\services.feature"
   }
 ]

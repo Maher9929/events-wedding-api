@@ -3,6 +3,7 @@ import {
   Inject,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -64,7 +65,7 @@ export class ReviewsService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
 
     // Update provider rating
     await this.updateProviderRating(dto.service_id);
@@ -107,7 +108,7 @@ export class ReviewsService {
     }
 
     const { data, error, count } = await q;
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return { data: data || [], total: count || 0 };
   }
 
@@ -123,7 +124,7 @@ export class ReviewsService {
       .eq('service_id', serviceId)
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
@@ -135,7 +136,7 @@ export class ReviewsService {
       .select('rating')
       .eq('service_id', serviceId);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
 
     const ratings = data || [];
     const count = ratings.length;
@@ -186,7 +187,7 @@ export class ReviewsService {
     }
 
     const { data, error, count } = await q;
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return { data: data || [], total: count || 0 };
   }
 
@@ -203,7 +204,7 @@ export class ReviewsService {
 
     const { error } = await this.supabase.from('reviews').delete().eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
 
     await this.updateProviderRating(review.service_id);
   }
@@ -261,7 +262,7 @@ export class ReviewsService {
       })
       .eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return { success: true };
   }
 }

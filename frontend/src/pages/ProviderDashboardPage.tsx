@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiService, type Conversation } from '../services/api';
 import { messagesService } from '../services/messages.service';
+import { toastService } from '../services/toast.service';
 
 interface RecentActivity {
     id: string;
@@ -55,18 +56,14 @@ interface PerformanceMetrics {
 
 const ProviderDashboardPage = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [stats, setStats] = useState<ProviderStats | null>(null);
     const [performance, setPerformance] = useState<PerformanceMetrics | null>(null);
     const [recentConversations, setRecentConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
 
-    useEffect(() => {
-        loadDashboardData();
-    }, [period]);
-
-    const loadDashboardData = async () => {
+    const loadDashboardData = useCallback(async () => {
         try {
             const [statsData, performanceData, convosData] = await Promise.all([
                 apiService.get<ProviderStats>(`/providers/stats?period=${period}`),
@@ -76,12 +73,16 @@ const ProviderDashboardPage = () => {
             setStats(statsData);
             setPerformance(performanceData);
             setRecentConversations(convosData.slice(0, 3));
-        } catch (error) {
-            console.error(t('provider_dashboard.error_loading', 'Failed to load dashboard data:'), error);
+        } catch (_error) {
+            toastService.error(t('provider_dashboard.error_loading', '\u0641\u0634\u0644 \u062a\u062d\u0645\u064a\u0644 \u0628\u064a\u0627\u0646\u0627\u062a \u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u062d\u0643\u0645'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [period, t]);
+
+    useEffect(() => {
+        void loadDashboardData();
+    }, [loadDashboardData]);
 
     if (loading) {
         return (
@@ -108,7 +109,7 @@ const ProviderDashboardPage = () => {
                     <h2 className="text-xl font-bold text-gray-900 mb-2">{t('provider_dashboard.data_unavailable', 'البيانات غير متاحة')}</h2>
                     <p className="text-gray-500 mb-6">{t('provider_dashboard.error_stats', 'لم نتمكن من تحميل الإحصائيات الخاصة بك.')}</p>
                     <button
-                        onClick={() => { setLoading(true); loadDashboardData(); }}
+                        onClick={() => { setLoading(true); void loadDashboardData(); }}
                         className="px-6 py-2 bg-primary text-white rounded-xl shadow-sm font-bold hover:bg-primary-dark transition-colors"
                     >
                         {t('common.retry', 'إعادة المحاولة')}
@@ -119,7 +120,7 @@ const ProviderDashboardPage = () => {
     }
 
     const formatCurrency = (amount: number) => {
-        return amount.toLocaleString('ar-EG') + ' ' + t('common.currency', 'ر.ق');
+        return amount.toLocaleString(t('common.date_locale')) + ' ' + t('common.currency', 'ر.ق');
     };
 
     const getPeriodLabel = () => {
@@ -132,7 +133,7 @@ const ProviderDashboardPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-bglight p-5" dir="rtl">
+        <div className="min-h-screen bg-bglight p-5" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
@@ -326,7 +327,7 @@ const ProviderDashboardPage = () => {
                                         <div className="absolute bottom-0 w-full bg-primary rounded-t-lg transition-all"></div>
                                     </div>
                                     <span className="text-xs text-gray-600 mt-2">
-                                        {new Date(data.month + '-01').toLocaleDateString('ar-EG', { month: 'short' })}
+                                        {new Date(data.month + '-01').toLocaleDateString(t('common.date_locale'), { month: 'short' })}
                                     </span>
                                     <span className="text-xs font-bold text-gray-900">
                                         {formatCurrency(data.revenue)}
@@ -356,14 +357,14 @@ const ProviderDashboardPage = () => {
                                     >
                                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary flex-shrink-0 overflow-hidden">
                                             {convo.recipient_avatar ? (
-                                                <img src={convo.recipient_avatar} alt="" className="w-full h-full object-cover" />
+                                                <img loading="lazy" src={convo.recipient_avatar} alt="" className="w-full h-full object-cover" />
                                             ) : (
                                                 convo.recipient_name?.charAt(0)
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-bold text-gray-900 truncate">{convo.recipient_name}</p>
-                                            <p className="text-xs text-gray-500 truncate">{new Date(convo.last_message_at).toLocaleDateString('ar-EG')}</p>
+                                            <p className="text-xs text-gray-500 truncate">{new Date(convo.last_message_at).toLocaleDateString(t('common.date_locale'))}</p>
                                         </div>
                                         {(convo.unread_count || 0) > 0 && (
                                             <span className="w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
@@ -403,7 +404,7 @@ const ProviderDashboardPage = () => {
                                                             activity.status === 'completed' ? t('provider_dashboard.activity_completed', 'مكتمل') : t('provider_dashboard.activity_unknown', 'حالة غير معروفة')}
                                             </p>
                                             <p className="text-xs text-gray-500">
-                                                {new Date(activity.created_at).toLocaleDateString('ar-EG')}
+                                                {new Date(activity.created_at).toLocaleDateString(t('common.date_locale'))}
                                             </p>
                                         </div>
                                     </div>

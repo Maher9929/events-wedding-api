@@ -5,6 +5,8 @@ import { servicesService } from '../services/services.service';
 import { categoriesService } from '../services/categories.service';
 import type { ServiceItem, Category } from '../services/api';
 import { getThumbnailUrl } from '../utils/image.utils';
+import { toastService } from '../services/toast.service';
+import Pagination from '../components/common/Pagination';
 
 const ServiceListingPage = () => {
     const { t, i18n } = useTranslation();
@@ -74,8 +76,9 @@ const ServiceListingPage = () => {
         eventStyle: ''
     });
 
-    const [visibleCount, setVisibleCount] = useState(12);
+    const [page, setPage] = useState(0);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const PAGE_SIZE = 12;
 
     useEffect(() => {
         const catName = selectedCategory === 'all' ? '' : categories.find(c => c.id === selectedCategory)?.name;
@@ -90,12 +93,8 @@ const ServiceListingPage = () => {
                 const list = Array.isArray(data) ? data : (data as { data: Category[] })?.data || [];
                 setCategories(list);
             })
-            .catch(() => { });
+            .catch(() => { /* categories are non-critical, page still works */ });
     }, []);
-
-    useEffect(() => {
-        setVisibleCount(12);
-    }, [selectedCategory, appliedFilters, searchQuery, sortBy]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -126,14 +125,15 @@ const ServiceListingPage = () => {
                     const list = Array.isArray(data) ? data : (data as { data: ServiceItem[] })?.data || [];
                     setServices(list);
                 })
-                .catch(() => { })
+                .catch(() => toastService.error(t('service.listing.error_loading', 'فشل تحميل الخدمات')))
                 .finally(() => setLoading(false));
         }, searchQuery ? 300 : 0);
         return () => clearTimeout(timer);
-    }, [selectedCategory, appliedFilters, searchQuery, sortBy, providerIdFilter]); 
+    }, [selectedCategory, appliedFilters, searchQuery, sortBy, providerIdFilter, t]); 
 
     const applyFilters = () => {
         setAppliedFilters({ ...filters });
+        setPage(0);
         setShowFilters(false);
     };
 
@@ -152,13 +152,28 @@ const ServiceListingPage = () => {
         };
         setFilters(empty);
         setAppliedFilters(empty);
+        setPage(0);
         setShowFilters(false);
+    };
+
+    const handleCategoryChange = (categoryId: string) => {
+        setSelectedCategory(categoryId);
+        setPage(0);
+    };
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value);
+        setPage(0);
+    };
+
+    const handleSortChange = (value: typeof sortBy) => {
+        setSortBy(value);
+        setPage(0);
     };
 
     const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
     const filteredServices = services;
-    const visibleServices = filteredServices.slice(0, visibleCount);
-    const hasMore = visibleCount < filteredServices.length;
+    const visibleServices = filteredServices.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     return (
         <div className="min-h-screen bg-bglight font-tajawal pb-20" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
@@ -192,7 +207,7 @@ const ServiceListingPage = () => {
                             placeholder={t('service.listing.search_placeholder', 'ابحث عن خدمات...')}
                             className={`w-full h-12 rounded-2xl bg-bglight ${i18n.language === 'en' ? 'pe-4 ps-12' : 'pe-12 ps-4'} text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => handleSearchChange(e.target.value)}
                         />
                         <i className={`fa-solid fa-magnifying-glass absolute ${i18n.language === 'en' ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-gray-400`}></i>
                     </div>
@@ -203,7 +218,7 @@ const ServiceListingPage = () => {
             <section id="category-tabs" className="bg-white px-5 py-4 sticky top-[136px] z-40 shadow-sm">
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                     <button
-                        onClick={() => setSelectedCategory('all')}
+                        onClick={() => handleCategoryChange('all')}
                         className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 ${
                             selectedCategory === 'all'
                                 ? 'bg-primary text-white shadow-md transform scale-105'
@@ -215,7 +230,7 @@ const ServiceListingPage = () => {
                     {categories.map(cat => (
                         <button
                             key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
+                            onClick={() => handleCategoryChange(cat.id)}
                             className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 ${
                                 selectedCategory === cat.id
                                     ? 'bg-primary text-white shadow-md transform scale-105'
@@ -262,7 +277,7 @@ const ServiceListingPage = () => {
                     {SORT_OPTIONS.map(opt => (
                         <button
                             key={opt.key}
-                            onClick={() => setSortBy(opt.key as typeof sortBy)}
+                            onClick={() => handleSortChange(opt.key as typeof sortBy)}
                             className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap flex items-center gap-1.5 transition-all ${
                                 sortBy === opt.key ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'
                             }`}
@@ -369,9 +384,9 @@ const ServiceListingPage = () => {
                                             </div>
                                             <h3 className="font-bold text-sm text-gray-900 mb-1">{service.title}</h3>
                                             <p className="text-xs text-gray-600 mb-2 line-clamp-2">{service.description}</p>
-                                            {(service as any).providers?.city && (
+                                            {service.providers?.city && (
                                                 <p className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-                                                    <i className="fa-solid fa-location-dot text-primary"></i>{(service as any).providers.city}
+                                                    <i className="fa-solid fa-location-dot text-primary"></i>{service.providers.city}
                                                 </p>
                                             )}
                                             <div className="flex items-center justify-between mt-auto">
@@ -433,10 +448,10 @@ const ServiceListingPage = () => {
                                                     <i className="fa-solid fa-star text-accent text-[10px]"></i>
                                                     <span className="font-bold text-gray-900">{service.rating || '0'}</span>
                                                 </span>
-                                                {(service as any).providers?.city && (
+                                                {service.providers?.city && (
                                                     <span className="text-xs text-gray-400 flex items-center gap-0.5">
                                                         <i className="fa-solid fa-location-dot text-primary text-[10px]"></i>
-                                                        {(service as any).providers.city}
+                                                        {service.providers.city}
                                                     </span>
                                                 )}
                                             </div>
@@ -449,19 +464,14 @@ const ServiceListingPage = () => {
                     </div>
                 )}
             </section>
-
-            {/* Load More */}
-            {hasMore && (
-                <section id="load-more" className="px-5 pb-6">
-                    <button
-                        onClick={() => setVisibleCount(c => c + 12)}
-                        className="w-full h-14 rounded-2xl bg-white text-primary font-bold text-base shadow-sm card-hover border-2 border-primary"
-                    >
-                        {t('service.listing.load_more', 'تحميل المزيد')} ({filteredServices.length - visibleCount})
-                        <i className={`fa-solid fa-chevron-down ${i18n.language === 'en' ? 'ml-2' : 'mr-2'}`}></i>
-                    </button>
-                </section>
-            )}
+            <section id="pagination" className="px-5 pb-6">
+                <Pagination
+                    page={page}
+                    total={filteredServices.length}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                />
+            </section>
 
             {/* Quick Filter Bottom */}
             <section id="quick-filter-bottom" className="px-5 pb-6">
@@ -659,3 +669,5 @@ const ServiceListingPage = () => {
 };
 
 export default ServiceListingPage;
+
+

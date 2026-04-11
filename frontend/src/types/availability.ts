@@ -16,4 +16,4 @@ export interface CreateAvailabilityDto {
   reason?: string;
 }
 
-export interface UpdateAvailabilityDto extends Partial<CreateAvailabilityDto> {}
+export type UpdateAvailabilityDto = Partial<CreateAvailabilityDto>;

@@ -11,6 +11,7 @@ import {
   HttpStatus,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { ProvidersService } from './providers.service';
 import { CreateProviderDto } from './dto/create-provider.dto';
@@ -55,7 +56,7 @@ export class ProvidersController {
     @Query('radius') radius?: string,
   ) {
     if (!latitude || !longitude) {
-      throw new Error('Latitude and longitude are required');
+      throw new BadRequestException('Latitude and longitude are required');
     }
     return await this.providersService.findNearby(
       parseFloat(latitude),
@@ -100,14 +101,14 @@ export class ProvidersController {
     );
   }
 
-  @Get(':id')
+  @Get('id/:id')
   async findOne(@Param('id') id: string) {
     return await this.providersService.findOne(id);
   }
 
   // --- Availabilities ---
 
-  @Get(':id/availabilities')
+  @Get('id/:id/availabilities')
   async getAvailabilities(
     @Param('id') id: string,
     @Query('start_date') startDate?: string,
@@ -120,7 +121,7 @@ export class ProvidersController {
     );
   }
 
-  @Post(':id/availabilities')
+  @Post('id/:id/availabilities')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   async addAvailability(
@@ -131,7 +132,7 @@ export class ProvidersController {
     return await this.providersService.addAvailability(req.user.id, id, dto);
   }
 
-  @Patch(':id/availabilities/:availabilityId')
+  @Patch('id/:id/availabilities/:availabilityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   async updateAvailability(
@@ -148,7 +149,7 @@ export class ProvidersController {
     );
   }
 
-  @Delete(':id/availabilities/:availabilityId')
+  @Delete('id/:id/availabilities/:availabilityId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -166,7 +167,7 @@ export class ProvidersController {
 
   // --- End Availabilities ---
 
-  @Patch(':id')
+  @Patch('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   async update(
@@ -181,7 +182,7 @@ export class ProvidersController {
     );
   }
 
-  @Patch(':id/verify')
+  @Patch('id/:id/verify')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async updateVerification(
@@ -191,7 +192,7 @@ export class ProvidersController {
     return await this.providersService.updateVerification(id, isVerified);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -226,7 +227,7 @@ export class ProvidersController {
     return this.providersService.getAllPendingKycDocuments();
   }
 
-  @Get(':id/kyc')
+  @Get('id/:id/kyc')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async getProviderKycDocuments(@Param('id') id: string) {

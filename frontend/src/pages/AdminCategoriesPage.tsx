@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Category } from '../services/api';
 import { toastService } from '../services/toast.service';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
 
 const AdminCategoriesPage = () => {
     const { t } = useTranslation();
@@ -11,29 +12,30 @@ const AdminCategoriesPage = () => {
     const [showModal, setShowModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState<any>(null);
     const [formData, setFormData] = useState({ name: '', slug: '', description: '' });
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
-    useEffect(() => {
-        loadCategories();
-    }, []);
-
-    const loadCategories = async () => {
+    const loadCategories = useCallback(async () => {
         setLoading(true);
         try {
             const data = await apiService.get<{ data?: Category[] } | Category[]>('/categories');
             const list = Array.isArray(data) ? data : data?.data || [];
             setCategories(list);
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_loading'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        void loadCategories();
+    }, [loadCategories]);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             if (editingCategory) {
-                await apiService.patch(`/categories/${editingCategory.id}`, formData);
+                await apiService.patch(`/categories/id/${editingCategory.id}`, formData);
                 toastService.success(t('common.admin.success_update'));
             } else {
                 await apiService.post('/categories', formData);
@@ -42,19 +44,25 @@ const AdminCategoriesPage = () => {
             setShowModal(false);
             setEditingCategory(null);
             setFormData({ name: '', slug: '', description: '' });
-            loadCategories();
-        } catch (error) {
+            void loadCategories();
+        } catch (_error) {
             toastService.error(t('common.error_saving'));
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm(t('common.admin.confirm_delete'))) return;
+        const ok = await confirm({
+            title: t('common.admin.confirm_delete', 'Delete'),
+            message: t('common.admin.confirm_delete_msg', 'Are you sure? This action cannot be undone.'),
+            confirmLabel: t('common.delete', 'Delete'),
+            cancelLabel: t('common.cancel', 'Cancel'),
+        });
+        if (!ok) return;
         try {
-            await apiService.delete(`/categories/${id}`);
+            await apiService.delete(`/categories/id/${id}`);
             setCategories(prev => prev.filter(c => c.id !== id));
             toastService.success(t('common.admin.success_delete'));
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_deleting'));
         }
     };
@@ -193,6 +201,7 @@ const AdminCategoriesPage = () => {
                     </div>
                 </div>
             )}
+            <ConfirmDialogComponent />
         </div>
     );
 };

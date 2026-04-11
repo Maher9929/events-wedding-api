@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
   Inject,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -40,7 +41,7 @@ export class CategoriesService {
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data;
@@ -88,7 +89,7 @@ export class CategoriesService {
     const { data, error, count } = await queryBuilder;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return {
@@ -136,7 +137,7 @@ export class CategoriesService {
       .order('name', { ascending: true });
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data || [];
@@ -152,7 +153,7 @@ export class CategoriesService {
       .order('name', { ascending: true });
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data || [];

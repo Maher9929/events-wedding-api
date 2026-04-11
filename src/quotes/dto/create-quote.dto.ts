@@ -3,7 +3,7 @@ import {
   IsArray,
   IsNumber,
   IsOptional,
-  IsDate,
+  IsDateString,
   IsEnum,
 } from 'class-validator';
 
@@ -26,6 +26,10 @@ export class CreateQuoteDto {
   @IsString()
   client_id: string;
 
+  @IsOptional()
+  @IsString()
+  quote_request_id?: string;
+
   @IsArray()
   items: QuoteItemDto[];
 
@@ -38,8 +42,8 @@ export class CreateQuoteDto {
   tax_rate?: number;
 
   @IsOptional()
-  @IsDate()
-  valid_until?: Date;
+  @IsDateString()
+  valid_until?: string;
 
   @IsOptional()
   @IsString()

@@ -5,7 +5,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
 
-@Controller('providers')
+@Controller('provider-analytics')
 @UseGuards(JwtAuthGuard)
 export class ProviderStatsController {
   constructor(private readonly providerStatsService: ProviderStatsService) {}

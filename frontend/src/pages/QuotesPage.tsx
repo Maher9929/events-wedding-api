@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { quotesService, type Quote } from '../services/quotes.service';
 import { toastService } from '../services/toast.service';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
+import Pagination from '../components/common/Pagination';
 
 const PAGE_SIZE = 10;
 
@@ -16,6 +18,7 @@ const QuotesPage = () => {
     const [page, setPage] = useState(0);
     const [total, setTotal] = useState(0);
     const [updating, setUpdating] = useState<string | null>(null);
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
 
     const statusMap: Record<string, { label: string; cls: string; icon: string }> = {
         draft:    { label: t('quotes.status.draft', 'مسودة'),       cls: 'bg-gray-100 text-gray-600',   icon: 'fa-file' },
@@ -40,12 +43,12 @@ const QuotesPage = () => {
             if (search.trim()) p.set('search', search.trim());
             p.set('limit', String(PAGE_SIZE));
             p.set('offset', String(page * PAGE_SIZE));
-            const res = await quotesService.getMyQuotes(`?${p.toString()}`);
-            const list = Array.isArray(res) ? res : (res as { data: Quote[] })?.data || [];
-            const tot = !Array.isArray(res) && typeof (res as any)?.total === 'number' ? (res as any)?.total : list.length;
-            setQuotes(list as Quote[]);
+            const res = await quotesService.getMyQuotes(`?${p.toString()}`) as Quote[] | { data?: Quote[]; total?: number };
+            const list = Array.isArray(res) ? res : res?.data || [];
+            const tot = !Array.isArray(res) && typeof res?.total === 'number' ? res.total : list.length;
+            setQuotes(list);
             setTotal(tot);
-        } catch {
+        } catch (_error) {
             toastService.error(t('quotes.fetch_failed', 'فشل تحميل عروض الأسعار'));
         } finally {
             setLoading(false);
@@ -58,7 +61,7 @@ const QuotesPage = () => {
             await quotesService.updateStatus(id, 'accepted');
             setQuotes(prev => prev.map(q => q.id === id ? { ...q, status: 'accepted' } : q));
             toastService.success(t('quotes.accept_success', 'تم قبول عرض السعر'));
-        } catch {
+        } catch (_error) {
             toastService.error(t('quotes.accept_failed', 'فشل قبول عرض السعر'));
         } finally {
             setUpdating(null);
@@ -66,13 +69,20 @@ const QuotesPage = () => {
     };
 
     const handleReject = async (id: string) => {
-        if (!window.confirm(t('quotes.confirm_reject', 'هل أنت متأكد من رفض عرض السعر؟'))) return;
+        const ok = await confirm({
+            title: t('quotes.confirm_reject_title', 'Reject Quote'),
+            message: t('quotes.confirm_reject', 'Are you sure you want to reject this quote?'),
+            variant: 'warning',
+            confirmLabel: t('common.reject', 'Reject'),
+            cancelLabel: t('common.cancel', 'Cancel'),
+        });
+        if (!ok) return;
         setUpdating(id);
         try {
             await quotesService.updateStatus(id, 'rejected');
             setQuotes(prev => prev.map(q => q.id === id ? { ...q, status: 'rejected' } : q));
             toastService.success(t('quotes.reject_success', 'تم رفض عرض السعر'));
-        } catch {
+        } catch (_error) {
             toastService.error(t('quotes.reject_failed', 'فشل رفض عرض السعر'));
         } finally {
             setUpdating(null);
@@ -86,7 +96,7 @@ const QuotesPage = () => {
             ...(quote.service_id ? { service: quote.service_id } : {}),
             ...(quote.event_id ? { event: quote.event_id } : {}),
         });
-        navigate(`/booking/checkout?${params.toString()}`);
+        navigate(`/client/checkout?${params.toString()}`);
     };
 
     const paginated = quotes;
@@ -231,7 +241,7 @@ const QuotesPage = () => {
                                                 <div className={i18n.language === 'en' ? 'text-right' : 'text-left'}>
                                                     <p className="text-xs text-gray-500">{t('quotes.card.valid_until', 'صالح حتى')}</p>
                                                     <p className="text-sm font-bold text-gray-700">
-                                                        {new Date(quote.valid_until).toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'ar-EG')}
+                                                        {new Date(quote.valid_until).toLocaleDateString(t('common.date_locale', 'ar-EG'))}
                                                     </p>
                                                 </div>
                                             )}
@@ -241,12 +251,12 @@ const QuotesPage = () => {
                                         {quote.items && quote.items.length > 0 && (
                                             <div className="mt-3 bg-gray-50 rounded-xl p-3 space-y-1.5">
                                                 <p className="text-xs font-bold text-gray-700 mb-2">{t('quotes.card.offer_details', 'تفاصيل العرض:')}</p>
-                                                {quote.items.map((item: any, idx: number) => (
+                                                {quote.items.map((item: { name?: string; description?: string; amount?: number; price?: number; quantity?: number }, idx: number) => (
                                                     <div key={idx} className="flex items-center justify-between text-xs">
                                                         <span className="text-gray-600 flex items-center gap-1">
                                                             <i className="fa-solid fa-circle text-primary text-[6px]"></i>
                                                             {item.name || item.description}
-                                                            {item.quantity > 1 && <span className="text-gray-400">×{item.quantity}</span>}
+                                                            {(item.quantity || 0) > 1 && <span className="text-gray-400">×{item.quantity}</span>}
                                                         </span>
                                                         <span className="font-bold text-gray-900">{((item.price || 0) * (item.quantity || 1)).toLocaleString()} {t('common.currency', 'ر.ق')}</span>
                                                     </div>
@@ -301,27 +311,14 @@ const QuotesPage = () => {
                     </div>
                 )}
 
-                {/* Pagination */}
-                {total > PAGE_SIZE && (
-                    <div className="flex items-center justify-center gap-3 pt-4 pb-2">
-                        <button
-                            onClick={() => setPage(p => Math.max(0, p - 1))}
-                            disabled={page === 0}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40"
-                        >
-                            <i className={`fa-solid ${i18n.language === 'en' ? 'fa-chevron-left' : 'fa-chevron-right'} text-sm`}></i>
-                        </button>
-                        <span className="text-sm font-bold text-gray-700">{page + 1} / {Math.ceil(total / PAGE_SIZE)}</span>
-                        <button
-                            onClick={() => setPage(p => p + 1)}
-                            disabled={(page + 1) * PAGE_SIZE >= total}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40"
-                        >
-                            <i className={`fa-solid ${i18n.language === 'en' ? 'fa-chevron-right' : 'fa-chevron-left'} text-sm`}></i>
-                        </button>
-                    </div>
-                )}
+                <Pagination
+                    page={page}
+                    total={total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                />
             </main>
+            <ConfirmDialogComponent />
         </div>
     );
 };

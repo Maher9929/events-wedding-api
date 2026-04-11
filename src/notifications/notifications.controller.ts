@@ -65,7 +65,7 @@ export class NotificationsController {
     return { count: count || 0 };
   }
 
-  @Patch(':id/read')
+  @Patch('id/:id/read')
   async markAsRead(@Param('id') id: string, @Request() req) {
     const { data, error } = await this.supabase
       .from('notifications')
@@ -105,7 +105,7 @@ export class NotificationsController {
       .lt('created_at', cutoff);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteOne(@Param('id') id: string, @Request() req) {
     await this.supabase

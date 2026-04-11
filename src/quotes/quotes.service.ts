@@ -3,6 +3,7 @@ import {
   Inject,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CreateQuoteDto } from './dto/create-quote.dto';
@@ -18,6 +19,26 @@ export class QuotesService {
     private readonly supabase: SupabaseClient,
     private readonly messagesService: MessagesService,
   ) {}
+
+  private async findOrCreateConversation(
+    providerUserId: string,
+    clientUserId: string,
+  ): Promise<string> {
+    const sortedIds = [providerUserId, clientUserId].sort();
+    const { data: existing } = await this.supabase
+      .from('conversations')
+      .select('id')
+      .contains('participant_ids', sortedIds)
+      .maybeSingle();
+
+    if (existing?.id) {
+      return existing.id;
+    }
+
+    const conversation =
+      await this.messagesService.createConversation(sortedIds);
+    return conversation.id;
+  }
 
   async findByUser(
     userId: string,
@@ -37,7 +58,7 @@ export class QuotesService {
     }
 
     if (search) {
-      q = q.ilike('note', `%${search}%`);
+      q = q.ilike('notes', `%${search}%`);
     }
 
     if (limit !== undefined && offset !== undefined) {
@@ -45,7 +66,7 @@ export class QuotesService {
     }
 
     const { data, error, count } = await q;
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return { data: data || [], total: count || 0 };
   }
 
@@ -65,6 +86,54 @@ export class QuotesService {
     providerId: string,
     createQuoteDto: CreateQuoteDto,
   ): Promise<Quote> {
+    if (providerId === createQuoteDto.client_id) {
+      throw new BadRequestException(
+        'Provider and client must be different users',
+      );
+    }
+
+    if (createQuoteDto.quote_request_id) {
+      const { data: quoteRequest } = await this.supabase
+        .from('quote_requests')
+        .select('id, client_id, provider_ids, status, deadline')
+        .eq('id', createQuoteDto.quote_request_id)
+        .maybeSingle();
+
+      if (!quoteRequest) {
+        throw new NotFoundException('Quote request not found');
+      }
+
+      if (quoteRequest.client_id !== createQuoteDto.client_id) {
+        throw new BadRequestException(
+          'Quote request client does not match the quote client',
+        );
+      }
+
+      if (!quoteRequest.provider_ids?.includes(providerId)) {
+        throw new ForbiddenException(
+          'Provider is not part of this quote request',
+        );
+      }
+
+      if (quoteRequest.status !== 'open') {
+        throw new BadRequestException(
+          'Quotes can only be created for open quote requests',
+        );
+      }
+
+      if (
+        quoteRequest.deadline &&
+        new Date(quoteRequest.deadline).getTime() < Date.now()
+      ) {
+        throw new BadRequestException('Quote request deadline has expired');
+      }
+    }
+
+    const conversationId = await this.findOrCreateConversation(
+      providerId,
+      createQuoteDto.client_id,
+    );
+
     // Calculate totals
     const subtotal = createQuoteDto.items.reduce(
       (sum, item) => sum + item.price * item.quantity,
@@ -81,6 +150,8 @@ export class QuotesService {
       .insert({
         provider_id: providerId,
         client_id: createQuoteDto.client_id,
+        conversation_id: conversationId,
+        quote_request_id: createQuoteDto.quote_request_id,
         items_json: createQuoteDto.items,
         subtotal,
         discount_amount: discountAmount,
@@ -97,7 +168,7 @@ export class QuotesService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
@@ -105,17 +176,35 @@ export class QuotesService {
     clientId: string,
     createQuoteRequestDto: CreateQuoteRequestDto,
   ): Promise<QuoteRequest> {
+    const { data: event, error: eventError } = await this.supabase
+      .from('events')
+      .select('id, client_id')
+      .eq('id', createQuoteRequestDto.event_id)
+      .single();
+
+    if (eventError || !event || event.client_id !== clientId) {
+      throw new ForbiddenException(
+        'You can only create quote requests for your own events',
+      );
+    }
+
+    const uniqueProviderIds = [...new Set(createQuoteRequestDto.provider_ids)];
+    if (uniqueProviderIds.length === 0) {
+      throw new BadRequestException('At least one provider is required');
+    }
+
     const { data, error } = await this.supabase
       .from('quote_requests')
       .insert({
         ...createQuoteRequestDto,
+        provider_ids: uniqueProviderIds,
         client_id: clientId,
         status: createQuoteRequestDto.status || 'open',
       })
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
@@ -137,7 +226,7 @@ export class QuotesService {
     }
 
     const { data, error } = await query;
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
@@ -168,7 +257,7 @@ export class QuotesService {
     }
 
     if (search) {
-      q = q.ilike('note', `%${search}%`);
+      q = q.ilike('notes', `%${search}%`);
     }
 
     if (limit !== undefined && offset !== undefined) {
@@ -176,11 +265,33 @@ export class QuotesService {
     }
 
     const { data, error, count } = await q;
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return { data: data || [], total: count || 0 };
   }
 
   async send(id: string, providerId: string): Promise<Quote> {
+    const { data: existingQuote } = await this.supabase
+      .from('quotes')
+      .select('id, provider_id, status, valid_until')
+      .eq('id', id)
+      .eq('provider_id', providerId)
+      .maybeSingle();
+
+    if (!existingQuote) {
+      throw new NotFoundException('Quote not found or access denied');
+    }
+
+    if (existingQuote.status !== 'draft') {
+      throw new BadRequestException('Only draft quotes can be sent');
+    }
+
+    if (
+      existingQuote.valid_until &&
+      new Date(existingQuote.valid_until).getTime() < Date.now()
+    ) {
+      throw new BadRequestException('Expired quotes cannot be sent');
+    }
+
     const { data: quote, error } = await this.supabase
       .from('quotes')
       .update({ status: 'sent' })
@@ -234,7 +345,7 @@ export class QuotesService {
     // Fetch quote first to check expiration
     const { data: existing } = await this.supabase
       .from('quotes')
-      .select('valid_until, status')
+      .select('id, valid_until, status, quote_request_id')
       .eq('id', id)
       .eq('client_id', userId)
       .single();
@@ -252,6 +363,12 @@ export class QuotesService {
       );
     }
 
+    if (!['sent'].includes(existing.status)) {
+      throw new ForbiddenException(
+        'Only sent quotes can be accepted or rejected by the client',
+      );
+    }
+
     const { data: quote, error } = await this.supabase
       .from('quotes')
       .update({ status })
@@ -261,6 +378,20 @@ export class QuotesService {
       .single();
 
     if (error) throw new NotFoundException('Quote not found or access denied');
+
+    if (status === 'accepted' && quote.quote_request_id) {
+      await this.supabase
+        .from('quotes')
+        .update({ status: 'rejected' })
+        .eq('quote_request_id', quote.quote_request_id)
+        .neq('id', quote.id)
+        .in('status', ['draft', 'sent']);
+
+      await this.supabase
+        .from('quote_requests')
+        .update({ status: 'closed' })
+        .eq('id', quote.quote_request_id);
+    }
 
     // Notify provider via message
     await this.messagesService.sendMessage(userId, {

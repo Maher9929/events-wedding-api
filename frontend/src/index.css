@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Force font-display:swap for Font Awesome to avoid invisible text (FOIT) */
+@font-face {
+  font-family: 'Font Awesome 6 Free';
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Font Awesome 6 Brands';
+  font-display: swap;
+}
+
 @theme {
   --font-tajawal: 'Tajawal', sans-serif;
 

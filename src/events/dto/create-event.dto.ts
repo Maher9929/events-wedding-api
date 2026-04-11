@@ -6,7 +6,6 @@ import {
   IsArray,
   IsObject,
   Min,
-  Max,
 } from 'class-validator';
 
 export class CreateEventDto {

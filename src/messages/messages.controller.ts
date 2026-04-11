@@ -28,9 +28,9 @@ export class MessagesController {
     return this.messagesService.getConversations(req.user.id);
   }
 
-  @Get('conversations/:id')
-  getMessages(@Param('id') id: string) {
-    return this.messagesService.getMessages(id);
+  @Get('conversations/id/:id')
+  getMessages(@Param('id') id: string, @Request() req) {
+    return this.messagesService.getMessages(id, req.user.id);
   }
 
   @Post('conversations')
@@ -44,7 +44,7 @@ export class MessagesController {
     });
   }
 
-  @Patch('conversations/:id/read')
+  @Patch('conversations/id/:id/read')
   markRead(@Param('id') id: string, @Request() req) {
     return this.messagesService.markConversationRead(id, req.user.id);
   }

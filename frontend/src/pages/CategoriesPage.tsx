@@ -45,14 +45,13 @@ const CategoriesPage = () => {
 
     useEffect(() => {
         Promise.allSettled([
-            categoriesService.getAll().then((data: any) => {
-                const list = Array.isArray(data) ? data : data?.data || [];
-                setCategories(list);
+            categoriesService.getAll().then((data) => {
+                setCategories(Array.isArray(data) ? data : []);
             }),
-            servicesService.getAll().then((data: any) => {
-                const list = Array.isArray(data) ? data : data?.data || [];
+            servicesService.getAll().then((data) => {
+                const list = Array.isArray(data) ? data : [];
                 const counts: Record<string, number> = {};
-                list.forEach((s: any) => {
+                list.forEach((s) => {
                     if (s.category_id) counts[s.category_id] = (counts[s.category_id] || 0) + 1;
                 });
                 setServiceCounts(counts);
@@ -147,8 +146,8 @@ const CategoriesPage = () => {
                                     <i className="fa-solid fa-mosque text-white text-xl"></i>
                                 </div>
                                 <div>
-                                    <h3 className="text-white font-bold">Ramadan Events</h3>
-                                    <p className="text-white text-opacity-80 text-xs">Iftar, Suhoor, Ghabga</p>
+                                    <h3 className="text-white font-bold">{t('categories.ramadan_events', 'Ramadan Events')}</h3>
+                                    <p className="text-white text-opacity-80 text-xs">{t('categories.ramadan_desc', 'Iftar, Suhoor, Ghabga')}</p>
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">

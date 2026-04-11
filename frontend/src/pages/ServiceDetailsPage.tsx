@@ -23,7 +23,7 @@ interface ExtendedServiceItem extends ServiceItem {
 }
 
 const ServiceDetailsPage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { id } = useParams();
     const { isAuthenticated, user } = useAuth();
@@ -58,6 +58,7 @@ const ServiceDetailsPage = () => {
             .catch(() => toastService.error(t('service.errors.load_failed', 'فشل تحميل تفاصيل الخدمة')))
             .finally(() => setLoading(false));
         loadReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, t]);
 
     const handleToggleFavorite = async () => {
@@ -66,19 +67,19 @@ const ServiceDetailsPage = () => {
         setTogglingFav(true);
         try {
             toastService.info(t('common.favorite_unavailable', 'المفضلة غير متاحة حالياً'));
-        } catch (err: any) {
-            toastService.error(err?.message || t('service.errors.favorite_failed', 'فشل تحديث المفضلة'));
+        } catch (err) {
+            toastService.error(err instanceof Error ? err.message : t('service.errors.favorite_failed', 'فشل تحديث المفضلة'));
         } finally {
             setTogglingFav(false);
         }
     };
 
-    const loadReviews = () => {
+    function loadReviews() {
         if (!id) return;
         reviewsService.getByService(id)
             .then(data => { if (Array.isArray(data)) setReviews(data); })
-            .catch(() => { });
-    };
+            .catch(() => { /* reviews are supplementary */ });
+    }
 
     const handleContact = async () => {
         if (!isAuthenticated) { navigate('/auth/login'); return; }
@@ -93,7 +94,7 @@ const ServiceDetailsPage = () => {
             const basePath = user?.role === 'provider' ? '/provider' : '/client';
             navigate(`${basePath}/messages`);
             toastService.success(t('messages.success', 'تم إنشاء المحادثة'));
-        } catch {
+        } catch (_error) {
             toastService.error(t('messages.error', 'فشل إنشاء المحادثة'));
         } finally {
             setContacting(false);
@@ -107,7 +108,7 @@ const ServiceDetailsPage = () => {
             await reviewsService.create({ service_id: id, rating: reviewForm.rating, comment: reviewForm.comment });
             setReviewForm({ rating: 5, comment: '' });
             loadReviews();
-        } catch (err) {
+        } catch (_error) {
             toastService.error(t('service.errors.review_failed', 'فشل إرسال التقييم'));
         } finally {
             setSubmitting(false);
@@ -131,11 +132,11 @@ const ServiceDetailsPage = () => {
         );
     }
 
-    const images = service.images?.length ? service.images : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800&q=80'];
+    const images = service.images?.length ? service.images : ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&q=60&fm=webp'];
     const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : '0';
 
     return (
-        <div className="min-h-screen bg-bglight font-tajawal pb-24" dir="rtl">
+        <div className="min-h-screen bg-bglight font-tajawal pb-24" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             {/* Header */}
             <header className="bg-white sticky top-0 z-50 shadow-sm">
                 <div className="px-5 py-4 flex items-center justify-between">
@@ -328,7 +329,7 @@ const ServiceDetailsPage = () => {
                                         if (bookingData?.id) {
                                             navigate(`/client/payment/${bookingData.id}`);
                                         }
-                                    } catch {
+                                    } catch (_error) {
                                         toastService.error(t('bookings.create_failed', 'فشل إنشاء الحجز'));
                                     } finally {
                                         setBookingLoading(false);
@@ -463,7 +464,7 @@ const ServiceDetailsPage = () => {
                         if (bookingData?.id) {
                             navigate(`/client/payment/${bookingData.id}?amount=${service.base_price}`);
                         }
-                    } catch {
+                    } catch (_error) {
                         toastService.error(t('bookings.create_failed', 'فشل إنشاء الحجز'));
                     } finally {
                         setBookingLoading(false);

@@ -72,12 +72,12 @@ export class ServicesController {
     );
   }
 
-  @Get(':id')
+  @Get('id/:id')
   async findOne(@Param('id') id: string) {
     return await this.servicesService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   async update(
@@ -88,7 +88,7 @@ export class ServicesController {
     return await this.servicesService.update(id, req.user.id, updateServiceDto);
   }
 
-  @Patch(':id/featured')
+  @Patch('id/:id/featured')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async updateFeatured(
@@ -103,7 +103,7 @@ export class ServicesController {
     );
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)

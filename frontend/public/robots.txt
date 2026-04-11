@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /client/
+Disallow: /provider/
+Disallow: /auth/
+
+Sitemap: https://dousha.qa/sitemap.xml

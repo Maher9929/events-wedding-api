@@ -9,17 +9,13 @@ export const getSupabaseClient = (configService: ConfigService) => {
     configService.get<string>('SUPABASE_ANON_KEY') ||
     'placeholder-key';
 
-  try {
-    return createClient(supabaseUrl, supabaseKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
-      },
-    });
-  } catch (error) {
-    throw error;
-  }
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
 };
 
 export const SupabaseProvider = {

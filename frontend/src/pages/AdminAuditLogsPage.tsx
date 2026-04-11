@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Booking } from '../services/api';
+import { toastService } from '../services/toast.service';
 
 interface AuditEntry {
     id: string;
@@ -22,11 +23,7 @@ const AdminAuditLogsPage = () => {
     const [filterType, setFilterType] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
-    useEffect(() => {
-        loadLogs();
-    }, []);
-
-    const loadLogs = async () => {
+    const loadLogs = useCallback(async () => {
         setLoading(true);
         try {
             // Try to load from audit-logs endpoint, fallback to constructing from bookings
@@ -35,7 +32,7 @@ const AdminAuditLogsPage = () => {
                 const data = await apiService.get<{ data?: AuditEntry[] }>('/audit-logs');
                 const list = Array.isArray(data) ? data : data?.data || [];
                 auditData = list;
-            } catch {
+            } catch (_error) {
                 // If no audit-logs endpoint, build audit trail from bookings activity
             }
 
@@ -65,19 +62,23 @@ const AdminAuditLogsPage = () => {
                 const existingIds = new Set(auditData.map(a => a.id));
                 const newEntries = bookingAuditEntries.filter(e => !existingIds.has(e.id));
                 auditData = [...auditData, ...newEntries];
-            } catch {
+            } catch (_error) {
                 // silently ignore if bookings fail
             }
 
             // Sort by date descending
             auditData.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             setLogs(auditData);
-        } catch (error) {
-            console.error(t('admin_audit.error_loading', 'Failed to load audit logs:'), error);
+        } catch (_error) {
+            toastService.error(t('admin_audit.error_loading', 'فشل تحميل سجلات التدقيق'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        void loadLogs();
+    }, [loadLogs]);
 
     const filteredLogs = logs.filter(log => {
         const matchesType = filterType === 'all' || log.entity_type === filterType || log.action.includes(filterType);
@@ -247,8 +248,8 @@ const AdminAuditLogsPage = () => {
                                         <p className="text-xs text-gray-500 truncate">{log.details}</p>
                                     </div>
                                     <div className="text-right flex-shrink-0">
-                                        <p className="text-xs text-gray-400">{new Date(log.created_at).toLocaleDateString('ar-EG')}</p>
-                                        <p className="text-[10px] text-gray-300">{new Date(log.created_at).toLocaleTimeString('ar-EG')}</p>
+                                        <p className="text-xs text-gray-400">{new Date(log.created_at).toLocaleDateString(t('common.date_locale', 'ar-EG'))}</p>
+                                        <p className="text-[10px] text-gray-300">{new Date(log.created_at).toLocaleTimeString(t('common.date_locale', 'ar-EG'))}</p>
                                     </div>
                                 </div>
                             );

@@ -4,7 +4,7 @@ import { authService } from '../services/auth.service';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
 
-const getNavItems = (t: any) => [
+const getNavItems = (t: (key: string) => string) => [
     { to: '/admin/dashboard', icon: 'fa-chart-pie', label: t('common.admin.overview') },
     { to: '/admin/users', icon: 'fa-users', label: t('common.admin.users') },
     { to: '/admin/providers', icon: 'fa-store', label: t('common.admin.providers') },
@@ -19,7 +19,7 @@ const getNavItems = (t: any) => [
     { to: '/admin/audit-logs', icon: 'fa-shield-halved', label: t('common.admin.audit_logs') },
 ];
 
-const SidebarContent = ({ currentUser, pathname, setSidebarOpen }: { currentUser: any, pathname: string, setSidebarOpen?: (val: boolean) => void }) => {
+const SidebarContent = ({ currentUser, pathname, setSidebarOpen }: { currentUser: { full_name?: string; email?: string; avatar_url?: string } | null, pathname: string, setSidebarOpen?: (val: boolean) => void }) => {
     const { t } = useTranslation();
     const isActive = (path: string) => pathname === path;
     const navItems = getNavItems(t);
@@ -88,7 +88,7 @@ const AdminLayout = () => {
             {/* Mobile Sidebar Overlay */}
             {sidebarOpen && (
                 <div className="fixed inset-0 z-50 md:hidden">
-                    <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)}></div>
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} role="button" aria-label="Close sidebar"></div>
                     <aside className="absolute right-0 top-0 h-full w-64 bg-white flex flex-col shadow-2xl">
                         <SidebarContent currentUser={currentUser} pathname={location.pathname} setSidebarOpen={setSidebarOpen} />
                     </aside>
@@ -101,6 +101,7 @@ const AdminLayout = () => {
                     <button
                         onClick={() => setSidebarOpen(true)}
                         className="w-10 h-10 rounded-xl bg-bglight flex items-center justify-center md:hidden"
+                        aria-label="Open menu"
                     >
                         <i className="fa-solid fa-bars text-gray-700"></i>
                     </button>
@@ -109,6 +110,13 @@ const AdminLayout = () => {
                         <span className="text-sm text-gray-500">{t('common.notifications.dates.today')}, {currentUser?.full_name || t('common.user')}</span>
                     </div>
                     <div className="flex items-center gap-3">
+                        <Link
+                            to="/"
+                            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-bglight text-gray-600 hover:bg-gray-200 transition-colors"
+                        >
+                            <i className="fa-solid fa-house"></i>
+                            {t('common.admin.back_to_site')}
+                        </Link>
                         <LanguageSwitcher />
                         <div className="hidden lg:flex items-center gap-2">
                             {navItems.slice(0, 3).map(item => (

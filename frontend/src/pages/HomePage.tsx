@@ -6,7 +6,7 @@ import { servicesService } from '../services/services.service';
 import { apiService } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import type { Category, ServiceItem } from '../services/api';
-import { getCarouselUrl, getThumbnailUrl } from '../utils/image.utils';
+import { getThumbnailUrl } from '../utils/image.utils';
 
 const HomePage = () => {
     const { t } = useTranslation();
@@ -23,15 +23,15 @@ const HomePage = () => {
 
     useEffect(() => {
         Promise.allSettled([
-            categoriesService.getAll().then((data: any) => {
-                const list = Array.isArray(data) ? data : data?.data || [];
+            categoriesService.getAll().then((data) => {
+                const list = Array.isArray(data) ? data : [];
                 setCategories(list.slice(0, 8));
             }),
-            servicesService.getFeatured(6).then((data: any) => {
-                const list = Array.isArray(data) ? data : data?.data || [];
+            servicesService.getFeatured(6).then((data) => {
+                const list = Array.isArray(data) ? data : [];
                 setFeaturedServices(list.slice(0, 6));
             }),
-            apiService.get<any>('/stats').then((d: any) => {
+            apiService.get<Record<string, number>>('/stats').then((d) => {
                 setStats({
                     providers: d?.providers || 0,
                     services: d?.services || 0,
@@ -41,9 +41,9 @@ const HomePage = () => {
         ]);
 
         if (isAuthenticated) {
-            apiService.get<any>('/notifications/unread-count')
-                .then((data: any) => setUnreadCount(data?.count || data?.data?.count || 0))
-                .catch(() => { });
+            apiService.get<{ count?: number }>('/notifications/unread-count')
+                .then((data) => setUnreadCount(data?.count || 0))
+                .catch(() => { /* notification count is non-critical */ });
         }
     }, [isAuthenticated]);
 
@@ -66,6 +66,7 @@ const HomePage = () => {
                                 <Link
                                     to={user?.role === 'provider' ? '/provider/notifications' : '/client/notifications'}
                                     className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center relative"
+                                    aria-label={t('common.notifications')}
                                 >
                                     <i className="fa-regular fa-bell text-gray-700"></i>
                                     {unreadCount > 0 && (
@@ -78,6 +79,7 @@ const HomePage = () => {
                                 <button
                                     onClick={() => navigate('/auth/login')}
                                     className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center"
+                                    aria-label={t('common.notifications')}
                                 >
                                     <i className="fa-regular fa-bell text-gray-700"></i>
                                 </button>
@@ -86,11 +88,12 @@ const HomePage = () => {
                                 <Link
                                     to={user?.role === 'provider' ? '/provider/dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/client/dashboard'}
                                     className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center"
+                                    aria-label={t('common.profile')}
                                 >
                                     <i className="fa-solid fa-user text-primary"></i>
                                 </Link>
                             ) : (
-                                <Link to="/auth/login" className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center">
+                                <Link to="/auth/login" className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center" aria-label={t('common.profile')}>
                                     <i className="fa-regular fa-user text-gray-700"></i>
                                 </Link>
                             )}
@@ -103,9 +106,11 @@ const HomePage = () => {
             <section className="relative w-full overflow-hidden bg-gray-900 rounded-b-[40px] mb-6 shadow-2xl animate-scale-in">
                 <div className="absolute inset-0">
                     <img 
-                        src={getCarouselUrl("https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80")} 
+                        src="https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=40&fm=webp" 
                         alt="Wedding Hero" 
                         className="w-full h-full object-cover opacity-40"
+                        loading="eager"
+                        fetchPriority="high"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent"></div>
                 </div>
@@ -113,13 +118,13 @@ const HomePage = () => {
                 <div className="relative z-10 px-5 pt-12 pb-16 text-center">
                     <span className="inline-block py-1 px-3 rounded-full bg-accent/20 text-accent text-xs font-bold mb-4 backdrop-blur-sm animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                         <i className="fa-solid fa-star me-1"></i>
-                        المنصة الأولى لخدمات الفعاليات
+                        {t('home.hero.badge')}
                     </span>
                     <h2 className="text-3xl font-bold text-white mb-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                        اصنع لحظات <span className="text-accent text-transparent bg-clip-text bg-gradient-to-r from-accent to-yellow-200">لا تُنسى</span>
+                        {t('home.hero.main_title')} <span className="text-accent text-transparent bg-clip-text bg-gradient-to-r from-accent to-yellow-200">{t('home.hero.main_title_highlight')}</span>
                     </h2>
                     <p className="text-gray-300 text-sm mb-8 max-w-md mx-auto animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                        اكتشف أفضل مزودي الخدمات لمناسباتك، من حفلات الزفاف إلى الفعاليات الخاصة، كل ذلك في مكان واحد.
+                        {t('home.hero.description')}
                     </p>
                     
                     <div className="relative max-w-md mx-auto animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
@@ -127,13 +132,13 @@ const HomePage = () => {
                             <i className="fa-solid fa-magnifying-glass text-white ms-3"></i>
                             <input 
                                 type="text" 
-                                placeholder="عن ماذا تبحث؟ (مثال: قاعة أفراح، تصوير...)" 
+                                placeholder={t('home.hero.search_placeholder')} 
                                 className="w-full h-12 bg-transparent text-white placeholder-gray-300 px-3 text-sm focus:outline-none"
                                 onFocus={() => navigate('/services')} 
                                 readOnly 
                             />
-                            <button onClick={() => navigate('/services')} className="h-10 px-5 rounded-xl gradient-purple text-white text-sm font-bold shadow-lg hover-scale">
-                                بحث
+                            <button onClick={() => navigate('/services')} className="h-10 px-5 rounded-xl gradient-purple text-white text-sm font-bold shadow-lg hover-scale" aria-label={t('home.hero.search_button')}>
+                                {t('home.hero.search_button')}
                             </button>
                         </div>
                     </div>
@@ -144,9 +149,9 @@ const HomePage = () => {
             <section className="px-5 pt-4 pb-2 animate-fade-in-up">
                 <div className="grid grid-cols-3 gap-3">
                     {[
-                        { value: stats.providers || '50+', label: 'مزود خدمة', icon: 'fa-store', color: 'text-primary' },
-                        { value: stats.services || '200+', label: 'خدمة متاحة', icon: 'fa-box', color: 'text-green-600' },
-                        { value: categories.length || '10+', label: 'فئة', icon: 'fa-border-all', color: 'text-amber-600' },
+                        { value: stats.providers || '50+', label: t('home.stats.providers'), icon: 'fa-store', color: 'text-primary' },
+                        { value: stats.services || '200+', label: t('home.stats.services'), icon: 'fa-box', color: 'text-green-600' },
+                        { value: categories.length || '10+', label: t('home.stats.categories'), icon: 'fa-border-all', color: 'text-amber-600' },
                     ].map((s, i) => (
                         <div key={i} className="glass-effect rounded-2xl p-3 shadow-premium text-center card-hover">
                             <i className={`fa-solid ${s.icon} ${s.color} text-lg mb-1`}></i>
@@ -165,8 +170,8 @@ const HomePage = () => {
                             <i className="fa-solid fa-calendar-plus text-white text-xl"></i>
                         </div>
                         <div className="text-right relative z-10">
-                            <p className="text-white font-bold text-lg">حجز فعالية</p>
-                            <p className="text-white text-opacity-80 text-xs">بناء فريق متكامل</p>
+                            <p className="text-white font-bold text-lg">{t('home.quick_actions.book_event')}</p>
+                            <p className="text-white text-opacity-80 text-xs">{t('home.quick_actions.book_event_desc')}</p>
                         </div>
                     </button>
 
@@ -176,8 +181,8 @@ const HomePage = () => {
                             <i className="fa-solid fa-wand-magic-sparkles text-gray-800 text-xl"></i>
                         </div>
                         <div className="text-right relative z-10">
-                            <p className="text-gray-900 font-bold text-lg">خدمة سريعة</p>
-                            <p className="text-gray-800 text-xs">احجز مباشر</p>
+                            <p className="text-gray-900 font-bold text-lg">{t('home.quick_actions.quick_service')}</p>
+                            <p className="text-gray-800 text-xs">{t('home.quick_actions.quick_service_desc')}</p>
                         </div>
                     </button>
                 </div>
@@ -189,45 +194,45 @@ const HomePage = () => {
                         <div className="min-w-[85%] h-40 rounded-3xl relative overflow-hidden" style={{ scrollSnapAlign: 'center' }}>
                             <img
                                 className="w-full h-full object-cover"
-                                src={getCarouselUrl("https://images.unsplash.com/photo-1519225421980-715cb0202128?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")}
+                                src="https://images.unsplash.com/photo-1519225421980-715cb0202128?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60&fm=webp"
                                 alt="luxury wedding venue"
                                 loading="lazy"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                             <div className="absolute bottom-0 right-0 p-5">
-                                <p className="text-accent text-xs font-bold mb-1">عرض خاص</p>
-                                <h3 className="text-white font-bold text-lg mb-1">باقة الزفاف الماسية</h3>
-                                <p className="text-white text-opacity-90 text-sm">خصم 30% على الحجز المبكر</p>
+                                <p className="text-accent text-xs font-bold mb-1">{t('home.promo.special_offer')}</p>
+                                <h3 className="text-white font-bold text-lg mb-1">{t('home.promo.diamond_package')}</h3>
+                                <p className="text-white text-opacity-90 text-sm">{t('home.promo.diamond_desc')}</p>
                             </div>
                         </div>
 
                         <div className="min-w-[85%] h-40 rounded-3xl relative overflow-hidden" style={{ scrollSnapAlign: 'center' }}>
                             <img
                                 className="w-full h-full object-cover"
-                                src={getCarouselUrl("https://images.unsplash.com/photo-1517457373958-b7bdd4587268?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")}
+                                src="https://images.unsplash.com/photo-1517457373958-b7bdd4587268?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60&fm=webp"
                                 alt="Ramadan iftar setup"
                                 loading="lazy"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                             <div className="absolute bottom-0 right-0 p-5">
-                                <p className="text-accent text-xs font-bold mb-1">رمضان كريم</p>
-                                <h3 className="text-white font-bold text-lg mb-1">باقات الإفطار الرمضاني</h3>
-                                <p className="text-white text-opacity-90 text-sm">ضيافة فاخرة لضيوفك</p>
+                                <p className="text-accent text-xs font-bold mb-1">{t('home.promo.ramadan')}</p>
+                                <h3 className="text-white font-bold text-lg mb-1">{t('home.promo.ramadan_package')}</h3>
+                                <p className="text-white text-opacity-90 text-sm">{t('home.promo.ramadan_desc')}</p>
                             </div>
                         </div>
 
                         <div className="min-w-[85%] h-40 rounded-3xl relative overflow-hidden" style={{ scrollSnapAlign: 'center' }}>
                             <img
                                 className="w-full h-full object-cover"
-                                src={getCarouselUrl("https://images.unsplash.com/photo-1530103862676-de3c9a59af57?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80")}
+                                src="https://images.unsplash.com/photo-1530103862676-de3c9a59af57?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=60&fm=webp"
                                 alt="kids birthday party"
                                 loading="lazy"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
                             <div className="absolute bottom-0 right-0 p-5">
-                                <p className="text-accent text-xs font-bold mb-1">حفلات الأطفال</p>
-                                <h3 className="text-white font-bold text-lg mb-1">أفكار إبداعية للأطفال</h3>
-                                <p className="text-white text-opacity-90 text-sm">اجعل يومهم مميزاً</p>
+                                <p className="text-accent text-xs font-bold mb-1">{t('home.promo.kids')}</p>
+                                <h3 className="text-white font-bold text-lg mb-1">{t('home.promo.kids_package')}</h3>
+                                <p className="text-white text-opacity-90 text-sm">{t('home.promo.kids_desc')}</p>
                             </div>
                         </div>
                     </div>
@@ -237,7 +242,7 @@ const HomePage = () => {
             <section id="featured-categories" className="px-5 py-6">
                 <div className="flex items-center justify-between mb-4 animate-slide-up">
                     <h2 className="text-xl font-bold text-gray-900">{t('common.categories')}</h2>
-                    <button onClick={() => navigate('/categories')} className="text-primary text-sm font-bold hover:underline transition-all">كل الفئات</button>
+                    <button onClick={() => navigate('/categories')} className="text-purple-700 text-sm font-bold hover:underline transition-all">{t('home.all_categories')}</button>
                 </div>
 
                 <div className="grid grid-cols-4 gap-3">
@@ -264,16 +269,16 @@ const HomePage = () => {
                 <div className="flex items-center justify-between mb-4 animate-slide-up">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                            الأكثر طلباً <i className="fa-solid fa-fire text-orange-500"></i>
+                            {t('home.trending.title')} <i className="fa-solid fa-fire text-orange-500"></i>
                         </h2>
-                        <p className="text-xs text-gray-500 mt-1">خدمات مميزة يحبها عملاؤنا</p>
+                        <p className="text-xs text-gray-500 mt-1">{t('home.trending.subtitle')}</p>
                     </div>
-                    <button onClick={() => navigate('/services')} className="text-primary text-sm font-bold bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors">المزيد</button>
+                    <button onClick={() => navigate('/services')} className="text-purple-800 text-sm font-bold bg-primary/10 px-3 py-1.5 rounded-full hover:bg-primary/20 transition-colors">{t('home.trending.more')}</button>
                 </div>
 
                 <div className="flex gap-4 overflow-x-auto pb-6 scrollbar-none animate-slide-up" style={{ scrollbarWidth: 'none', animationDelay: '0.1s' }}>
                     {featuredServices.length === 0 ? (
-                        <p className="text-center text-gray-400 py-8 w-full">جاري التحميل...</p>
+                        <p className="text-center text-gray-500 py-8 w-full">{t('common.loading')}</p>
                     ) : (
                         featuredServices.map((service) => (
                             <div key={service.id} onClick={() => navigate(`/services/${service.id}`)} className="min-w-[280px] hover-scale cursor-pointer pr-1 pl-2">
@@ -281,13 +286,13 @@ const HomePage = () => {
                                     <div className="h-48 overflow-hidden relative group">
                                         <img
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                                            src={getThumbnailUrl(service.images?.[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=800')}
+                                            src={getThumbnailUrl(service.images?.[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400&q=60&fm=webp')}
                                             alt={service.title}
                                             loading="lazy"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                                         <div className="absolute top-3 right-3 px-3 py-1 rounded-full bg-accent text-gray-900 text-xs font-bold shadow-lg">
-                                            مميز
+                                            {t('home.trending.featured_badge')}
                                         </div>
                                     </div>
                                     <div className="p-4">
@@ -296,16 +301,16 @@ const HomePage = () => {
                                                 <i className="fa-solid fa-star text-accent text-xs"></i>
                                                 <span className="text-sm font-bold text-gray-900">{service.rating || '0'}</span>
                                             </div>
-                                            <span className="text-xs text-gray-500">({service.review_count || 0} تقييم)</span>
+                                            <span className="text-xs text-gray-500">({service.review_count || 0} {t('home.trending.review_count')})</span>
                                         </div>
                                         <h3 className="font-bold text-gray-900 mb-1 truncate">{service.title}</h3>
                                         <p className="text-xs text-gray-600 mb-3 line-clamp-2">{service.description}</p>
                                         <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                                             <div>
-                                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">يبدأ من</p>
-                                                <p className="text-lg font-bold text-primary">{service.base_price.toLocaleString()} ر.ق</p>
+                                                <p className="text-[10px] text-gray-500 uppercase tracking-wider">{t('home.trending.price_from')}</p>
+                                                <p className="text-lg font-bold text-primary">{service.base_price.toLocaleString()} {t('common.currency')}</p>
                                             </div>
-                                            <button className="w-10 h-10 rounded-full gradient-purple flex items-center justify-center hover-scale shadow-md">
+                                            <button className="w-10 h-10 rounded-full gradient-purple flex items-center justify-center hover-scale shadow-md" aria-label={t('home.trending.more')}>
                                                 <i className="fa-solid fa-arrow-left text-white"></i>
                                             </button>
                                         </div>
@@ -320,8 +325,8 @@ const HomePage = () => {
             {/* Testimonials Section */}
             <section className="px-5 py-8 bg-bglight overflow-hidden">
                 <div className="text-center mb-6 animate-slide-up">
-                    <span className="text-primary text-xs font-bold tracking-widest uppercase mb-1 block">تجارب العملاء</span>
-                    <h2 className="text-2xl font-bold text-gray-900">ماذا يقولون عنا؟</h2>
+                    <span className="text-purple-700 text-xs font-bold tracking-widest uppercase mb-1 block">{t('home.testimonials.badge')}</span>
+                    <h2 className="text-2xl font-bold text-gray-900">{t('home.testimonials.title')}</h2>
                 </div>
                 
                 <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x" style={{ scrollbarWidth: 'none' }}>
@@ -355,10 +360,10 @@ const HomePage = () => {
                         <div className="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center mx-auto mb-4">
                             <i className="fa-solid fa-rocket text-white text-3xl"></i>
                         </div>
-                        <h2 className="text-2xl font-bold text-white mb-2">ابدأ فعاليتك الآن</h2>
-                        <p className="text-white text-opacity-90 mb-6">انشئ فعاليتك واختر الخدمات المناسبة بكل سهولة</p>
+                        <h2 className="text-2xl font-bold text-white mb-2">{t('home.cta.title')}</h2>
+                        <p className="text-white text-opacity-90 mb-6">{t('home.cta.description')}</p>
                         <button onClick={() => navigate('/client/events/new')} className="w-full h-14 rounded-2xl bg-white text-primary font-bold text-lg shadow-lg card-hover">
-                            إنشاء فعالية جديدة
+                            {t('home.cta.button')}
                         </button>
                     </div>
                 </div>
@@ -369,22 +374,22 @@ const HomePage = () => {
                             <i className="fa-solid fa-headset text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900 mb-1">هل تحتاج مساعدة؟</h3>
-                            <p className="text-sm text-gray-600 mb-3">فريق الدعم جاهز لمساعدتك على مدار الساعة</p>
+                            <h3 className="font-bold text-gray-900 mb-1">{t('home.help.title')}</h3>
+                            <p className="text-sm text-gray-600 mb-3">{t('home.help.description')}</p>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => window.open('https://wa.me/97400000000', '_blank')}
                                     className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-bold card-hover"
                                 >
                                     <i className="fa-brands fa-whatsapp ms-1"></i>
-                                    واتساب
+                                    {t('home.help.whatsapp')}
                                 </button>
                                 <button
                                     onClick={() => window.location.href = 'tel:+97400000000'}
                                     className="px-4 py-2 rounded-xl bg-white text-primary text-sm font-bold card-hover"
                                 >
                                     <i className="fa-solid fa-phone ms-1"></i>
-                                    اتصل بنا
+                                    {t('home.help.call')}
                                 </button>
                             </div>
                         </div>

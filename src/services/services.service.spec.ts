@@ -39,7 +39,12 @@ describe('ServicesService', () => {
 
   describe('findOne', () => {
     it('should return a service when found', async () => {
-      const svc = { id: '1', title: 'Photographie Premium', base_price: 5000, is_active: true };
+      const svc = {
+        id: '1',
+        title: 'Photographie Premium',
+        base_price: 5000,
+        is_active: true,
+      };
       supabase.single.mockResolvedValueOnce({ data: svc, error: null });
 
       const result = await service.findOne('1');
@@ -48,9 +53,14 @@ describe('ServicesService', () => {
     });
 
     it('should throw NotFoundException when service not found', async () => {
-      supabase.single.mockResolvedValueOnce({ data: null, error: { message: 'Row not found' } });
+      supabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Row not found' },
+      });
 
-      await expect(service.findOne('non-existent-id')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('non-existent-id')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -58,11 +68,26 @@ describe('ServicesService', () => {
     it('should create a service when provider is valid', async () => {
       // 1st single() → provider lookup
       supabase.single
-        .mockResolvedValueOnce({ data: { id: 'p1', user_id: 'u1' }, error: null })
+        .mockResolvedValueOnce({
+          data: { id: 'p1', user_id: 'u1' },
+          error: null,
+        })
         // 2nd single() → inserted service
-        .mockResolvedValueOnce({ data: { id: 's1', title: 'DJ Service', base_price: 3000, provider_id: 'p1' }, error: null });
+        .mockResolvedValueOnce({
+          data: {
+            id: 's1',
+            title: 'DJ Service',
+            base_price: 3000,
+            provider_id: 'p1',
+          },
+          error: null,
+        });
 
-      const dto = { title: 'DJ Service', base_price: 3000, price_type: 'fixed' };
+      const dto = {
+        title: 'DJ Service',
+        base_price: 3000,
+        price_type: 'fixed',
+      };
       const result = await service.create('p1', dto as any);
       expect(result).toHaveProperty('id', 's1');
       expect(result.title).toBe('DJ Service');

@@ -17,13 +17,13 @@ export const notificationsService = {
         apiService.get<any>(`/notifications${params ? '?' + params.toString() : ''}`),
 
     markAsRead: (id: string) =>
-        apiService.patch<void>(`/notifications/${id}/read`, {}),
+        apiService.patch<void>(`/notifications/id/${id}/read`, {}),
 
     markAllAsRead: () =>
         apiService.patch<void>('/notifications/read-all', {}),
 
     deleteNotification: (id: string) =>
-        apiService.delete<void>(`/notifications/${id}`),
+        apiService.delete<void>(`/notifications/id/${id}`),
 
     deleteAllRead: () =>
         apiService.delete<void>('/notifications'),

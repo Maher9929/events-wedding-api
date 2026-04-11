@@ -4,6 +4,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 export type AuditAction =
   | 'user_register'
   | 'user_login'
+  | 'user_logout'
   | 'user_delete'
   | 'user_ban'
   | 'user_unban'
@@ -42,7 +43,7 @@ export class AuditLogService {
         action,
         entity: entityType,
         entity_id: entityId || null,
-        details: details || {},
+        metadata: details || {},
       });
     } catch {
       // Non-critical — audit failures should never break main flow

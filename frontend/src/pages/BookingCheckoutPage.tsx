@@ -13,7 +13,7 @@ interface PromoResult {
 }
 
 const BookingCheckoutPage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();
@@ -40,9 +40,9 @@ const BookingCheckoutPage = () => {
         if (serviceId) {
             servicesService.findById(serviceId)
                 .then((data) => setService((data as { data?: ServiceItem }).data || (data as ServiceItem)))
-                .catch(() => { });
+                .catch(() => { /* service info is supplementary, checkout still works */ });
         }
-    }, [serviceId]);
+    }, [searchParams, serviceId]);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -70,8 +70,8 @@ const BookingCheckoutPage = () => {
         setPromoResult(null);
         try {
             setPromoError(t('bookings.checkout.promo_disabled', 'أكواد الخصم غير مفعلة مؤقتاً'));
-        } catch (err: any) {
-            setPromoError(err?.message || t('bookings.checkout.invalid_promo', 'كود الخصم غير صالح'));
+        } catch (err) {
+            setPromoError(err instanceof Error ? err.message : t('bookings.checkout.invalid_promo', 'كود الخصم غير صالح'));
         } finally {
             setPromoValidating(false);
         }
@@ -115,15 +115,15 @@ const BookingCheckoutPage = () => {
             } else {
                 navigate(`/client/booking-success/${bookingId}?${params.toString()}`);
             }
-        } catch (err: any) {
-            setError(err.message || t('bookings.errors.create_failed', 'حدث خطأ أثناء الحجز'));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : t('bookings.errors.create_failed', 'حدث خطأ أثناء الحجز'));
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-bglight font-tajawal pb-20" dir="rtl">
+        <div className="min-h-screen bg-bglight font-tajawal pb-20" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             <header className="bg-white p-4 shadow-sm sticky top-0 z-50">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center">
@@ -150,7 +150,7 @@ const BookingCheckoutPage = () => {
                             <div className="mb-4 pb-4 border-b border-gray-100">
                                 <div className="flex gap-4 mb-3">
                                     <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                                        <img src={service.images?.[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200'} className="w-full h-full object-cover" alt={service.title} />
+                                        <img loading="lazy" src={service.images?.[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200'} className="w-full h-full object-cover" alt={service.title} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-sm text-gray-900">{service.title}</h4>
@@ -165,19 +165,19 @@ const BookingCheckoutPage = () => {
                                             {service.duration_minutes} {t('common.minute', 'دقيقة')}
                                         </span>
                                     )}
-                                    {(service as any).providers?.company_name && (
+                                    {service.providers?.company_name && (
                                         <span className="flex items-center gap-1 text-xs bg-bglight px-2.5 py-1 rounded-lg text-gray-600">
                                             <i className="fa-solid fa-store text-primary"></i>
-                                            {(service as any).providers.company_name}
+                                            {service.providers.company_name}
                                         </span>
                                     )}
-                                    {(service as any).providers?.city && (
+                                    {service.providers?.city && (
                                         <span className="flex items-center gap-1 text-xs bg-bglight px-2.5 py-1 rounded-lg text-gray-600">
                                             <i className="fa-solid fa-location-dot text-primary"></i>
-                                            {(service as any).providers.city}
+                                            {service.providers.city}
                                         </span>
                                     )}
-                                    {(service as any).providers?.is_verified && (
+                                    {service.providers?.is_verified && (
                                         <span className="flex items-center gap-1 text-xs bg-green-100 px-2.5 py-1 rounded-lg text-green-700 font-bold">
                                             <i className="fa-solid fa-circle-check"></i>
                                             {t('common.verified', 'موثق')}

@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { QuotesService } from './quotes.service';
 import { QuotesController } from './quotes.controller';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { createClient } from '@supabase/supabase-js';
+import { ConfigModule } from '@nestjs/config';
 import { MessagesModule } from '../messages/messages.module';
 
 import { SupabaseProvider } from '../config/supabase.config';

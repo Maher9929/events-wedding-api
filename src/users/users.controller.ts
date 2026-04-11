@@ -11,7 +11,10 @@ import {
   UseGuards,
   Request,
   Query,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
   ApiOperation,
@@ -21,6 +24,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -34,6 +38,7 @@ export class UsersController {
 
   @Public()
   @Post('register')
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: "Inscription d'un nouvel utilisateur" })
   @ApiResponse({ status: 201, description: 'Utilisateur créé avec succès' })
   @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
@@ -43,6 +48,7 @@ export class UsersController {
 
   @Public()
   @Post('login')
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Connexion utilisateur' })
   @ApiResponse({ status: 200, description: 'Connexion réussie' })
@@ -51,12 +57,23 @@ export class UsersController {
     return await this.usersService.login(loginDto);
   }
 
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Déconnexion — invalide le token courant' })
+  @ApiResponse({ status: 200, description: 'Déconnecté avec succès' })
+  async logout(@Request() req: { user: { id: string; jti?: string } }) {
+    await this.usersService.logout(req.user.jti, req.user.id);
+    return { message: 'Logged out' };
+  }
+
   @Post('refresh')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Renouveler le token JWT' })
   @ApiResponse({ status: 200, description: 'Nouveau token généré' })
-  async refresh(@Request() req) {
+  async refresh(@Request() req: { user: { id: string } }) {
     return await this.usersService.refreshToken(req.user.id);
   }
 
@@ -66,7 +83,7 @@ export class UsersController {
   @ApiOperation({ summary: 'Obtenir le profil utilisateur' })
   @ApiResponse({ status: 200, description: 'Profil utilisateur récupéré' })
   @ApiResponse({ status: 401, description: 'Non autorisé' })
-  async getProfile(@Request() req) {
+  async getProfile(@Request() req: { user: { id: string } }) {
     return await this.usersService.findOne(req.user.id);
   }
 
@@ -74,7 +91,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Mettre à jour le profil utilisateur' })
-  async updateProfile(@Request() req, @Body() updateData: any) {
+  async updateProfile(@Request() req: { user: { id: string } }, @Body() updateData: UpdateUserDto) {
     return await this.usersService.update(req.user.id, updateData);
   }
 
@@ -97,27 +114,27 @@ export class UsersController {
     );
   }
 
-  @Get(':id')
+  @Get('id/:id')
   @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string) {
     return await this.usersService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('id/:id')
   @UseGuards(JwtAuthGuard)
   async update(
     @Param('id') id: string,
-    @Body() updateData: any,
-    @Request() req,
+    @Body() updateData: UpdateUserDto,
+    @Request() req: { user: { id: string; role: string } },
   ) {
     // Users can only update their own profile unless they're admin
     if (req.user.id !== id && req.user.role !== UserRole.ADMIN) {
-      throw new Error('Unauthorized');
+      throw new ForbiddenException('Unauthorized');
     }
     return await this.usersService.update(id, updateData);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -127,8 +144,8 @@ export class UsersController {
 
   @Post('avatar')
   @UseGuards(JwtAuthGuard)
-  async uploadAvatar(@Request() req, @Body('avatar_url') avatarUrl: string) {
-    if (!avatarUrl) throw new Error('avatar_url is required');
+  async uploadAvatar(@Request() req: { user: { id: string } }, @Body('avatar_url') avatarUrl: string) {
+    if (!avatarUrl) throw new BadRequestException('avatar_url is required');
     const updated = await this.usersService.update(req.user.id, {
       avatar_url: avatarUrl,
     });

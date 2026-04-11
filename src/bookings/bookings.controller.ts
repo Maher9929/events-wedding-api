@@ -86,9 +86,11 @@ export class BookingsController {
     @Query('search') search?: string,
     @Query('sort_order') sortOrder?: string,
   ) {
-    const targetProviderId = providerId === 'me' ? req.user.id : providerId;
+    const targetProviderId =
+      providerId === 'me' ? (req.user.provider_id ?? req.user.id) : providerId;
     return await this.bookingsService.findByProvider(
       targetProviderId,
+      req.user.id,
       status,
       paymentStatus,
       limit ? parseInt(limit) : undefined,
@@ -101,8 +103,10 @@ export class BookingsController {
   @Get('stats/:providerId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
-  async getStats(@Param('providerId') providerId: string) {
-    return await this.bookingsService.getStats(providerId);
+  async getStats(@Param('providerId') providerId: string, @Request() req) {
+    const targetProviderId =
+      providerId === 'me' ? (req.user.provider_id ?? req.user.id) : providerId;
+    return await this.bookingsService.getStats(targetProviderId, req.user.id);
   }
 
   @Get('admin/stats')
@@ -112,13 +116,13 @@ export class BookingsController {
     return await this.bookingsService.getAdminStats();
   }
 
-  @Get(':id')
+  @Get('id/:id')
   @UseGuards(JwtAuthGuard)
-  async findOne(@Param('id') id: string) {
-    return await this.bookingsService.findOne(id);
+  async findOne(@Param('id') id: string, @Request() req) {
+    return await this.bookingsService.findOne(id, req.user.id);
   }
 
-  @Patch(':id/status')
+  @Patch('id/:id/status')
   @UseGuards(JwtAuthGuard)
   async updateStatus(
     @Param('id') id: string,
@@ -128,7 +132,7 @@ export class BookingsController {
     return await this.bookingsService.updateStatus(id, req.user.id, dto);
   }
 
-  @Post(':id/pay')
+  @Post('id/:id/pay')
   @UseGuards(JwtAuthGuard)
   async createPaymentIntent(
     @Param('id') id: string,
@@ -142,16 +146,18 @@ export class BookingsController {
     );
   }
 
-  @Post(':id/mock-confirm')
+  @Post('id/:id/mock-confirm')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   async confirmMockPayment(
     @Param('id') id: string,
+    @Request() req,
     @Body('paymentIntentId') paymentIntentId: string,
     @Body('paymentType') paymentType: string,
   ) {
     return this.bookingsService.confirmMockPayment(
       id,
+      req.user.id,
       paymentIntentId,
       paymentType,
     );

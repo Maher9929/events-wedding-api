@@ -20,7 +20,7 @@ const FileUpload = ({
   maxSizeMB = 10,
   bucket = 'attachments',
   folder = 'general',
-  buttonText = 'رفع ملف',
+  buttonText = '',
   buttonClassName = 'px-4 py-2 rounded-xl bg-primary text-white font-bold hover:bg-purple-700 transition-colors',
 }: FileUploadProps) => {
   const [uploading, setUploading] = useState(false);
@@ -36,7 +36,7 @@ const FileUpload = ({
     // Validation
     for (const file of fileArray) {
       if (!uploadService.validateFileSize(file, maxSizeMB)) {
-        toastService.error(`الملف ${file.name} كبير جداً. الحد الأقصى ${maxSizeMB}MB`);
+        toastService.error(`File ${file.name} is too large. Max ${maxSizeMB}MB`);
         return;
       }
     }
@@ -54,15 +54,15 @@ const FileUpload = ({
         setProgress(((i + 1) / fileArray.length) * 100);
       }
 
-      toastService.success(`تم رفع ${results.length} ملف بنجاح`);
+      toastService.success(`${results.length} files uploaded successfully`);
       onUploadComplete(results);
       
       // Reset input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    } catch (error: any) {
-      toastService.error('فشل رفع الملف: ' + (error.message || 'خطأ غير معروف'));
+    } catch (error) {
+      toastService.error('Upload failed: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setUploading(false);
       setProgress(0);
@@ -90,7 +90,7 @@ const FileUpload = ({
         {uploading ? (
           <span className="flex items-center gap-2">
             <i className="fa-solid fa-spinner fa-spin"></i>
-            جاري الرفع... {Math.round(progress)}%
+            Uploading... {Math.round(progress)}%
           </span>
         ) : (
           <span className="flex items-center gap-2">

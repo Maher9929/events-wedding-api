@@ -34,7 +34,7 @@ export class ModerationService {
     private readonly supabase: SupabaseClient,
   ) {}
 
-  async createReport(reportDto: ReportDto, reporterId: string) {
+  async createReport(reportDto: any, reporterId: string) {
     const { data, error } = await this.supabase
       .from('moderation_reports')
       .insert({
@@ -80,7 +80,7 @@ export class ModerationService {
 
   async updateReport(
     reportId: string,
-    action: ModerationAction,
+    action: any,
     moderatorId: string,
   ) {
     // Get the report first
@@ -286,7 +286,7 @@ export class ModerationService {
 
   async reviewKycDocument(
     documentId: string,
-    status: 'approved' | 'rejected',
+    status: string,
     notes?: string,
     reviewerId?: string,
   ) {

@@ -33,8 +33,16 @@ describe('UsersController', () => {
 
   describe('register', () => {
     it('should call usersService.register', async () => {
-      const dto = { email: 't@t.com', password: 'P@ss1234', full_name: 'Test', role: 'client' as const };
-      const expected = { access_token: 'jwt', user: { id: '1', email: 't@t.com' } };
+      const dto = {
+        email: 't@t.com',
+        password: 'P@ss1234',
+        full_name: 'Test',
+        role: 'client' as const,
+      };
+      const expected = {
+        access_token: 'jwt',
+        user: { id: '1', email: 't@t.com' },
+      };
       mockUsersService.register.mockResolvedValue(expected);
 
       const result = await controller.register(dto);

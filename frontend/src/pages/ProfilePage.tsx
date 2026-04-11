@@ -21,7 +21,7 @@ interface ProviderProfile {
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [loggingOut, setLoggingOut] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -68,8 +68,8 @@ const ProfilePage = () => {
       setFormData({
         full_name: user.full_name || '',
         phone: user.phone || '',
-        bio: (user as any).bio || '',
-        city: (user as any).city || '',
+        bio: user.bio || '',
+        city: user.city || '',
       });
       if (user.role === 'provider') {
         interface ProfileResponse { data?: ProviderProfile; id?: string }
@@ -86,7 +86,7 @@ const ProfilePage = () => {
               });
             }
           })
-          .catch(() => { });
+          .catch(() => { /* provider profile is supplementary */ });
       }
     }
   }, [user, isAuthenticated, navigate]);
@@ -107,7 +107,7 @@ const ProfilePage = () => {
       setProviderProfile(prev => prev ? { ...prev, ...providerForm } : prev);
       toastService.success(t('profile.provider.success_update', 'تم تحديث ملف الشركة بنجاح'));
       setEditingProvider(false);
-    } catch {
+    } catch (_error) {
       toastService.error(t('profile.provider.error_update', 'فشل تحديث ملف الشركة'));
     } finally {
       setSavingProvider(false);
@@ -118,16 +118,16 @@ const ProfilePage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      let avatarUrl = (user as any)?.avatar_url || null;
+      let avatarUrl: string | null = user?.avatar_url ?? null;
 
       // Upload avatar if a new file was selected
       if (avatarFile && avatarPreview) {
         try {
           const uploadRes = await apiService.post<{ url?: string; data?: { url?: string } }>('/users/avatar', { avatar_url: avatarPreview });
           if (uploadRes?.url || uploadRes?.data?.url) {
-            avatarUrl = uploadRes.url || uploadRes.data?.url;
+            avatarUrl = uploadRes.url ?? uploadRes.data?.url ?? null;
           }
-        } catch { /* avatar upload failed silently */ }
+        } catch (_error) { /* avatar upload failed silently */ }
       }
 
       const payload = { ...formData, ...(avatarUrl ? { avatar_url: avatarUrl } : {}) };
@@ -135,8 +135,9 @@ const ProfilePage = () => {
       toastService.success(t('profile.success_update', 'تم تحديث الملف الشخصي بنجاح'));
       setEditing(false);
       setAvatarFile(null);
-    } catch (error: any) {
-      toastService.error(error.message || t('profile.error_update', 'فشل تحديث الملف الشخصي'));
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : t('profile.error_update', 'فشل تحديث الملف الشخصي');
+      toastService.error(msg);
     } finally {
       setLoading(false);
     }
@@ -147,13 +148,13 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-bglight p-5" dir="rtl">
+    <div className="min-h-screen bg-bglight p-5" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
       <div className="max-w-2xl mx-auto">
         <button
           onClick={() => navigate(-1)}
           className="text-gray-500 hover:text-primary mb-4 flex items-center gap-2 transition-colors"
         >
-          <i className="fa-solid fa-arrow-right"></i>
+          <i className={`fa-solid ${i18n.language === 'ar' ? 'fa-arrow-right' : 'fa-arrow-left'}`}></i>
           {t('common.back', 'العودة')}
         </button>
 
@@ -342,7 +343,7 @@ const ProfilePage = () => {
                       to={`/services?provider=${providerProfile.id}`}
                       className="px-3 py-1.5 rounded-xl bg-bglight text-primary text-xs font-bold flex items-center gap-1 hover:bg-purple-50 transition-colors"
                     >
-                      <i className="fa-solid fa-eye"></i> {t('common.view_profile', 'عرض الملف')}
+                      <i className="fa-solid fa-eye"></i> {t('profile.provider.view_services', 'عرض الخدمات')}
                     </Link>
                   )}
                   {!editingProvider && (
@@ -390,7 +391,7 @@ const ProfilePage = () => {
                       onChange={handleProviderChange}
                       disabled={!editingProvider}
                       className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
-                      placeholder="https://example.com"
+                      placeholder={t('profile.provider.website_placeholder', 'https://example.com')}
                     />
                   </div>
                   <div>

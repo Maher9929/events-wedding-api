@@ -77,7 +77,7 @@ export class ReviewsController {
     return await this.reviewsService.getAverageRating(serviceId);
   }
 
-  @Post(':id/report')
+  @Post('id/:id/report')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async reportReview(
@@ -88,7 +88,7 @@ export class ReviewsController {
     return await this.reviewsService.reportReview(id, req.user.id, reason);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   async remove(@Param('id') id: string, @Request() req) {

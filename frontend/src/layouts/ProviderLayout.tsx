@@ -31,10 +31,17 @@ const ProviderLayout = () => {
                 Dousha
               </Link>
               <span className="ms-4 text-sm text-gray-500">{t('common.provider.portal')}</span>
+              <Link
+                to="/"
+                className="ms-4 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-50 text-gray-700 hover:bg-gray-100 transition-colors text-sm font-medium"
+              >
+                <i className="fa-solid fa-house"></i>
+                <span>{t('common.admin.back_to_site')}</span>
+              </Link>
             </div>
 
             <div className="flex items-center space-x-4">
-              <Link to="/provider/notifications" className="relative p-2 text-gray-600 hover:text-primary">
+              <Link to="/provider/notifications" className="relative p-2 text-gray-600 hover:text-primary" aria-label={t('common.notifications')}>
                 <i className="fa-solid fa-bell text-lg"></i>
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </Link>

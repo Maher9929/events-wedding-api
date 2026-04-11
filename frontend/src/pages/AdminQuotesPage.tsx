@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import { toastService } from '../services/toast.service';
@@ -29,7 +29,7 @@ interface Quote {
 }
 
 const AdminQuotesPage = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('all');
@@ -44,29 +44,29 @@ const AdminQuotesPage = () => {
         expired:   { label: t('quotes.status.expired', 'منتهي'),   cls: 'bg-gray-100 text-gray-600',   icon: 'fa-hourglass-end' },
     };
 
-    useEffect(() => { loadQuotes(); }, [statusFilter]);
-
-    const loadQuotes = async () => {
+    const loadQuotes = useCallback(async () => {
         setLoading(true);
         try {
             const endpoint = statusFilter === 'all' ? '/quotes/admin' : `/quotes/admin?status=${statusFilter}`;
             const res = await apiService.get<{ data?: Quote[] } | Quote[]>(endpoint);
             const list = Array.isArray(res) ? res : res?.data || [];
             setQuotes(list);
-        } catch {
+        } catch (_error) {
             toastService.error(t('quotes.error_loading', 'فشل تحميل عروض الأسعار'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter, t]);
+
+    useEffect(() => { void loadQuotes(); }, [loadQuotes]);
 
     const handleStatusUpdate = async (quoteId: string, newStatus: string) => {
         try {
-            await apiService.patch(`/quotes/${quoteId}/status`, { status: newStatus });
+            await apiService.patch(`/quotes/id/${quoteId}/status`, { status: newStatus });
             setQuotes(prev => prev.map(q => q.id === quoteId ? { ...q, status: newStatus } : q));
             if (selected?.id === quoteId) setSelected((prev) => prev ? { ...prev, status: newStatus } : null);
             toastService.success(t('quotes.success_update', 'تم تحديث حالة العرض'));
-        } catch {
+        } catch (_error) {
             toastService.error(t('quotes.error_updating', 'فشل تحديث الحالة'));
         }
     };
@@ -146,7 +146,7 @@ const AdminQuotesPage = () => {
             {/* Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-right" dir="rtl">
+                    <table className="w-full text-right" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                         <thead className="bg-gray-50 border-b border-gray-100 text-sm font-bold text-gray-700">
                             <tr>
                                 <th className="px-6 py-4">{t('admin_quotes.table.title_client', 'العنوان / العميل')}</th>
@@ -195,7 +195,7 @@ const AdminQuotesPage = () => {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-gray-500">
-                                                {new Date(quote.created_at).toLocaleDateString('ar-EG')}
+                                                {new Date(quote.created_at).toLocaleDateString(t('common.date_locale', 'ar-EG'))}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-center gap-2">
@@ -235,7 +235,7 @@ const AdminQuotesPage = () => {
             {/* Detail Modal */}
             {selected && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] overflow-y-auto" dir="rtl">
+                    <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl max-h-[80vh] overflow-y-auto" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                         <div className="flex items-center justify-between mb-5">
                             <h3 className="font-bold text-lg text-gray-900">{t('admin_quotes.details_title', 'تفاصيل عرض السعر')}</h3>
                             <button onClick={() => setSelected(null)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
@@ -270,7 +270,7 @@ const AdminQuotesPage = () => {
                                 {selected.deadline && (
                                     <div className="flex justify-between">
                                         <span className="text-sm text-gray-500">{t('admin_quotes.details.deadline', 'الموعد النهائي')}</span>
-                                        <span className="text-sm text-orange-600 font-bold">{new Date(selected.deadline).toLocaleDateString('ar-EG')}</span>
+                                        <span className="text-sm text-orange-600 font-bold">{new Date(selected.deadline).toLocaleDateString(t('common.date_locale', 'ar-EG'))}</span>
                                     </div>
                                 )}
                             </div>

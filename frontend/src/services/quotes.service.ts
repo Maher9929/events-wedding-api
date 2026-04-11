@@ -24,9 +24,9 @@ export interface QuoteItem {
 
 export const quotesService = {
     getMyQuotes: (params = '') => apiService.get<Quote[]>(`/quotes/my-quotes${params}`),
-    findOne: (id: string) => apiService.get<Quote>(`/quotes/${id}`),
+    findOne: (id: string) => apiService.get<Quote>(`/quotes/id/${id}`),
     create: (data: Partial<Quote>) => apiService.post<Quote>('/quotes', data),
-    send: (id: string) => apiService.patch<Quote>(`/quotes/${id}/send`, {}),
+    send: (id: string) => apiService.patch<Quote>(`/quotes/id/${id}/send`, {}),
     updateStatus: (id: string, status: 'accepted' | 'rejected') =>
-        apiService.patch<Quote>(`/quotes/${id}/status`, { status }),
+        apiService.patch<Quote>(`/quotes/id/${id}/status`, { status }),
 };

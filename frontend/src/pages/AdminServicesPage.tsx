@@ -1,50 +1,69 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { ServiceItem } from '../services/api';
 import { toastService } from '../services/toast.service';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
+import Pagination from '../components/common/Pagination';
 
 const AdminServicesPage = () => {
     const { t } = useTranslation();
     const [services, setServices] = useState<ServiceItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(0);
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+    const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+    const PAGE_SIZE = 10;
 
-    useEffect(() => {
-        loadServices();
-    }, []);
-
-    const loadServices = async () => {
+    const loadServices = useCallback(async () => {
         setLoading(true);
         try {
             const data = await apiService.get<{ data?: ServiceItem[] } | ServiceItem[]>('/services');
             const list = Array.isArray(data) ? data : data?.data || [];
             setServices(list);
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_loading'));
         } finally {
             setLoading(false);
         }
-    };
+    }, [t]);
+
+    useEffect(() => {
+        void loadServices();
+    }, [loadServices]);
+
+    useEffect(() => {
+        setPage(0);
+    }, [searchTerm]);
 
     const handleFeatureToggle = async (serviceId: string, currentStatus: boolean) => {
         try {
-            await apiService.patch(`/services/${serviceId}/featured`, { isFeatured: !currentStatus });
+            await apiService.patch(`/services/id/${serviceId}/featured`, { isFeatured: !currentStatus });
             setServices(prev => prev.map(s => s.id === serviceId ? { ...s, is_featured: !currentStatus } : s));
             toastService.success(t('common.admin.success_update'));
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_updating'));
         }
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm(t('common.admin.confirm_delete'))) return;
+        const ok = await confirm({
+            title: t('common.admin.confirm_delete', 'Delete Service'),
+            message: t('common.admin.confirm_delete_msg', 'Are you sure? This action cannot be undone.'),
+            confirmLabel: t('common.delete', 'Delete'),
+            cancelLabel: t('common.cancel', 'Cancel'),
+        });
+        if (!ok) return;
+        setDeletingId(id);
         try {
-            await apiService.delete(`/services/${id}`);
+            await apiService.delete(`/services/id/${id}`);
             setServices(prev => prev.filter(s => s.id !== id));
             toastService.success(t('common.admin.success_delete'));
-        } catch (error) {
+        } catch (_error) {
             toastService.error(t('common.error_deleting'));
+        } finally {
+            setDeletingId(null);
         }
     };
 
@@ -52,6 +71,7 @@ const AdminServicesPage = () => {
         s.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    const paginatedServices = filteredServices.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     return (
         <div className="space-y-6">
@@ -77,7 +97,7 @@ const AdminServicesPage = () => {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50 border-b border-gray-100 font-bold text-gray-700 text-sm">
                             <tr>
-                                <th className="px-6 py-4">{t('common.service')}</th>
+                                <th className="px-6 py-4">{t('common.service_label', 'Service')}</th>
                                 <th className="px-6 py-4">{t('common.price')}</th>
                                 <th className="px-6 py-4">{t('common.category')}</th>
                                 <th className="px-6 py-4 text-center">{t('common.featured')}</th>
@@ -100,11 +120,11 @@ const AdminServicesPage = () => {
                                     <td colSpan={5} className="px-6 py-10 text-center text-gray-500">{t('common.no_results')}</td>
                                 </tr>
                             ) : (
-                                filteredServices.map(service => (
+                                paginatedServices.map(service => (
                                     <tr key={service.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-bold text-gray-800">{service.title}</div>
-                                            <div className="text-xs text-gray-400">#{(service as any).id.substring(0, 8).toUpperCase()}</div>
+                                            <div className="text-xs text-gray-400">#{service.id.substring(0, 8).toUpperCase()}</div>
                                         </td>
                                         <td className="px-6 py-4 font-bold text-primary">{service.base_price?.toLocaleString()} QR</td>
                                         <td className="px-6 py-4 text-gray-600 text-sm">
@@ -122,9 +142,10 @@ const AdminServicesPage = () => {
                                         <td className="px-6 py-4 text-center">
                                             <button
                                                 onClick={() => handleDelete(service.id)}
-                                                className="text-red-400 hover:text-red-600 p-2"
+                                                disabled={deletingId === service.id}
+                                                className="text-red-400 hover:text-red-600 p-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                <i className="fa-solid fa-trash-can"></i>
+                                                <i className={`fa-solid ${deletingId === service.id ? 'fa-spinner fa-spin' : 'fa-trash-can'}`}></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -134,6 +155,13 @@ const AdminServicesPage = () => {
                     </table>
                 </div>
             </div>
+            <Pagination
+                page={page}
+                total={filteredServices.length}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+            />
+            <ConfirmDialogComponent />
         </div>
     );
 };

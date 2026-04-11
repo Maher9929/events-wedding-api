@@ -154,6 +154,8 @@ export class InvoiceService {
 
     const grossAmount = Number(booking.amount || 0);
     const platformFee = Number(booking.platform_fee || 0);
+    const platformFeeRate =
+      grossAmount > 0 ? ((platformFee / grossAmount) * 100).toFixed(1) : '0.0';
 
     doc
       .fillColor('#334155')
@@ -164,7 +166,7 @@ export class InvoiceService {
 
     if (platformFee > 0) {
       doc
-        .text('Frais de plateforme (5%):', 380, 330)
+        .text(`Frais de plateforme (${platformFeeRate}%):`, 380, 330)
         .text(`${platformFee.toFixed(2)} QAR`, 480, 330);
     }
 

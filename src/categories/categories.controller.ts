@@ -62,17 +62,17 @@ export class CategoriesController {
     return await this.categoriesService.findBySlug(slug);
   }
 
-  @Get(':id/children')
+  @Get('id/:id/children')
   async findChildren(@Param('id') id: string) {
     return await this.categoriesService.findChildren(id);
   }
 
-  @Get(':id')
+  @Get('id/:id')
   async findOne(@Param('id') id: string) {
     return await this.categoriesService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   async update(
@@ -82,7 +82,7 @@ export class CategoriesController {
     return await this.categoriesService.update(id, updateCategoryDto);
   }
 
-  @Delete(':id')
+  @Delete('id/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)

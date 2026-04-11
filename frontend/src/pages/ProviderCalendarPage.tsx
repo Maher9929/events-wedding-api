@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Booking } from '../services/api';
+import { toastService } from '../services/toast.service';
 
 const ProviderCalendarPage = () => {
     const navigate = useNavigate();
@@ -25,8 +26,8 @@ const ProviderCalendarPage = () => {
             const data = await apiService.get<Booking[] | { data: Booking[] }>(`/bookings/provider/me?start_date=${startDate.toISOString()}&end_date=${endDate.toISOString()}`);
             const payload = Array.isArray(data) ? data : data?.data || [];
             setBookings(payload);
-        } catch (error) {
-            console.error('Failed to load bookings:', error);
+        } catch (_error) {
+            toastService.error(t('provider.calendar.error_loading', 'فشل تحميل الحجوزات'));
         } finally {
             setLoading(false);
         }
@@ -95,7 +96,7 @@ const ProviderCalendarPage = () => {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">{t('provider.calendar.title', 'تقويم الحجوزات')}</h1>
                         <p className="text-gray-600 mt-1">
-                            {currentMonth.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'ar-EG', { month: 'long', year: 'numeric' })}
+                            {currentMonth.toLocaleDateString(t('common.date_locale', 'ar-EG'), { month: 'long', year: 'numeric' })}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -189,7 +190,7 @@ const ProviderCalendarPage = () => {
                 {selectedDate && (
                     <div className="bg-white rounded-3xl shadow-sm p-6 mt-6">
                         <h3 className="text-lg font-bold text-gray-900 mb-4">
-                            {t('provider.calendar.bookings_on', 'حجوزات')} {selectedDate.toLocaleDateString(i18n.language === 'en' ? 'en-US' : 'ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            {t('provider.calendar.bookings_on', 'حجوزات')} {selectedDate.toLocaleDateString(t('common.date_locale', 'ar-EG'), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                         </h3>
                         <div className="space-y-3">
                             {getBookingsForDate(selectedDate).length > 0 ? (
@@ -213,7 +214,7 @@ const ProviderCalendarPage = () => {
                                                 </p>
                                                 <div className="flex items-center gap-4 text-sm">
                                                     <span className="font-bold text-primary">
-                                                        {booking.amount.toLocaleString(i18n.language === 'en' ? 'en-US' : 'ar-EG')} {t('common.currency', 'ر.ق')}
+                                                        {booking.amount.toLocaleString(t('common.date_locale', 'ar-EG'))} {t('common.currency', 'ر.ق')}
                                                     </span>
                                                     <span className="text-gray-500">
                                                         {booking.payment_status === 'fully_paid' ? t('provider.calendar.payment.fully_paid', 'مدفوع بالكامل') :
@@ -291,7 +292,7 @@ const ProviderCalendarPage = () => {
                                     {bookings
                                         .filter(b => b.payment_status === 'fully_paid')
                                         .reduce((sum, b) => sum + b.amount, 0)
-                                        .toLocaleString(i18n.language === 'en' ? 'en-US' : 'ar-EG')} {t('common.currency', 'ر.ق')}
+                                        .toLocaleString(t('common.date_locale', 'ar-EG'))} {t('common.currency', 'ر.ق')}
                                 </p>
                             </div>
                         </div>

@@ -4,10 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
 import type { Event } from '../services/api';
 import { toastService } from '../services/toast.service';
+import { useConfirmDialog } from '../components/common/ConfirmDialog';
+import StatusBadge from '../components/common/StatusBadge';
+import Pagination from '../components/common/Pagination';
 
 const EventsListPage = () => {
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [events, setEvents] = useState<Event[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
@@ -16,6 +19,7 @@ const EventsListPage = () => {
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(0);
     const PAGE_SIZE = 10;
+    const { confirm: confirmDialog, ConfirmDialogComponent } = useConfirmDialog();
 
     const statusMap = {
         planning: { label: t('events.status.planning', 'جاري التخطيط'), cls: 'bg-blue-100 text-blue-700' },
@@ -60,7 +64,7 @@ const EventsListPage = () => {
             
             setEvents(list);
             setTotal(returnedTotal);
-        } catch {
+        } catch (_error) {
             toastService.error(t('events.error_loading', 'فشل تحميل الفعاليات'));
         } finally {
             setLoading(false);
@@ -68,18 +72,24 @@ const EventsListPage = () => {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm(t('events.confirm_delete', 'هل أنت متأكد من حذف هذه الفعالية؟'))) return;
+        const ok = await confirmDialog({
+            title: t('events.confirm_delete_title', 'Delete Event'),
+            message: t('events.confirm_delete', 'Are you sure you want to delete this event?'),
+            confirmLabel: t('common.delete', 'Delete'),
+            cancelLabel: t('common.cancel', 'Cancel'),
+        });
+        if (!ok) return;
         try {
-            await apiService.delete(`/events/${id}`);
+            await apiService.delete(`/events/id/${id}`);
             setEvents(prev => prev.filter(e => e.id !== id));
             toastService.success(t('events.delete_success', 'تم حذف الفعالية'));
-        } catch {
+        } catch (_error) {
             toastService.error(t('events.error_deleting', 'فشل حذف الفعالية'));
         }
     };
 
     return (
-        <div className="min-h-screen bg-bglight font-tajawal pb-24" dir="rtl">
+        <div className="min-h-screen bg-bglight font-tajawal pb-24" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             {/* Header */}
             <header className="bg-white sticky top-0 z-50 shadow-sm px-5 py-4">
                 <div className="flex items-center justify-between">
@@ -146,7 +156,7 @@ const EventsListPage = () => {
                         <h3 className="text-lg font-bold text-gray-900 mb-2">{t('events.no_events', 'لا توجد فعاليات بعد')}</h3>
                         <p className="text-sm text-gray-500 mb-6">{t('events.start_creating', 'ابدأ بإنشاء فعاليتك الأولى الآن')}</p>
                         <Link
-                            to="/client/events/create"
+                            to="/client/events/new"
                             className="px-8 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg"
                         >
                             {t('events.create_new', 'إنشاء فعالية جديدة')}
@@ -156,7 +166,6 @@ const EventsListPage = () => {
                     <div className="space-y-4">
                         {events
                             .map(event => {
-                                const st = statusMap[event.status as keyof typeof statusMap] || { label: event.status, cls: 'bg-gray-100 text-gray-700' };
                                 const daysLeft = Math.ceil((new Date(event.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                                 return (
                                     <div key={event.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
@@ -168,15 +177,13 @@ const EventsListPage = () => {
                                                         {eventTypeMap[event.event_type] || event.event_type}
                                                     </p>
                                                 </div>
-                                                <span className={`text-xs px-2 py-1 rounded-lg font-bold flex-shrink-0 ${st.cls}`}>
-                                                    {st.label}
-                                                </span>
+                                                <StatusBadge status={event.status} />
                                             </div>
 
                                             <div className="flex items-center gap-4 text-xs text-gray-500">
                                                 <span className="flex items-center gap-1">
                                                     <i className="fa-solid fa-calendar text-primary"></i>
-                                                    {new Date(event.event_date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                                    {new Date(event.event_date).toLocaleDateString(t('common.date_locale', 'ar-EG'), { year: 'numeric', month: 'short', day: 'numeric' })}
                                                 </span>
                                                 {event.guest_count && (
                                                     <span className="flex items-center gap-1">
@@ -194,10 +201,10 @@ const EventsListPage = () => {
 
                                             {/* Budget + Tasks stats */}
                                             {(() => {
-                                                const budgets: any[] = (event as any).event_budgets || [];
-                                                const tasks: any[] = (event as any).event_tasks || [];
-                                                const spent = budgets.reduce((s: number, b: any) => s + (b.amount || 0), 0);
-                                                const completedTasks = tasks.filter((t: any) => t.is_completed).length;
+                                                const budgets = (event.event_budgets || []) as { amount?: number }[];
+                                                const tasks = (event.event_tasks || []) as { is_completed?: boolean }[];
+                                                const spent = budgets.reduce((s, b) => s + (b.amount || 0), 0);
+                                                const completedTasks = tasks.filter((t) => t.is_completed).length;
                                                 if (budgets.length === 0 && tasks.length === 0) return null;
                                                 return (
                                                     <div className="mt-3 flex items-center gap-3 text-xs">
@@ -264,27 +271,14 @@ const EventsListPage = () => {
                     </div>
                 )}
 
-                {/* Pagination */}
-                {total > PAGE_SIZE && (
-                    <div className="flex items-center justify-center gap-3 pt-4 pb-2">
-                        <button
-                            onClick={() => setPage(p => Math.max(0, p - 1))}
-                            disabled={page === 0}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                        >
-                            <i className="fa-solid fa-chevron-right text-sm"></i>
-                        </button>
-                        <span className="text-sm font-bold text-gray-700">{page + 1} / {Math.ceil(total / PAGE_SIZE)}</span>
-                        <button
-                            onClick={() => setPage(p => p + 1)}
-                            disabled={(page + 1) * PAGE_SIZE >= total}
-                            className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
-                        >
-                            <i className="fa-solid fa-chevron-left text-sm"></i>
-                        </button>
-                    </div>
-                )}
+                <Pagination
+                    page={page}
+                    total={total}
+                    pageSize={PAGE_SIZE}
+                    onPageChange={setPage}
+                />
             </main>
+            <ConfirmDialogComponent />
         </div>
     );
 };

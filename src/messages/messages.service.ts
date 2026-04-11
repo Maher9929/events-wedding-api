@@ -17,6 +17,24 @@ export class MessagesService {
     private readonly supabase: SupabaseClient,
   ) {}
 
+  private async getConversationForUser(
+    conversationId: string,
+    userId: string,
+  ): Promise<Conversation> {
+    const { data, error } = await this.supabase
+      .from('conversations')
+      .select('*')
+      .eq('id', conversationId)
+      .contains('participant_ids', [userId])
+      .maybeSingle();
+
+    if (error || !data) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    return data;
+  }
+
   async createConversation(participantIds: string[]): Promise<Conversation> {
     const sortedIds = [...participantIds].sort();
 
@@ -91,8 +109,9 @@ export class MessagesService {
     return enrichedConversations;
   }
 
-  async getMessages(conversationId: string): Promise<any[]> {
+  async getMessages(conversationId: string, userId: string): Promise<any[]> {
     if (!conversationId) return [];
+    await this.getConversationForUser(conversationId, userId);
 
     const { data, error } = await this.supabase
       .from('messages')
@@ -119,6 +138,8 @@ export class MessagesService {
     conversationId: string,
     userId: string,
   ): Promise<{ success: boolean }> {
+    await this.getConversationForUser(conversationId, userId);
+
     const { error } = await this.supabase
       .from('messages')
       .update({ read_at: new Date().toISOString() })
@@ -164,6 +185,8 @@ export class MessagesService {
         'Conversation ID or Recipient ID is required',
       );
     }
+
+    await this.getConversationForUser(conversationId, senderId);
 
     const { data: message, error } = await this.supabase
       .from('messages')

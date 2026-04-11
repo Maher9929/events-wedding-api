@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:cucumber": "cucumber-js",
     "test:selenium": "cucumber-js --tags @selenium",
-    "test:report": "node test/generate-report.js"
+    "test:report": "node test/generate-report.js",
+    "test:ui": "node test/run-cucumber.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -59,6 +60,7 @@
     "@nestjs/testing": "^11.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.10.7",
     "@types/selenium-webdriver": "^4.35.5",
     "@types/supertest": "^6.0.2",

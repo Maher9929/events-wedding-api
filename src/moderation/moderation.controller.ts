@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Patch,
-  Delete,
   Body,
   Param,
   Query,
@@ -15,6 +14,11 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
+import {
+  CreateReportDto,
+  UpdateReportActionDto,
+  ReviewKycDto,
+} from './dto/moderation.dto';
 
 @Controller('moderation')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,7 +27,7 @@ export class ModerationController {
 
   @Post('reports')
   @Roles(UserRole.CLIENT, UserRole.PROVIDER, UserRole.ADMIN)
-  async createReport(@Body() reportDto: any, @Request() req) {
+  async createReport(@Body() reportDto: CreateReportDto, @Request() req) {
     return this.moderationService.createReport(reportDto, req.user.id);
   }
 
@@ -43,11 +47,11 @@ export class ModerationController {
     );
   }
 
-  @Patch('reports/:id')
+  @Patch('reports/id/:id')
   @Roles(UserRole.ADMIN)
   async updateReport(
     @Param('id') id: string,
-    @Body() action: any,
+    @Body() action: UpdateReportActionDto,
     @Request() req,
   ) {
     return this.moderationService.updateReport(id, action, req.user.id);
@@ -59,11 +63,11 @@ export class ModerationController {
     return this.moderationService.getKycPending();
   }
 
-  @Patch('kyc/:id')
+  @Patch('kyc/id/:id')
   @Roles(UserRole.ADMIN)
   async reviewKycDocument(
     @Param('id') id: string,
-    @Body() review: any,
+    @Body() review: ReviewKycDto,
     @Request() req,
   ) {
     return this.moderationService.reviewKycDocument(

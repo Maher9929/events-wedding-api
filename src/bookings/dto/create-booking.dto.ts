@@ -5,7 +5,7 @@ import {
   IsOptional,
   Min,
   IsEnum,
-  IsDate,
+  IsDateString,
   IsArray,
 } from 'class-validator';
 
@@ -28,6 +28,7 @@ export class CreateBookingDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsDateString()
   booking_date: string;
 
   @IsOptional()
@@ -66,7 +67,7 @@ export class CreateBookingDto {
   cancellation_reason?: string;
 
   @IsOptional()
-  @IsDate()
+  @IsDateString()
   cancellation_deadline?: Date;
 
   @IsString()

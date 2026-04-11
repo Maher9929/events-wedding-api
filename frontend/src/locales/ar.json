@@ -8,6 +8,8 @@
         "messages": "الرسائل",
         "notifications": "الإشعارات",
         "profile": "الملف الشخصي",
+        "currency": "ر.ق",
+        "date_locale": "ar-EG",
         "search": "ما الذي تحتاجه لفعاليتك ؟",
         "loading": "جاري التحميل...",
         "no_results": "لا توجد نتائج",
@@ -22,6 +24,25 @@
         "sending": "جاري الإرسال",
         "back_to_services": "العودة إلى الخدمات",
         "link_copied": "تم نسخ الرابط",
+        "edit": "تعديل",
+        "save": "حفظ",
+        "save_changes": "حفظ التغييرات",
+        "saving": "جاري الحفظ...",
+        "cancel": "إلغاء",
+        "delete": "حذف",
+        "add": "إضافة",
+        "view": "عرض",
+        "active": "نشط",
+        "inactive": "متوقف",
+        "featured": "مميز",
+        "pause": "إيقاف",
+        "activate": "تفعيل",
+        "update": "تحديث",
+        "create": "إنشاء",
+        "category": "الفئة",
+        "search_placeholder": "بحث...",
+        "previous": "السابق",
+        "next": "التالي",
         "footer": {
             "terms": "الأحكام والشروط",
             "privacy": "سياسة الخصوصية",
@@ -49,7 +70,33 @@
             "reviews": "التقييمات",
             "quotes": "عروض الأسعار",
             "commissions": "العمولات",
-            "audit_logs": "سجل المراقبة"
+            "audit_logs": "سجل المراقبة",
+            "success_update": "تم التحديث بنجاح",
+            "manage_bookings_desc": "نظرة عامة على جميع حجوزات المنصة وحالاتها.",
+            "created_at": "تاريخ الإنشاء",
+            "actions": "الإجراءات",
+            "confirm_delete": "Delete User",
+            "confirm_delete_msg": "Are you sure? This action cannot be undone.",
+            "confirm_delete_event": "Delete Event",
+            "confirm_delete_event_msg": "Are you sure you want to delete this event? This action cannot be undone.",
+            "reviews_load_error": "Failed to load reviews",
+            "confirm_delete_review_msg": "Are you sure you want to delete this review?",
+            "review_delete_success": "Review deleted successfully",
+            "review_delete_error": "Failed to delete review",
+            "reviews_subtitle": "Moderate and manage reviews submitted across the platform.",
+            "users_load_error": "Failed to load users",
+            "role_update_success": "Role updated successfully",
+            "role_update_error": "Failed to update role",
+            "confirm_delete_user_msg": "Are you sure you want to delete this user? This action cannot be undone.",
+            "user_delete_success": "User deleted successfully",
+            "user_delete_error": "Failed to delete user",
+            "total_users": "Total users",
+            "users_subtitle": "View and manage all registered users on the platform.",
+            "search_users": "Search by name or email...",
+            "all_roles": "All roles",
+            "user": "User",
+            "registered_at": "Registered",
+            "no_users": "No users found"
         },
         "provider": {
             "portal": "بوابة المزود",
@@ -68,12 +115,127 @@
             "favorites": "المفضلة",
             "messages": "الرسائل",
             "my_account": "حسابي"
-        }
+        },
+        "no_data": "لا توجد بيانات",
+        "no_data_desc": "لم يتم العثور على نتائج",
+        "accept": "قبول",
+        "reject": "رفض",
+        "error_loading": "فشل تحميل البيانات",
+        "error_updating": "فشل التحديث",
+        "filter": "تصفية",
+        "status": "الحالة",
+        "manage": "إدارة",
+        "view_all": "عرض الكل",
+        "unspecified": "Unspecified",
+        "booking_count": "حجز",
+        "event_count": "فعالية",
+        "all_statuses": "جميع الحالات",
+        "actions": "Actions",
+        "service_label": "Service",
+        "client_label": "العميل",
+        "rating": "التقييم",
+        "comment": "التعليق",
+        "not_available": "N/A",
+        "roles": {
+            "client": "Client",
+            "provider": "Provider",
+            "admin": "Admin",
+            "client_plural": "Clients",
+            "provider_plural": "Providers",
+            "admin_plural": "Admins"
+        },
+        "email": "Email",
+        "role": "Role",
+        "minute": "دقيقة",
+        "notifications_label": "الإشعارات",
+        "week": "أسبوع",
+        "month": "شهر",
+        "year": "سنة",
+        "hour": "ساعة",
+        "hours_suffix": "س",
+        "date": "التاريخ",
+        "select": "اختر",
+        "today": "اليوم",
+        "yesterday": "أمس",
+        "favorite_unavailable": "المفضلة غير متاحة حالياً",
+        "contact": "تواصل",
+        "clear": "مسح الكل"
+    },
+    "messages": {
+        "inquiry": "مرحباً، أود الاستفسار عن الخدمة",
+        "success": "تم إنشاء المحادثة",
+        "error": "فشل إنشاء المحادثة",
+        "errors": {
+            "upload": "فشل رفع المرفق",
+            "send": "فشل إرسال الرسالة"
+        },
+        "select_conversation": "اختر محادثة لبدء المراسلة",
+        "conversation_title": "المحادثة",
+        "online_now": "متصل الآن",
+        "empty_chat": "لا توجد رسائل بعد. ابدأ المحادثة الآن.",
+        "input_placeholder": "اكتب رسالتك... واضغط Enter للإرسال",
+        "title": "الرسائل",
+        "empty": "لا توجد محادثات بعد",
+        "open_prompt": "افتح لعرض الرسائل",
+        "conversation_fallback": "محادثة",
+        "unread_count": "{{count}} غير مقروءة"
     },
     "home": {
         "hero": {
             "title": "خطط لفعاليتك المثالية",
-            "subtitle": "أفضل الخدمات لمناسباتكم السعيدة"
+            "subtitle": "أفضل الخدمات لمناسباتكم السعيدة",
+            "badge": "منصة موثوقة لتنظيم المناسبات",
+            "main_title": "خطط لفعاليتك",
+            "main_title_highlight": "المثالية",
+            "description": "اكتشف أفضل القاعات والمصورين وخدمات الضيافة والترفيه في مكان واحد.",
+            "search_placeholder": "ابحث عن قاعة، تصوير، ضيافة...",
+            "search_button": "استكشف الخدمات"
+        },
+        "stats": {
+            "providers": "مقدمو الخدمات",
+            "services": "الخدمات",
+            "categories": "الفئات"
+        },
+        "quick_actions": {
+            "book_event": "أنشئ فعاليتك",
+            "book_event_desc": "ابدأ التخطيط وحدد الميزانية والموعد",
+            "quick_service": "ابحث عن خدمة",
+            "quick_service_desc": "تصفح أفضل المزودين بسرعة"
+        },
+        "promo": {
+            "special_offer": "عرض مميز",
+            "diamond_package": "باقة الزفاف الماسية",
+            "diamond_desc": "حل متكامل لليلة استثنائية مع أفضل الشركاء.",
+            "ramadan": "رمضان",
+            "ramadan_package": "تنسيق أمسيات رمضانية",
+            "ramadan_desc": "ديكورات وضيافة وتجهيزات تناسب الأجواء الرمضانية.",
+            "kids": "الأطفال",
+            "kids_package": "حفلات أطفال مرحة",
+            "kids_desc": "أنشطة وترفيه وديكور مبهج لأجمل الاحتفالات."
+        },
+        "all_categories": "كل الفئات",
+        "trending": {
+            "title": "الخدمات الرائجة",
+            "subtitle": "اختيارات مميزة من أفضل مقدمي الخدمات",
+            "more": "عرض الكل",
+            "featured_badge": "مميز",
+            "review_count": "تقييم",
+            "price_from": "يبدأ من"
+        },
+        "testimonials": {
+            "badge": "آراء العملاء",
+            "title": "ماذا يقول عملاؤنا"
+        },
+        "cta": {
+            "title": "ابدأ التخطيط اليوم",
+            "description": "أنشئ فعاليتك ونسهّل عليك الوصول إلى أفضل الخدمات المناسبة لميزانيتك.",
+            "button": "ابدأ الآن"
+        },
+        "help": {
+            "title": "تحتاج مساعدة؟",
+            "description": "فريقنا جاهز لمساعدتك في اختيار الخدمات المناسبة والإجابة عن أي استفسار.",
+            "whatsapp": "واتساب",
+            "call": "اتصال"
         }
     },
     "auth": {
@@ -99,7 +261,9 @@
             "login_link": "تسجيل الدخول",
             "success": "تم إنشاء الحساب بنجاح !",
             "error": "حدث خطأ أثناء التسجيل"
-        }
+        },
+        "logging_out": "جاري تسجيل الخروج...",
+        "logout": "تسجيل الخروج"
     },
     "service": {
         "details": {
@@ -125,7 +289,8 @@
             "conv_created": "تم إنشاء المحادثة",
             "conv_error": "فشل إنشاء المحادثة",
             "success_review": "تم إرسال التقييم بنجاح",
-            "error_review": "فشل إرسال التقييم"
+            "error_review": "فشل إرسال التقييم",
+            "base_price": "السعر الأساسي"
         },
         "listing": {
             "title": "الخدمات المتاحة",
@@ -146,7 +311,14 @@
                 "apply": "تطبيق الفلاتر",
                 "reset": "إعادة تعيين",
                 "min_price": "الحد الأدنى",
-                "max_price": "الحد الأقصى"
+                "max_price": "الحد الأقصى",
+                "available_date": "التاريخ المتاح",
+                "max_budget": "الميزانية القصوى",
+                "category": "الفئة",
+                "capacity": "السعة (عدد الضيوف)",
+                "min": "الحد الأدنى",
+                "max": "الحد الأقصى",
+                "event_style": "نمط الفعالية"
             },
             "sort": {
                 "rating": "الأعلى تقييماً",
@@ -154,7 +326,20 @@
                 "newest": "الأحدث",
                 "price_asc": "السعر: الأقل",
                 "price_desc": "السعر: الأعلى"
-            }
+            },
+            "styles": {
+                "modern": "عصري",
+                "traditional": "تقليدي",
+                "rustic": "ريفي",
+                "elegant": "أنيق",
+                "bohemian": "بوهيمي"
+            },
+            "error_loading": "فشل تحميل الخدمات"
+        },
+        "errors": {
+            "load_failed": "فشل تحميل تفاصيل الخدمة",
+            "favorite_failed": "فشل تحديث المفضلة",
+            "review_failed": "فشل إرسال التقييم"
         }
     },
     "bookings": {
@@ -188,8 +373,61 @@
         "notes": "ملاحظات",
         "notes_placeholder": "أي متطلبات أو ملاحظات خاصة...",
         "errors": {
-            "select_date": "يرجى اختيار تاريخ الفعالية"
-        }
+            "select_date": "يرجى اختيار تاريخ الفعالية",
+            "past_date": "يجب أن يكون تاريخ الحجز في المستقبل",
+            "create_failed": "حدث خطأ أثناء الحجز",
+            "select_date_above": "يرجى اختيار تاريخ الفعالية أعلاه"
+        },
+        "checkout": {
+            "promo_disabled": "أكواد الخصم غير مفعلة مؤقتاً",
+            "invalid_promo": "كود الخصم غير صالح",
+            "title": "إتمام الحجز",
+            "details": "تفاصيل الحجز",
+            "payment_options": "خيارات الدفع",
+            "deposit_only": "دفع العربون فقط",
+            "deposit_rest": "الباقي يُدفع لاحقاً",
+            "pay_full": "دفع المبلغ كاملاً",
+            "promo_code": "كود الخصم (اختياري)",
+            "promo_placeholder": "أدخل كود الخصم",
+            "apply": "تطبيق",
+            "subtotal": "المجموع الفرعي",
+            "discount": "الخصم",
+            "total": "الإجمالي",
+            "confirm": "تأكيد الحجز والدفع"
+        },
+        "not_found": "Booking not found",
+        "status_label": "Booking status",
+        "receipt": "Receipt",
+        "view_receipt": "View receipt",
+        "booking_info": "Booking information",
+        "total_amount": "Total amount",
+        "platform_fee": "Platform fee",
+        "created_at": "Created at",
+        "cancellation_reason": "Cancellation reason",
+        "contact_provider": "Contact provider",
+        "cancel_modal_title": "Cancel booking",
+        "cancel_modal_body": "Are you sure? This action cannot be undone.",
+        "cancel_reason_optional": "Cancellation reason (optional)",
+        "cancel_reason_placeholder": "Enter a cancellation reason...",
+        "cancelling": "Cancelling...",
+        "confirm_cancel_title": "Cancel Booking",
+        "success": {
+            "payment_title": "Payment completed successfully!",
+            "title": "Booking completed successfully!",
+            "deposit_subtitle": "Your deposit was received successfully. You can complete the remaining payment later from the booking details.",
+            "payment_subtitle": "Your payment was received successfully. The booking will now continue with the provider.",
+            "subtitle": "Thank you. Your booking request has been received and you will be contacted soon.",
+            "summary": "Booking summary",
+            "booking_id": "Booking ID",
+            "payment_type": "Payment type",
+            "pending_notice": "Your booking is pending until the provider confirms it",
+            "view_bookings": "View my bookings",
+            "view_booking_details": "View booking details",
+            "contact_provider": "Contact provider",
+            "back_home": "Back to home"
+        },
+        "create_success": "تم إنشاء الحجز بنجاح",
+        "create_failed": "فشل إنشاء الحجز"
     },
     "notifications": {
         "unread": "غير مقروء",
@@ -217,7 +455,297 @@
         "dates": {
             "today": "اليوم",
             "yesterday": "أمس"
-        }
+        },
+        "error_mark_read": "فشل تحديث الإشعار",
+        "error_delete": "فشل حذف الإشعار",
+        "confirm_delete_all_title": "Delete Read Notifications"
+    },
+    "provider_services": {
+        "load_failed": "فشل تحميل الخدمات",
+        "max_photos": "الحد الأقصى 5 صور لكل خدمة",
+        "fill_required": "الرجاء ملء جميع الحقول المطلوبة (العنوان، السعر، الفئة)",
+        "photo_upload_failed": "فشل رفع بعض الصور",
+        "update_success": "تم تحديث الخدمة بنجاح",
+        "create_success": "تم إنشاء الخدمة بنجاح",
+        "profile_required": "يجب إعداد ملفك الشخصي كمزوّد أولاً قبل إضافة خدمات",
+        "update_failed": "فشل تحديث الخدمة",
+        "create_failed": "فشل إنشاء الخدمة",
+        "confirm_delete": "حذف الخدمة",
+        "confirm_delete_msg": "هل أنت متأكد من حذف هذه الخدمة؟ لا يمكن التراجع عن هذا الإجراء.",
+        "delete_success": "تم حذف الخدمة بنجاح",
+        "delete_failed": "فشل حذف الخدمة",
+        "paused": "تم إيقاف الخدمة بنجاح",
+        "activated": "تم تفعيل الخدمة بنجاح",
+        "toggle_failed": "فشل تحديث حالة الخدمة",
+        "manage_desc": "إدارة الخدمات التي تقدمها للعملاء",
+        "add_new": "إضافة خدمة جديدة",
+        "total_services": "إجمالي الخدمات",
+        "active_services": "خدمات نشطة",
+        "total_value": "إجمالي القيمة",
+        "no_services": "لم تضف أي خدمات بعد",
+        "start_adding": "ابدأ بإضافة خدمتك الأولى لجذب العملاء",
+        "add": "إضافة خدمة",
+        "edit_title": "تعديل الخدمة",
+        "service_name": "اسم الخدمة *",
+        "name_placeholder": "مثال: تصوير حفلات الزفاف",
+        "service_description": "الوصف",
+        "desc_placeholder": "وصف تفصيلي للخدمة...",
+        "price_type": "نوع التسعير",
+        "fixed": "ثابت",
+        "hourly": "بالساعة",
+        "package": "باقة",
+        "custom": "مخصص",
+        "base_price": "السعر الأساسي",
+        "choose_category": "اختر الفئة",
+        "photos": "صور الخدمة",
+        "add_photos": "إضافة صور",
+        "photo_formats": "JPG وPNG وWEBP حتى 5 ميغابايت",
+        "publish_now": "نشر الخدمة فوراً",
+        "uploading_photos": "جاري رفع الصور...",
+        "new_badge": "جديد"
+    },
+    "provider_reviews": {
+        "subtitle_with_name": "آراء العملاء حول خدمات {{name}}"
+    },
+    "profile": {
+        "provider": {
+            "website_placeholder": "https://example.com",
+            "view_services": "عرض الخدمات",
+            "success_update": "تم تحديث ملف الشركة بنجاح",
+            "error_update": "فشل تحديث ملف الشركة",
+            "title": "ملف الشركة",
+            "verified": "موثق",
+            "company_name": "اسم الشركة",
+            "website": "الموقع الإلكتروني",
+            "description": "وصف الشركة",
+            "description_placeholder": "وصف مختصر عن خدماتك...",
+            "rating": "التقييم",
+            "reviews": "مراجعة",
+            "no_profile_yet": "لا يوجد ملف شركة بعد"
+        },
+        "avatar": {
+            "size_error": "حجم الصورة يجب أن يكون أقل من 5 ميغابايت",
+            "success": "تم اختيار صورة جديدة"
+        },
+        "success_update": "تم تحديث الملف الشخصي بنجاح",
+        "error_update": "فشل تحديث الملف الشخصي",
+        "title": "الملف الشخصي",
+        "fields": {
+            "full_name": "الاسم الكامل",
+            "phone": "رقم الهاتف",
+            "city": "المدينة",
+            "bio": "نبذة عني",
+            "bio_placeholder": "أخبرنا عن نفسك...",
+            "email": "البريد الإلكتروني"
+        },
+        "account_info": "معلومات الحساب",
+        "registration_date": "تاريخ التسجيل",
+        "role": "الدور"
+    },
+    "events": {
+        "budget": {
+            "errors": {
+                "load": "فشل تحميل الميزانية",
+                "add": "فشل إضافة بند الميزانية",
+                "delete": "فشل حذف بند الميزانية"
+            },
+            "delete_title": "حذف بند الميزانية",
+            "delete_message": "هل أنت متأكد من حذف هذا البند من الميزانية؟",
+            "title": "الميزانية",
+            "add_item": "إضافة بند",
+            "target_budget": "الميزانية المستهدفة",
+            "estimated_total": "التقديري",
+            "actual_total": "الفعلي",
+            "paid_total": "المدفوع",
+            "item": "البند",
+            "category": "الفئة",
+            "estimated": "التقديري",
+            "actual": "الفعلي",
+            "paid": "المدفوع",
+            "notes": "ملاحظات",
+            "add_modal_title": "إضافة بند ميزانية",
+            "item_placeholder": "اسم البند",
+            "estimated_placeholder": "التكلفة التقديرية",
+            "actual_placeholder": "التكلفة الفعلية",
+            "paid_placeholder": "المبلغ المدفوع",
+            "notes_placeholder": "ملاحظات اختيارية"
+        },
+        "checklist": {
+            "errors": {
+                "load": "فشل تحميل قائمة المهام",
+                "add": "فشل إضافة المهمة",
+                "status": "فشل تحديث حالة المهمة",
+                "delete": "فشل حذف المهمة"
+            },
+            "delete_title": "حذف المهمة",
+            "delete_message": "هل أنت متأكد من حذف هذه المهمة؟",
+            "status": {
+                "in_progress": "قيد التنفيذ",
+                "completed": "مكتملة",
+                "pending": "معلّقة"
+            },
+            "title": "قائمة المهام",
+            "new_task": "مهمة جديدة",
+            "task_placeholder": "ما الذي يجب إنجازه؟",
+            "no_date": "بدون موعد نهائي",
+            "empty": "لا توجد مهام بعد. ابدأ بإضافة أول مهمة.",
+            "due_on": "الموعد النهائي {{date}}"
+        },
+        "tabs": {
+            "overview": "نظرة عامة",
+            "budget": "الميزانية",
+            "checklist": "المهام",
+            "timeline": "الجدول الزمني",
+            "guests": "الضيوف"
+        },
+        "planning": {
+            "summary_title": "مساحة تخطيط الفعالية",
+            "summary_body": "استخدم التبويبات التالية لإدارة الميزانية وقائمة المهام والجدول الزمني ليوم الفعالية.",
+            "progress_title": "أدوات تخطيط مباشرة",
+            "progress_body": "كلما أضفت مهاماً وبنود ميزانية وأنشطة، تتحول هذه الصفحة إلى مركز تحكم فعلي للفعالية."
+        },
+        "timeline": {
+            "errors": {
+                "load": "فشل تحميل الجدول الزمني",
+                "add": "فشل إضافة النشاط",
+                "delete": "فشل حذف النشاط"
+            },
+            "delete_title": "حذف النشاط",
+            "delete_message": "هل أنت متأكد من حذف هذا النشاط؟",
+            "title": "الجدول الزمني",
+            "new_activity": "نشاط جديد",
+            "activity_placeholder": "اسم النشاط",
+            "description_placeholder": "وصف اختياري",
+            "empty": "لا توجد عناصر في الجدول الزمني بعد."
+        },
+        "guests": {
+            "status": {
+                "invited": "تمت الدعوة",
+                "confirmed": "مؤكد",
+                "declined": "معتذر",
+                "maybe": "ربما"
+            },
+            "errors": {
+                "load": "فشل تحميل قائمة الضيوف",
+                "add": "فشل إضافة الضيف",
+                "status": "فشل تحديث حالة الضيف",
+                "delete": "فشل حذف الضيف"
+            },
+            "success": {
+                "add": "تمت إضافة الضيف بنجاح",
+                "delete": "تم حذف الضيف بنجاح"
+            },
+            "delete_title": "حذف الضيف",
+            "delete_message": "هل أنت متأكد من حذف هذا الضيف؟",
+            "stats": {
+                "total": "الإجمالي",
+                "confirmed": "المؤكدون",
+                "invited": "المدعوون",
+                "declined": "المعتذرون"
+            },
+            "title": "قائمة الضيوف",
+            "add_guest": "إضافة ضيف",
+            "form": {
+                "title": "ضيف جديد",
+                "name": "الاسم",
+                "name_placeholder": "اسم الضيف",
+                "email": "البريد الإلكتروني",
+                "phone": "رقم الهاتف",
+                "status": "الحالة",
+                "notes": "ملاحظات",
+                "notes_placeholder": "ملاحظات اختيارية",
+                "submitting": "جارٍ الإضافة..."
+            },
+            "empty": "لم تتم إضافة أي ضيوف بعد"
+        },
+        "details": {
+            "errors": {
+                "load": "فشل تحميل تفاصيل الفعالية"
+            },
+            "not_found": "الفعالية غير موجودة",
+            "info_title": "تفاصيل الفعالية",
+            "type": "نوع الفعالية",
+            "date": "التاريخ",
+            "city": "المدينة",
+            "venue": "المكان",
+            "guest_count": "الضيوف",
+            "estimated_budget": "الميزانية التقديرية",
+            "description": "الوصف",
+            "time_left": "الوقت المتبقي",
+            "days": "أيام",
+            "today": "الفعالية اليوم!"
+        },
+        "status": {
+            "planning": "جاري التخطيط",
+            "confirmed": "مؤكد",
+            "in_progress": "قيد التنفيذ",
+            "completed": "مكتمل",
+            "cancelled": "ملغي"
+        },
+        "type": {
+            "wedding": "حفل زفاف",
+            "birthday": "عيد ميلاد",
+            "party": "حفلة / خطوبة",
+            "corporate": "فعالية شركة",
+            "conference": "مؤتمر",
+            "other": "أخرى"
+        },
+        "errors": {
+            "title_required": "عنوان الفعالية مطلوب",
+            "past_date": "يجب أن يكون تاريخ الفعالية في المستقبل",
+            "invalid_guests": "عدد الضيوف يجب أن يكون أكبر من صفر"
+        },
+        "create": {
+            "success": "تم إنشاء الفعالية بنجاح!",
+            "error": "فشل في إنشاء الفعالية",
+            "title": "إنشاء فعالية جديدة",
+            "event_title_label": "عنوان الفعالية *",
+            "event_title_placeholder": "مثال: حفل زفاف أحمد وسارة",
+            "event_type": "نوع الفعالية *",
+            "event_date": "تاريخ الفعالية *",
+            "guest_count": "عدد الضيوف",
+            "start_time": "وقت البداية",
+            "end_time": "وقت النهاية",
+            "budget": "الميزانية",
+            "venue_name": "اسم المكان",
+            "venue_name_placeholder": "قاعة اللؤلؤة",
+            "venue_address": "عنوان المكان",
+            "venue_address_placeholder": "شارع الكورنيش",
+            "city": "المدينة",
+            "city_placeholder": "الدوحة",
+            "description": "الوصف",
+            "description_placeholder": "تفاصيل إضافية عن الفعالية...",
+            "special_requests": "طلبات خاصة",
+            "special_requests_placeholder": "أي متطلبات أو ملاحظات خاصة...",
+            "submit": "إنشاء الفعالية"
+        },
+        "types": {
+            "wedding": "Wedding",
+            "birthday": "Birthday",
+            "party": "Party / Engagement",
+            "corporate": "Corporate",
+            "conference": "Conference",
+            "other": "Other"
+        },
+        "error_loading": "فشل تحميل الفعاليات",
+        "confirm_delete_title": "Delete Event",
+        "confirm_delete": "Are you sure you want to delete this event?",
+        "delete_success": "تم حذف الفعالية",
+        "error_deleting": "فشل حذف الفعالية",
+        "title": "فعالياتي",
+        "sort": {
+            "closest": "الأقرب",
+            "furthest": "الأبعد"
+        },
+        "new_event": "جديدة",
+        "all_statuses": "كل الحالات",
+        "no_events": "لا توجد فعاليات بعد",
+        "start_creating": "ابدأ بإنشاء فعاليتك الأولى الآن",
+        "create_new": "إنشاء فعالية جديدة",
+        "spent": "ر.ق مصروف",
+        "tasks": "مهام",
+        "date_passed": "انتهى التاريخ",
+        "add_service": "إضافة خدمة"
     },
     "cities": {
         "Doha": "الدوحة",
@@ -227,6 +755,504 @@
         "Al Shamal": "الشمال",
         "Al Shahaniya": "الشيلة",
         "Umm Salal": "أم صلال",
-        "Al Daayen": "الضعاين"
+        "Al Daayen": "الضعاين",
+        "doha": "الدوحة"
+    },
+    "quotes": {
+        "quote_label": "Quote",
+        "awaiting_reply": "Awaiting reply",
+        "total": "Total",
+        "status": {
+            "pending": "معلق",
+            "accepted": "مقبول",
+            "rejected": "مرفوض",
+            "completed": "مكتمل",
+            "expired": "منتهي",
+            "draft": "مسودة",
+            "sent": "مرسل",
+            "expired_short": "منتهي"
+        },
+        "error_loading": "فشل تحميل عروض الأسعار",
+        "success_update": "تم تحديث حالة العرض",
+        "error_updating": "فشل تحديث الحالة",
+        "fetch_failed": "فشل تحميل عروض الأسعار",
+        "accept_success": "تم قبول عرض السعر",
+        "accept_failed": "فشل قبول عرض السعر",
+        "confirm_reject_title": "Reject Quote",
+        "confirm_reject": "Are you sure you want to reject this quote?",
+        "reject_success": "تم رفض عرض السعر",
+        "reject_failed": "فشل رفض عرض السعر",
+        "title": "عروض الأسعار",
+        "offers_count": "عرض",
+        "search_placeholder": "بحث في عروض الأسعار...",
+        "stats": {
+            "total": "إجمالي",
+            "accepted": "مقبول",
+            "qr_accepted": "ر.ق مقبول"
+        },
+        "empty_state": {
+            "title": "لا توجد عروض أسعار",
+            "desc": "ستظهر هنا عروض الأسعار التي تتلقاها من مقدمي الخدمات"
+        },
+        "card": {
+            "quote_number": "عرض سعر",
+            "total_amount": "المبلغ الإجمالي",
+            "valid_until": "صالح حتى",
+            "offer_details": "تفاصيل العرض:",
+            "create_booking": "إنشاء حجز من هذا العرض"
+        }
+    },
+    "payment": {
+        "statuses": {
+            "refunded": "مسترد",
+            "fully_paid_full": "مدفوع بالكامل",
+            "completed": "مكتمل",
+            "new": "جديد",
+            "deposit_paid_full": "عربون مدفوع",
+            "pending": "معلّق",
+            "fully_paid": "مدفوع",
+            "deposit_paid": "عربون"
+        },
+        "failed_create_session": "فشل إنشاء جلسة الدفع",
+        "card_error": "خطأ في عنصر البطاقة",
+        "failed": "فشل الدفع",
+        "success": "تم الدفع بنجاح!",
+        "failed_general": "حدث خطأ أثناء الدفع",
+        "card_info": "معلومات البطاقة",
+        "processing": "جاري المعالجة...",
+        "pay": "دفع",
+        "secure_stripe": "مدفوعات آمنة بواسطة Stripe",
+        "stripe_missing": "خدمة الدفع غير متوفرة حالياً",
+        "invalid_data": "بيانات الدفع غير صحيحة",
+        "already_paid_title": "تم الدفع مسبقاً",
+        "already_paid_desc": "هذا الحجز مدفوع بالفعل",
+        "view_my_bookings": "عرض حجوزاتي",
+        "complete_payment": "إتمام الدفع",
+        "order_summary": "ملخص الطلب",
+        "service": "الخدمة",
+        "service_default": "خدمة",
+        "booking_id": "رقم الحجز",
+        "payment_type": "نوع الدفعة",
+        "deposit": "عربون",
+        "balance": "المبلغ المتبقي",
+        "full": "دفع كامل",
+        "total": "الإجمالي",
+        "total_booking": "الإجمالي الكلي للحجز:",
+        "payment_details": "بيانات الدفع"
+    },
+    "admin_audit": {
+        "error_loading": "فشل تحميل سجلات التدقيق",
+        "actions": {
+            "booking_created": "إنشاء حجز",
+            "booking_confirmed": "تأكيد حجز",
+            "booking_cancelled": "إلغاء حجز",
+            "booking_completed": "إكمال حجز",
+            "payment_received": "استلام دفعة",
+            "user_created": "تسجيل مستخدم",
+            "user_deleted": "حذف مستخدم",
+            "provider_verified": "توثيق مورد",
+            "review_created": "إضافة تقييم"
+        },
+        "title": "سجل التدقيق",
+        "subtitle": "تتبع جميع الإجراءات والعمليات على المنصة",
+        "search": "بحث في السجلات...",
+        "total_logs": "إجمالي السجلات",
+        "info": "معلومات",
+        "warnings": "تحذيرات",
+        "critical": "حرجة",
+        "filters": {
+            "bookings": "الحجوزات",
+            "payments": "المدفوعات",
+            "users": "المستخدمين",
+            "providers": "الموردين"
+        },
+        "tags": {
+            "warning": "تحذير",
+            "critical": "حرج"
+        }
+    },
+    "admin_bookings": {
+        "total_bookings": "إجمالي الحجوزات"
+    },
+    "admin_commissions": {
+        "error_loading": "فشل تحميل الحجوزات",
+        "title": "إدارة العمولات",
+        "subtitle": "إدارة ومتابعة عمولات المنصة على الحجوزات",
+        "commission_rate": "نسبة العمولة:",
+        "collected_commissions": "العمولات المحصّلة",
+        "pending_commissions": "عمولات معلّقة",
+        "waiting_payment": "بانتظار الدفع",
+        "total_transactions": "إجمالي المعاملات",
+        "provider_revenue": "إيرادات الموردين",
+        "after_commission": "بعد خصم العمولات",
+        "revenue_distribution": "توزيع الإيرادات",
+        "transaction_details": "تفاصيل المعاملات",
+        "table": {
+            "booking": "الحجز",
+            "amount": "المبلغ",
+            "commission": "العمولة",
+            "provider_share": "حصة المورد",
+            "payment_status": "حالة الدفع",
+            "date": "التاريخ"
+        }
+    },
+    "admin": {
+        "dashboard": {
+            "error_loading": "تعذر تحميل بعض البيانات. يرجى التأكد من صلاحياتك.",
+            "title": "لوحة تحكم المنصة",
+            "total_users": "إجمالي المستخدمين",
+            "providers": "مقدمو الخدمات",
+            "clients": "العملاء",
+            "events": "الفعاليات",
+            "bookings": "الحجوزات",
+            "revenue": "الإيراد",
+            "categories": "الفئات",
+            "no_categories": "لا توجد فئات",
+            "recent_users": "آخر المستخدمين",
+            "no_users": "لا يوجد مستخدمون",
+            "monthly_registrations": "التسجيلات الشهرية",
+            "monthly_revenue": "الإيرادات الشهرية",
+            "last_6_months": "آخر 6 أشهر",
+            "events_breakdown": "توزيع الفعاليات",
+            "provider_stats": "إحصائيات الموردين",
+            "total_providers": "إجمالي الموردين",
+            "verified_providers": "موثقون",
+            "unverified_providers": "غير موثقين",
+            "avg_rating": "متوسط التقييم",
+            "total_services": "إجمالي الخدمات",
+            "bookings_breakdown": "توزيع الحجوزات",
+            "top_services": "أكثر الخدمات حجزاً",
+            "top_clients": "أعلى العملاء إنفاقاً",
+            "top_categories": "أكثر الفئات طلباً",
+            "top_providers_revenue": "أعلى الموردين إيراداً",
+            "recent_registrations": "آخر المسجلين",
+            "recent_events": "آخر الفعاليات",
+            "no_events": "لا توجد فعاليات"
+        },
+        "nav": {
+            "users": "المستخدمين",
+            "providers": "الموردون",
+            "bookings": "الحجوزات",
+            "events": "الفعاليات",
+            "services": "الخدمات",
+            "reviews": "التقييمات",
+            "quotes": "عروض الأسعار",
+            "categories": "الفئات",
+            "moderation": "الإشراف",
+            "messages": "الرسائل",
+            "commissions": "العمولات",
+            "audit_logs": "سجل التدقيق"
+        }
+    },
+    "roles": {
+        "admin": "مدير",
+        "provider": "مزود خدمة",
+        "client": "عميل"
+    },
+    "months": {
+        "jan": "يناير",
+        "feb": "فبراير",
+        "mar": "مارس",
+        "apr": "أبريل",
+        "may": "مايو",
+        "jun": "يونيو",
+        "jul": "يوليو",
+        "aug": "أغسطس",
+        "sep": "سبتمبر",
+        "oct": "أكتوبر",
+        "nov": "نوفمبر",
+        "dec": "ديسمبر"
+    },
+    "admin_quotes": {
+        "title": "عروض الأسعار",
+        "subtitle": "إدارة طلبات وعروض الأسعار على المنصة",
+        "stats": {
+            "total": "إجمالي العروض",
+            "pending": "معلقة",
+            "accepted": "مقبولة",
+            "total_value": "القيمة الإجمالية"
+        },
+        "search_placeholder": "بحث بالعنوان أو اسم العميل...",
+        "table": {
+            "title_client": "العنوان / العميل",
+            "service": "الخدمة",
+            "amount": "المبلغ",
+            "status": "الحالة",
+            "date": "التاريخ"
+        },
+        "no_quotes": "لا توجد عروض أسعار",
+        "quote_prefix": "عرض",
+        "details_title": "تفاصيل عرض السعر",
+        "details": {
+            "title": "العنوان",
+            "client": "العميل",
+            "service": "الخدمة",
+            "amount": "المبلغ",
+            "status": "الحالة",
+            "deadline": "الموعد النهائي",
+            "description": "الوصف",
+            "notes": "ملاحظات"
+        },
+        "actions": {
+            "accept_quote": "قبول العرض"
+        }
+    },
+    "status": {
+        "fully_paid": "Fully paid",
+        "deposit_paid": "Deposit paid",
+        "refunded": "Refunded"
+    },
+    "payments": {
+        "deposit": "Deposit",
+        "pay_remaining": "Pay remaining",
+        "pay_now": "Pay now",
+        "balance": "Remaining balance",
+        "full": "Full payment"
+    },
+    "categories": {
+        "ramadan_events": "Ramadan Events",
+        "ramadan_desc": "Iftar, Suhoor, Ghabga"
+    },
+    "dashboard": {
+        "loading": "جاري تحميل لوحة التحكم..."
+    },
+    "client_dashboard": {
+        "title": "لوحة تحكم العميل",
+        "welcome": "مرحباً،",
+        "description": "نظم فعالياتك وتتبع حجوزاتك بسهولة في مكان واحد. جميع أدواتك الإدارية جاهزة.",
+        "next_event": "الفعالية القادمة",
+        "manage_event": "إدارة الفعالية",
+        "no_upcoming_events": "لا توجد فعاليات قادمة",
+        "create_new": "إنشاء فعالية جديدة",
+        "stats": {
+            "my_events": "فعالياتي",
+            "completed_bookings": "حجوزات مكتملة",
+            "pending_bookings": "بانتظار التأكيد",
+            "spent": "ر.ق مصروف"
+        },
+        "actions": {
+            "events": "فعالياتي",
+            "bookings": "حجوزاتي",
+            "messages": "الرسائل",
+            "notifications": "الإشعارات",
+            "quotes": "عروض",
+            "explore": "استكشف"
+        },
+        "recent": {
+            "messages": "آخر المحادثات",
+            "no_messages": "لا توجد رسائل بعد",
+            "bookings": "آخر الحجوزات",
+            "no_bookings": "لا توجد حجوزات بعد"
+        }
+    },
+    "user": {
+        "default_name": "مستخدم"
+    },
+    "favorites": {
+        "title": "المفضلة",
+        "subtitle": "الخدمات التي أعجبتك",
+        "empty_title": "لا توجد مفضلات بعد",
+        "empty_desc": "تصفح الخدمات وأضف ما يعجبك إلى المفضلة",
+        "browse_services": "تصفح الخدمات"
+    },
+    "moderation": {
+        "error_loading": "فشل تحميل بيانات الإشراف",
+        "notes_required": "يرجى إضافة ملاحظات لهذا القرار",
+        "report_update_error": "خطأ في تحديث البلاغ",
+        "kyc_review_error": "خطأ في مراجعة مستند الـ KYC",
+        "status": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "resolved": "Resolved",
+            "expired": "Expired",
+            "rejected_f": "Rejected"
+        },
+        "doc_types": {
+            "id_card": "ID Card",
+            "business_license": "Business License",
+            "tax_certificate": "Tax Certificate",
+            "insurance": "Insurance",
+            "portfolio": "Portfolio",
+            "other": "Other"
+        },
+        "page_title": "Moderation & KYC",
+        "page_subtitle": "Manage reports and verify providers",
+        "reports": "Reports",
+        "total": "total",
+        "kyc_title": "KYC Verification",
+        "documents": "documents",
+        "enforcement": "Enforcement",
+        "current": "current",
+        "banned": "Banned",
+        "suspended": "Suspended",
+        "quick_actions": "Quick Actions",
+        "stats_tab": "Statistics",
+        "pending_reports": "Pending Reports",
+        "no_pending_reports": "No pending reports",
+        "reported_by": "Reported by",
+        "evidence": "Evidence",
+        "evidence_item": "Evidence",
+        "approve": "Approve",
+        "reject": "Reject",
+        "already_rejected": "Already rejected",
+        "pending_kyc": "Pending KYC Documents",
+        "no_pending_kyc": "No pending KYC documents",
+        "provider_label": "Provider",
+        "view_document": "View Document",
+        "accept": "Accept",
+        "verified": "Verified",
+        "rejected_status": "Rejected",
+        "stats_title": "Moderation Statistics",
+        "last_30_days": "Last 30 Days Activity",
+        "total_label": "Total",
+        "enforcement_label": "Enforcement",
+        "active_bans": "Active Bans",
+        "active_suspensions": "Active Suspensions",
+        "mod_action": "Moderation Action",
+        "report_id": "Report #",
+        "mod_notes": "Moderation Notes",
+        "explain_decision": "Explain your decision...",
+        "kyc_review": "KYC Review",
+        "kyc_doc_id": "KYC Doc #",
+        "review_notes": "Review Notes"
+    },
+    "provider": {
+        "calendar": {
+            "error_loading": "فشل تحميل الحجوزات",
+            "title": "تقويم الحجوزات",
+            "days": {
+                "sun": "أحد",
+                "mon": "اثنين",
+                "tue": "ثلاثاء",
+                "wed": "أربعاء",
+                "thu": "خميس",
+                "fri": "جمعة",
+                "sat": "سبت"
+            },
+            "all_day": "طوال اليوم",
+            "others": "أخرى",
+            "bookings_on": "حجوزات",
+            "no_location": "المكان غير محدد",
+            "guest": "ضيف",
+            "payment": {
+                "fully_paid": "مدفوع بالكامل",
+                "deposit_paid": "تم دفع العربون",
+                "pending": "بانتظار الدفع"
+            },
+            "view_details": "عرض التفاصيل",
+            "no_bookings": "لا توجد حجوزات لهذا التاريخ",
+            "stats": {
+                "confirmed": "مؤكدة",
+                "pending": "قيد الانتظار",
+                "this_month": "هذا الشهر",
+                "revenue": "الإيرادات"
+            }
+        },
+        "profile": {
+            "error_loading": "فشل تحميل بيانات المزود",
+            "not_found": "مزود الخدمة غير موجود",
+            "reviews": "تقييمات",
+            "per_event": "لكل مناسبة",
+            "max_capacity": "السعة القصوى",
+            "experience": "الخبرة",
+            "years": "سنوات",
+            "response_time": "وقت الاستجابة",
+            "categories": "الفئات",
+            "styles": "أنماط المناسبات",
+            "languages": "اللغات",
+            "contact": "تواصل",
+            "portfolio": "المعرض",
+            "availability": "التوفر",
+            "website": "الموقع الإلكتروني",
+            "no_portfolio": "لا توجد صور في المعرض",
+            "watch_video": "شاهد الفيديو",
+            "customer_reviews": "آراء العملاء",
+            "no_reviews": "لا توجد تقييمات حتى الآن",
+            "contact_for_availability": "يرجى التواصل مع المزود لمعرفة التوفر"
+        },
+        "my_services": "خدماتي"
+    },
+    "provider_dashboard": {
+        "error_loading": "\\u0641\\u0634\\u0644 \\u062a\\u062d\\u0645\\u064a\\u0644 \\u0628\\u064a\\u0627\\u0646\\u0627\\u062a \\u0644\\u0648\\u062d\\u0629 \\u0627\\u0644\\u062a\\u062d\\u0643\\u0645",
+        "data_unavailable": "البيانات غير متاحة",
+        "error_stats": "لم نتمكن من تحميل الإحصائيات الخاصة بك.",
+        "last_7_days": "آخر 7 أيام",
+        "this_month": "هذا الشهر",
+        "this_year": "هذه السنة",
+        "title": "لوحة التحكم",
+        "subtitle": "نظرة عامة على نشاطك",
+        "total_bookings": "إجمالي الحجوزات",
+        "confirmed": "مؤكدة",
+        "completed": "مكتملة",
+        "total_revenue": "الإيرادات المحققة",
+        "monthly_goal_progress": "من الهدف الشهري",
+        "average_rating": "متوسط التقييم",
+        "published_services": "الخدمات المنشورة",
+        "featured": "مميزة",
+        "pending_quotes": "عرض سعر معلق",
+        "conversion_rates": "معدلات التحويل",
+        "quote_to_booking": "عرض سعر ← حجز",
+        "request_to_confirm": "طلب ← تأكيد",
+        "performance": "الأداء",
+        "average_response_time": "متوسط وقت الاستجابة",
+        "client_satisfaction": "رضا العملاء",
+        "revenue_30_days": "الإيرادات (30 يوم)",
+        "growth": "النمو",
+        "new_clients": "عملاء جدد",
+        "repeat_clients": "عملاء عائدون",
+        "retention_rate": "معدل الاحتفاظ:",
+        "monthly_revenue": "الإيرادات الشهرية",
+        "recent_messages": "الرسائل الأخيرة",
+        "no_messages": "لا توجد رسائل",
+        "recent_activity": "النشاط الأخير",
+        "activity_new_booking": "حجز جديد مؤكد",
+        "activity_pending": "قيد الانتظار",
+        "activity_cancelled": "إلغاء",
+        "activity_completed": "مكتمل",
+        "activity_unknown": "حالة غير معروفة",
+        "no_recent_activity": "لا يوجد نشاط حديث",
+        "calendar": "التقويم",
+        "my_services": "خدماتي",
+        "quotes": "عروض الأسعار",
+        "reviews": "التقييمات"
+    },
+    "quote_request": {
+        "fill_required": "يرجى تعبئة جميع الحقول الإلزامية",
+        "success": "تم إرسال طلب عرض السعر بنجاح",
+        "error": "حدث خطأ في إرسال الطلب",
+        "title": "طلب عروض أسعار متعددة",
+        "event": "الفعالية",
+        "select_event": "اختر فعالية",
+        "request_title": "عنوان الطلب",
+        "title_placeholder": "مثال: طلب عرض سعر زفاف فاخر",
+        "description": "وصف تفصيلي",
+        "description_placeholder": "صف احتياجاتك وتفضيلاتك...",
+        "required_services": "الخدمات المطلوبة",
+        "add_service": "إضافة خدمة",
+        "category": "الفئة",
+        "item_description": "الوصف",
+        "item_desc_placeholder": "مثال: خدمة تصوير كاملة",
+        "estimated_budget": "الميزانية التقديرية",
+        "quantity": "الكمية",
+        "item_notes": "ملاحظات",
+        "notes_placeholder": "تفاصيل إضافية...",
+        "max_budget": "أقصى ميزانية",
+        "max_budget_placeholder": "أقصى ميزانية",
+        "deadline": "آخر موعد للرد",
+        "additional_notes": "ملاحظات إضافية",
+        "additional_notes_placeholder": "معلومات تكميلية...",
+        "submit": "إرسال الطلب"
+    },
+    "errors": {
+        "connection": "Connection error",
+        "bad_request": "Bad request",
+        "unauthorized": "Please log in first",
+        "forbidden": "Access denied",
+        "not_found": "Resource not found",
+        "conflict": "Data already exists",
+        "server": "Server error",
+        "unavailable": "Service unavailable",
+        "generic": "Error"
     }
 }

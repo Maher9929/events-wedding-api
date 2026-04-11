@@ -1,6 +1,6 @@
 -- Add payment tracking fields to bookings table
 ALTER TABLE bookings
-ADD COLUMN IF NOT EXISTS payment_intent_ids UUID[] DEFAULT '{}',
+ADD COLUMN IF NOT EXISTS payment_intent_ids TEXT[] DEFAULT '{}',
 ADD COLUMN IF NOT EXISTS deposit_percentage NUMERIC(5,2) DEFAULT 20.00,
 ADD COLUMN IF NOT EXISTS auto_refund_deadline TIMESTAMP WITH TIME ZONE;
 

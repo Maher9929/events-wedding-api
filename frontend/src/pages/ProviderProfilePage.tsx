@@ -5,13 +5,14 @@ import { apiService } from '../services/api';
 import { reviewsService, type Review } from '../services/reviews.service';
 import type { Provider } from '../services/api';
 import { getThumbnailUrl } from '../utils/image.utils';
+import { toastService } from '../services/toast.service';
 
 type TabKey = 'about' | 'portfolio' | 'reviews' | 'availability';
 
 const ProviderProfilePage = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [provider, setProvider] = useState<Provider | null>(null);
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
@@ -22,24 +23,24 @@ const ProviderProfilePage = () => {
         const loadProvider = async () => {
             try {
                 const [providerData, reviewsData] = await Promise.all([
-                    apiService.get<Provider>(`/providers/${id}`),
+                    apiService.get<Provider>(`/providers/id/${id}`),
                     reviewsService.getByProvider(id)
                 ]);
                 const reviewArray = Array.isArray(reviewsData) ? reviewsData : (reviewsData as any)?.data || [];
                 setProvider(providerData as Provider);
                 setReviews(reviewArray);
-            } catch (error) {
-                console.error('Failed to load provider:', error);
+            } catch (_error) {
+                toastService.error(t('provider.profile.error_loading', 'فشل تحميل بيانات المزود'));
             } finally {
                 setLoading(false);
             }
         };
         loadProvider();
-    }, [id]);
+    }, [id, t]);
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-bglight p-5" dir="rtl">
+            <div className="min-h-screen bg-bglight p-5" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                 <div className="animate-pulse">
                     <div className="h-48 bg-gray-200 rounded-3xl mb-4"></div>
                     <div className="h-8 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -51,7 +52,7 @@ const ProviderProfilePage = () => {
 
     if (!provider) {
         return (
-            <div className="min-h-screen bg-bglight flex items-center justify-center p-5" dir="rtl">
+            <div className="min-h-screen bg-bglight flex items-center justify-center p-5" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
                 <div className="text-center">
                     <h2 className="text-xl font-bold text-gray-900 mb-2">{t('provider.profile.not_found', 'مزود الخدمة غير موجود')}</h2>
                     <button onClick={() => navigate(-1)} className="text-primary font-bold">
@@ -67,13 +68,14 @@ const ProviderProfilePage = () => {
         : 0;
 
     return (
-        <div className="min-h-screen bg-bglight" dir="rtl">
+        <div className="min-h-screen bg-bglight" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
             <div className="relative">
                 {provider.portfolio_images && provider.portfolio_images.length > 0 && (
                     <img
                         src={getThumbnailUrl(provider.portfolio_images[0])}
                         alt="Cover"
                         className="w-full h-48 object-cover"
+                        loading="lazy"
                     />
                 )}
                 <button onClick={() => navigate(-1)} className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
@@ -234,6 +236,7 @@ const ProviderProfilePage = () => {
                                             src={getThumbnailUrl(img)}
                                             alt={`Portfolio ${idx + 1}`}
                                             className="w-full h-32 object-cover rounded-xl"
+                                            loading="lazy"
                                         />
                                     ))}
                                 </div>

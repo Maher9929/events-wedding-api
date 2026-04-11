@@ -36,13 +36,13 @@ const MessagesPage = () => {
     useEffect(() => {
         const loadConversations = (initial = false) => {
             messagesService.getConversations()
-                .then((data: any) => {
-                    const list = Array.isArray(data) ? data : data?.data || [];
+                .then((data) => {
+                    const list = Array.isArray(data) ? data : [];
                     setConversations(list);
 
                     // Handle auto-start or pre-selection
                     if (initial && providerIdParam) {
-                        const existingConvo = list.find((c: any) =>
+                        const existingConvo = list.find((c) =>
                             c.participant_ids?.includes(providerIdParam)
                         );
                         if (existingConvo) {
@@ -53,7 +53,7 @@ const MessagesPage = () => {
                         }
                     }
                 })
-                .catch(() => { })
+                .catch(() => { /* conversations may fail on first load */ })
                 .finally(() => { if (initial) setLoadingConvos(false); });
         };
 
@@ -73,14 +73,13 @@ const MessagesPage = () => {
         if (!selectedId) return;
         setLoadingMsgs(true);
         messagesService.getMessages(selectedId)
-            .then((data: any) => {
-                const list = Array.isArray(data) ? data : data?.data || [];
-                setMessages(list);
+            .then((data) => {
+                setMessages(Array.isArray(data) ? data : []);
             })
-            .catch(() => { })
+            .catch(() => { /* messages load failure handled by empty state UI */ })
             .finally(() => setLoadingMsgs(false));
 
-        messagesService.markConversationRead(selectedId).catch(() => { });
+        messagesService.markConversationRead(selectedId).catch(() => { /* fire-and-forget */ });
 
         const subscription = messagesService.subscribeToMessages(selectedId, (newMsg: Message) => {
             if (newMsg.sender_id !== currentUser?.id) {
@@ -104,15 +103,14 @@ const MessagesPage = () => {
         if (!newMessage.trim() || !selectedId || sending) return;
         setSending(true);
         try {
-            const sent: any = await messagesService.sendMessage({ conversation_id: selectedId, content: newMessage });
-            const msg = sent?.data || sent;
-            if (msg?.id) setMessages(prev => [...prev, msg]);
+            const sent = await messagesService.sendMessage({ conversation_id: selectedId, content: newMessage });
+            if (sent?.id) setMessages(prev => [...prev, sent]);
             setNewMessage('');
             setConversations(prev => prev.map(c =>
                 c.id === selectedId ? { ...c, last_message_at: new Date().toISOString() } : c
             ));
-        } catch {
-            toastService.error('فشل إرسال الرسالة');
+        } catch (_error) {
+            toastService.error(t('messages_page.send_error'));
         } finally {
             setSending(false);
         }
@@ -121,8 +119,8 @@ const MessagesPage = () => {
     const handleNewConversation = async () => {
         if (!recipientId.trim() || !firstMsg.trim()) return;
         try {
-            const result: any = await messagesService.createConversation(recipientId, firstMsg);
-            const msg = result?.data || result;
+            const result = await messagesService.createConversation(recipientId, firstMsg);
+            const msg = result;
             if (msg?.conversation_id) {
                 const newConvo: Conversation = {
                     id: msg.conversation_id,
@@ -138,18 +136,18 @@ const MessagesPage = () => {
             setShowNewConvo(false);
             setRecipientId('');
             setFirstMsg('');
-            toastService.success('تم إنشاء المحادثة');
-        } catch {
-            toastService.error('فشل إنشاء المحادثة');
+            toastService.success(t('messages_page.create_success'));
+        } catch (_error) {
+            toastService.error(t('messages_page.create_error'));
         }
     };
 
-    const getContactName = (convo: any) => {
-        return convo.recipient_name || `محادثة (${convo.participant_ids.length})`;
+    const getContactName = (convo: Conversation) => {
+        return (convo as Conversation & { recipient_name?: string }).recipient_name || `${t('messages_page.conversation_fallback')} (${convo.participant_ids.length})`;
     };
 
-    const getContactAvatar = (convo: any) => {
-        return convo.recipient_avatar;
+    const getContactAvatar = (convo: Conversation) => {
+        return (convo as Conversation & { recipient_avatar?: string }).recipient_avatar;
     };
 
     const filteredConvos = conversations.filter(c => {
@@ -171,7 +169,7 @@ const MessagesPage = () => {
                         <button
                             onClick={() => setShowNewConvo(true)}
                             className="w-9 h-9 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
-                            title="محادثة جديدة"
+                            title={t('messages_page.new_conversation')}
                         >
                             <i className="fa-solid fa-pen-to-square text-sm"></i>
                         </button>
@@ -179,7 +177,7 @@ const MessagesPage = () => {
                     <div className="relative">
                         <input
                             type="text"
-                            placeholder="بحث في المحادثات..."
+                            placeholder={t('messages_page.search_placeholder')}
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             className="w-full h-10 bg-gray-50 rounded-xl px-4 pe-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border border-gray-100"
@@ -199,19 +197,19 @@ const MessagesPage = () => {
                     {!loadingConvos && filteredConvos.length === 0 && (
                         <div className="p-8 text-center text-gray-400">
                             <i className="fa-regular fa-comments text-4xl mb-3 opacity-30"></i>
-                            <p className="text-sm font-bold">لا توجد محادثات</p>
-                            <p className="text-xs mt-1">ابدأ محادثة جديدة مع أحد الموردين</p>
+                            <p className="text-sm font-bold">{t('messages_page.no_conversations')}</p>
+                            <p className="text-xs mt-1">{t('messages_page.no_conversations_desc')}</p>
                             <button
                                 onClick={() => setShowNewConvo(true)}
                                 className="mt-4 px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors"
                             >
-                                محادثة جديدة
+                                {t('messages_page.new_conversation')}
                             </button>
                         </div>
                     )}
                     {filteredConvos.map(convo => {
                         const isSelected = selectedId === convo.id;
-                        const unread = (convo as any).unread_count || 0;
+                        const unread = convo.unread_count || 0;
                         return (
                             <button
                                 key={convo.id}
@@ -219,7 +217,7 @@ const MessagesPage = () => {
                                 className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-50 text-right ${isSelected ? 'bg-purple-50 border-r-4 border-r-primary' : ''}`}
                             >
                                 {getContactAvatar(convo) ? (
-                                    <img src={getContactAvatar(convo)} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                                    <img loading="lazy" src={getContactAvatar(convo)} alt="" className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
                                 ) : (
                                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold flex-shrink-0">
                                         <i className="fa-solid fa-user text-sm"></i>
@@ -233,7 +231,7 @@ const MessagesPage = () => {
                                         <div className="flex items-center gap-1 flex-shrink-0 me-1">
                                             {convo.last_message_at && (
                                                 <span className="text-[10px] text-gray-400">
-                                                    {new Date(convo.last_message_at).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' })}
+                                                    {new Date(convo.last_message_at).toLocaleDateString(t('common.date_locale'), { month: 'short', day: 'numeric' })}
                                                 </span>
                                             )}
                                             {unread > 0 && (
@@ -243,7 +241,7 @@ const MessagesPage = () => {
                                             )}
                                         </div>
                                     </div>
-                                    <p className={`text-xs truncate ${unread > 0 ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>انقر لعرض الرسائل</p>
+                                    <p className={`text-xs truncate ${unread > 0 ? 'text-gray-600 font-medium' : 'text-gray-400'}`}>{t('messages_page.click_to_view')}</p>
                                 </div>
                             </button>
                         );
@@ -256,14 +254,14 @@ const MessagesPage = () => {
                 {!selectedId ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
                         <i className="fa-regular fa-comments text-7xl mb-4 opacity-20"></i>
-                        <p className="font-bold text-lg">اختر محادثة</p>
-                        <p className="text-sm mt-1">أو ابدأ محادثة جديدة</p>
+                        <p className="font-bold text-lg">{t('messages_page.select_conversation')}</p>
+                        <p className="text-sm mt-1">{t('messages_page.or_start_new')}</p>
                         <button
                             onClick={() => setShowNewConvo(true)}
                             className="mt-6 px-6 py-3 bg-primary text-white rounded-2xl font-bold hover:bg-primary/90 transition-colors"
                         >
                             <i className="fa-solid fa-pen-to-square ms-2"></i>
-                            محادثة جديدة
+                            {t('messages_page.new_conversation')}
                         </button>
                     </div>
                 ) : (
@@ -276,8 +274,8 @@ const MessagesPage = () => {
                             >
                                 <i className="fa-solid fa-arrow-right"></i>
                             </button>
-                            {selectedConvo && (selectedConvo as any).recipient_avatar ? (
-                                <img src={(selectedConvo as any).recipient_avatar} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+                            {selectedConvo && selectedConvo.recipient_avatar ? (
+                                <img loading="lazy" src={selectedConvo.recipient_avatar} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
                             ) : (
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold flex-shrink-0">
                                     <i className="fa-solid fa-user text-sm"></i>
@@ -285,11 +283,11 @@ const MessagesPage = () => {
                             )}
                             <div>
                                 <h3 className="font-bold text-gray-900 text-sm">
-                                    {selectedConvo ? getContactName(selectedConvo) : 'محادثة'}
+                                    {selectedConvo ? getContactName(selectedConvo) : t('messages_page.conversation_fallback')}
                                 </h3>
                                 <span className="text-xs text-green-500 flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
-                                    نشط
+                                    {t('messages_page.active')}
                                 </span>
                             </div>
                         </div>
@@ -304,13 +302,13 @@ const MessagesPage = () => {
                             {!loadingMsgs && messages.length === 0 && (
                                 <div className="text-center text-gray-400 py-8">
                                     <i className="fa-regular fa-comment-dots text-4xl mb-2 opacity-30"></i>
-                                    <p className="text-sm">لا توجد رسائل بعد. ابدأ المحادثة!</p>
+                                    <p className="text-sm">{t('messages_page.no_messages_yet')}</p>
                                 </div>
                             )}
                             {messages.map((msg, idx) => {
                                 const isMe = msg.sender_id === currentUser?.id;
-                                const senderInfo = (msg as any).sender;
-                                const attachments = (msg as any).metadata?.attachments || msg.attachments || [];
+                                const senderInfo = msg.sender;
+                                const attachments = msg.metadata?.attachments || msg.attachments || [];
                                 const showDate = idx === 0 ||
                                     new Date(msg.created_at).toDateString() !== new Date(messages[idx - 1].created_at).toDateString();
                                 return (
@@ -318,7 +316,7 @@ const MessagesPage = () => {
                                         {showDate && (
                                             <div className="flex items-center justify-center my-4">
                                                 <span className="px-3 py-1 bg-gray-100 rounded-full text-[11px] text-gray-500 font-bold">
-                                                    {new Date(msg.created_at).toLocaleDateString('ar-EG', { weekday: 'long', month: 'short', day: 'numeric' })}
+                                                    {new Date(msg.created_at).toLocaleDateString(t('common.date_locale'), { weekday: 'long', month: 'short', day: 'numeric' })}
                                                 </span>
                                             </div>
                                         )}
@@ -339,14 +337,14 @@ const MessagesPage = () => {
                                                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                                                     {attachments.length > 0 && (
                                                         <div className="mt-2 space-y-1.5">
-                                                            {attachments.map((att: any, i: number) => {
+                                                            {attachments.map((att: { url?: string; type?: string; name?: string }, i: number) => {
                                                                 const isImage = att.type?.startsWith('image/') || att.url?.match(/\.(jpg|jpeg|png|gif|webp)/i);
                                                                 return isImage ? (
-                                                                    <img key={i} src={att.url} alt={att.name || 'مرفق'} className="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(att.url, '_blank')} />
+                                                                    <img loading="lazy" key={i} src={att.url} alt={att.name || t('messages_page.attachment')} className="max-w-[200px] rounded-lg cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(att.url, '_blank')} />
                                                                 ) : (
                                                                     <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${isMe ? 'bg-white/20 text-white hover:bg-white/30' : 'bg-gray-50 text-gray-700 hover:bg-gray-100'}`}>
                                                                         <i className="fa-solid fa-file-arrow-down"></i>
-                                                                        {att.name || 'تحميل الملف'}
+                                                                        {att.name || t('messages_page.download_file')}
                                                                     </a>
                                                                 );
                                                             })}
@@ -354,7 +352,7 @@ const MessagesPage = () => {
                                                     )}
                                                     <div className={`flex items-center gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                                         <span className={`text-[10px] ${isMe ? 'text-purple-200' : 'text-gray-400'}`}>
-                                                            {new Date(msg.created_at).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                                                            {new Date(msg.created_at).toLocaleTimeString(t('common.date_locale'), { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                         {isMe && (
                                                             <i className={`fa-solid fa-check-double text-[10px] ${isMe ? 'text-purple-200' : 'text-gray-400'}`}></i>
@@ -404,7 +402,7 @@ const MessagesPage = () => {
                                         }
                                     }}
                                     onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-                                    placeholder="اكتب رسالتك..."
+                                    placeholder={t('messages_page.type_message')}
                                     className="flex-1 h-12 bg-gray-50 rounded-full px-5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border border-gray-100"
                                 />
                                 <button
@@ -428,27 +426,27 @@ const MessagesPage = () => {
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
                         <div className="flex items-center justify-between mb-5">
-                            <h3 className="font-bold text-lg text-gray-900">محادثة جديدة</h3>
+                            <h3 className="font-bold text-lg text-gray-900">{t('messages_page.new_conversation')}</h3>
                             <button onClick={() => setShowNewConvo(false)} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">
                                 <i className="fa-solid fa-times text-sm"></i>
                             </button>
                         </div>
                         <div className="space-y-4">
                             <div>
-                                <label className="text-sm font-bold text-gray-700 block mb-1.5">معرّف المستلم (ID)</label>
+                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('messages_page.recipient_id')}</label>
                                 <input
                                     type="text"
-                                    placeholder="أدخل ID المستخدم أو المورد"
+                                    placeholder={t('messages_page.recipient_id_placeholder')}
                                     value={recipientId}
                                     onChange={e => setRecipientId(e.target.value)}
                                     className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 />
-                                <p className="text-xs text-gray-400 mt-1">يمكنك إيجاد ID المورد في صفحة الخدمة</p>
+                                <p className="text-xs text-gray-400 mt-1">{t('messages_page.recipient_id_hint')}</p>
                             </div>
                             <div>
-                                <label className="text-sm font-bold text-gray-700 block mb-1.5">الرسالة الأولى</label>
+                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('messages_page.first_message')}</label>
                                 <textarea
-                                    placeholder="اكتب رسالتك الأولى..."
+                                    placeholder={t('messages_page.first_message_placeholder')}
                                     value={firstMsg}
                                     onChange={e => setFirstMsg(e.target.value)}
                                     rows={3}
@@ -462,13 +460,13 @@ const MessagesPage = () => {
                                 disabled={!recipientId.trim() || !firstMsg.trim()}
                                 className="flex-1 h-11 bg-primary text-white rounded-xl font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
                             >
-                                إرسال
+                                {t('messages_page.send')}
                             </button>
                             <button
                                 onClick={() => setShowNewConvo(false)}
                                 className="flex-1 h-11 bg-gray-100 text-gray-700 rounded-xl font-bold text-sm hover:bg-gray-200 transition-colors"
                             >
-                                إلغاء
+                                {t('common.cancel')}
                             </button>
                         </div>
                     </div>

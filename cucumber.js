@@ -5,6 +5,7 @@ module.exports = {
     paths: ['test/features/**/*.feature'],
     format: [
       'progress',
+      'summary',
       'json:test/reports/cucumber-report.json',
     ],
     publishQuiet: true,

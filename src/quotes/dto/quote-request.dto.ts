@@ -3,7 +3,7 @@ import {
   IsArray,
   IsNumber,
   IsOptional,
-  IsDate,
+  IsDateString,
   IsEnum,
 } from 'class-validator';
 
@@ -49,8 +49,8 @@ export class CreateQuoteRequestDto {
   provider_ids: string[];
 
   @IsOptional()
-  @IsDate()
-  deadline?: Date;
+  @IsDateString()
+  deadline?: string;
 
   @IsOptional()
   @IsNumber()

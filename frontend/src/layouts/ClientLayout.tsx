@@ -19,15 +19,14 @@ const ClientLayout = () => {
 
         const fetchCounts = () => {
             apiService.get<{ count: number }>('/notifications/unread-count')
-                .then((data: any) => setUnreadCount(data?.count || data?.data?.count || 0))
-                .catch(() => { });
-            apiService.get<any>('/messages/conversations')
-                .then((data: any) => {
-                    const list = Array.isArray(data) ? data : data?.data || [];
-                    const unread = list.filter((c: any) => c.unread_count > 0).length;
-                    setUnreadMessages(unread);
+                .then((data) => setUnreadCount(data?.count || 0))
+                .catch(() => { /* badge count is non-critical */ });
+            apiService.get<{ unread_count?: number }[]>('/messages/conversations')
+                .then((data) => {
+                    const list = Array.isArray(data) ? data : [];
+                    setUnreadMessages(list.filter((c) => (c.unread_count || 0) > 0).length);
                 })
-                .catch(() => { });
+                .catch(() => { /* unread messages count is non-critical */ });
         };
         fetchCounts();
         const interval = setInterval(fetchCounts, 30000);
@@ -40,8 +39,11 @@ const ClientLayout = () => {
             <header className="glass-effect sticky top-0 z-50 shadow-sm px-5 py-4 flex items-center justify-between md:hidden">
                 <h1 className="text-lg font-bold text-gray-900">{t('common.dashboard')}</h1>
                 <div className="flex items-center gap-2">
+                    <Link to="/" className="w-10 h-10 rounded-xl bg-bglight flex items-center justify-center hover:bg-gray-200 transition-colors" aria-label={t('common.admin.back_to_site')}>
+                        <i className="fa-solid fa-house text-gray-700"></i>
+                    </Link>
                     <LanguageSwitcher />
-                    <Link to="/client/notifications" className="w-10 h-10 rounded-xl bg-bglight flex items-center justify-center hover:bg-gray-200 transition-colors relative">
+                    <Link to="/client/notifications" className="w-10 h-10 rounded-xl bg-bglight flex items-center justify-center hover:bg-gray-200 transition-colors relative" aria-label={t('common.notifications')}>
                         <i className="fa-regular fa-bell text-gray-700"></i>
                         {unreadCount > 0 && (
                             <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
@@ -49,7 +51,7 @@ const ClientLayout = () => {
                             </span>
                         )}
                     </Link>
-                    <Link to="/client/profile" className="w-10 h-10 rounded-xl bg-bglight flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <Link to="/client/profile" className="w-10 h-10 rounded-xl bg-bglight flex items-center justify-center hover:bg-gray-200 transition-colors" aria-label={t('common.profile')}>
                         <i className="fa-solid fa-user text-gray-700"></i>
                     </Link>
                 </div>
@@ -58,6 +60,16 @@ const ClientLayout = () => {
             <div className="flex">
                 {/* Simplify for now - Sidebar could go here for desktop */}
                 <main className="flex-1 p-5 md:p-8 animate-fade-in-up">
+                    <div className="hidden md:flex items-center justify-between mb-6">
+                        <Link
+                            to="/"
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-gray-700 hover:bg-gray-100 transition-colors shadow-sm"
+                        >
+                            <i className="fa-solid fa-house"></i>
+                            <span className="font-bold">{t('common.admin.back_to_site')}</span>
+                        </Link>
+                        <LanguageSwitcher />
+                    </div>
                     <Outlet />
                 </main>
             </div>

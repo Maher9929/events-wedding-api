@@ -5,8 +5,8 @@ import {
   IsEnum,
   IsArray,
   IsObject,
+  IsUUID,
   Min,
-  Max,
 } from 'class-validator';
 
 export class CreateServiceDto {
@@ -15,6 +15,9 @@ export class CreateServiceDto {
 
   @IsString()
   description: string;
+
+  @IsUUID()
+  category_id: string;
 
   @IsString()
   @IsOptional()

@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ConflictException,
   ForbiddenException,
   Inject,
   Logger,
@@ -56,7 +55,7 @@ export class ServicesService {
           rating_avg,
           is_verified
         ),
-        categories!inner(
+        categories(
           id,
           name,
           slug
@@ -78,6 +77,8 @@ export class ServicesService {
   async findAll(
     query: QueryServiceDto = {},
   ): Promise<{ data: Service[]; total: number }> {
+    const categoryId = query.category_id || query.category;
+
     let queryBuilder = this.supabase.from('services').select(
       `
         *,
@@ -101,23 +102,21 @@ export class ServicesService {
 
     // Apply filters
     if (query.search) {
-      queryBuilder = queryBuilder.or(`
-        title.ilike.%${query.search}%, 
-        description.ilike.%${query.search}%, 
-        short_description.ilike.%${query.search}%
-      `);
+      queryBuilder = queryBuilder.or(
+        `title.ilike.%${query.search}%,description.ilike.%${query.search}%,short_description.ilike.%${query.search}%`,
+      );
     }
 
-    if (query.category_id) {
+    if (categoryId) {
       // Validate if it's a UUID
       const isUuid =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-          query.category_id,
+          categoryId,
         );
       if (!isUuid) {
         return { data: [], total: 0 };
       }
-      queryBuilder = queryBuilder.eq('category_id', query.category_id);
+      queryBuilder = queryBuilder.eq('category_id', categoryId);
     }
     if (query.provider_id) {
       const isUuid =
@@ -146,20 +145,26 @@ export class ServicesService {
       queryBuilder = queryBuilder.eq('location_type', query.location_type);
     }
 
-    if (query.city) {
-      queryBuilder = queryBuilder.eq('providers.city', query.city);
-    }
-
-    if (query.min_rating) {
-      queryBuilder = queryBuilder.gte('providers.rating_avg', query.min_rating);
-    }
-
     if (query.is_active !== undefined) {
       queryBuilder = queryBuilder.eq('is_active', query.is_active);
+    } else {
+      queryBuilder = queryBuilder.eq('is_active', true);
     }
 
     if (query.is_featured !== undefined) {
       queryBuilder = queryBuilder.eq('is_featured', query.is_featured);
+    }
+
+    if (query.max_budget) {
+      queryBuilder = queryBuilder.lte('base_price', query.max_budget);
+    }
+
+    if (query.min_capacity) {
+      queryBuilder = queryBuilder.gte('max_capacity', query.min_capacity);
+    }
+
+    if (query.max_capacity) {
+      queryBuilder = queryBuilder.lte('min_capacity', query.max_capacity);
     }
 
     // Apply pagination
@@ -184,11 +189,6 @@ export class ServicesService {
           ascending: sortOrder === 'asc',
         });
         break;
-      case 'rating':
-        queryBuilder = queryBuilder.order('providers.rating_avg', {
-          ascending: sortOrder === 'asc',
-        });
-        break;
       case 'title':
         queryBuilder = queryBuilder.order('title', {
           ascending: sortOrder === 'asc',
@@ -203,12 +203,52 @@ export class ServicesService {
     const { data, error, count } = await queryBuilder;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
+    }
+
+    let services = data || [];
+
+    if (query.city) {
+      services = services.filter(
+        (service) => service.providers?.city === query.city,
+      );
+    }
+
+    if (query.min_rating) {
+      const minRating = query.min_rating;
+      services = services.filter(
+        (service) => Number(service.providers?.rating_avg || 0) >= minRating,
+      );
+    }
+
+    if (query.event_style) {
+      services = services.filter((service) => {
+        const eventStyles = (service.providers as any)?.event_styles;
+        return Array.isArray(eventStyles)
+          ? eventStyles.includes(query.event_style)
+          : true;
+      });
+    }
+
+    if (sortBy === 'rating') {
+      services = [...services].sort((a, b) => {
+        const aRating = Number(a.providers?.rating_avg || 0);
+        const bRating = Number(b.providers?.rating_avg || 0);
+        return sortOrder === 'asc' ? aRating - bRating : bRating - aRating;
+      });
+    }
+
+    if (sortBy === 'review_count') {
+      services = [...services].sort((a, b) => {
+        const aCount = Number((a.providers as any)?.review_count || 0);
+        const bCount = Number((b.providers as any)?.review_count || 0);
+        return sortOrder === 'asc' ? aCount - bCount : bCount - aCount;
+      });
     }
 
     return {
-      data: data || [],
-      total: count || 0,
+      data: services,
+      total: services.length || count || 0,
     };
   }
 
@@ -252,16 +292,37 @@ export class ServicesService {
     createServiceDto: CreateServiceDto,
   ): Promise<Service> {
     // Find provider by user_id
-    const { data: provider } = await this.supabase
+    let { data: provider } = await this.supabase
       .from('providers')
       .select('id')
       .eq('user_id', userId)
       .single();
 
+    // Auto-create provider profile if user has provider role but no profile yet
     if (!provider) {
-      throw new ForbiddenException(
-        'You must have a provider profile to create services',
-      );
+      const { data: user } = await this.supabase
+        .from('user_profiles')
+        .select('full_name, email')
+        .eq('id', userId)
+        .single();
+
+      const { data: newProvider, error: createErr } = await this.supabase
+        .from('providers')
+        .insert({
+          user_id: userId,
+          company_name: user?.full_name || 'My Company',
+        })
+        .select('id')
+        .single();
+
+      if (createErr || !newProvider) {
+        this.logger.error(`Failed to auto-create provider profile: ${createErr?.message}`);
+        throw new ForbiddenException(
+          'You must have a provider profile to create services',
+        );
+      }
+
+      provider = newProvider;
     }
 
     return this.create(provider.id, createServiceDto);
@@ -306,7 +367,7 @@ export class ServicesService {
     const { data, error, count } = await q;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return {
@@ -350,7 +411,7 @@ export class ServicesService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return {
@@ -389,26 +450,27 @@ export class ServicesService {
       .limit(limit);
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data || [];
   }
 
   async findFeatured(limit: number = 10): Promise<Service[]> {
-    const { data, error } = await this.supabase
+    // First try to get featured services
+    const { data: featured, error: featuredError } = await this.supabase
       .from('services')
       .select(
         `
         *,
-        providers!inner(
+        providers(
           id,
           company_name,
           rating_avg,
           is_verified,
           city
         ),
-        categories!inner(
+        categories(
           id,
           name,
           slug
@@ -421,11 +483,44 @@ export class ServicesService {
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (error) {
-      throw new Error(error.message);
+    if (featuredError) {
+      this.logger.warn(`Error fetching featured services: ${featuredError.message}`);
     }
 
-    return data || [];
+    // If we have featured services, return them
+    if (featured && featured.length > 0) {
+      return featured;
+    }
+
+    // Fallback: return the latest active services so the home page is never empty
+    const { data: latest, error: latestError } = await this.supabase
+      .from('services')
+      .select(
+        `
+        *,
+        providers(
+          id,
+          company_name,
+          rating_avg,
+          is_verified,
+          city
+        ),
+        categories(
+          id,
+          name,
+          slug
+        )
+      `,
+      )
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (latestError) {
+      throw new BadRequestException(latestError.message);
+    }
+
+    return latest || [];
   }
 
   async update(
@@ -447,7 +542,10 @@ export class ServicesService {
       .eq('id', id)
       .single();
 
-    if (!service || (service.providers as any)[0].user_id !== userId) {
+    const providerData = service?.providers as unknown as
+      | { user_id: string }
+      | undefined;
+    if (!service || providerData?.user_id !== userId) {
       throw new ForbiddenException('You can only update your own services');
     }
 
@@ -519,7 +617,10 @@ export class ServicesService {
       .eq('id', id)
       .single();
 
-    if (!service || (service.providers as any)[0].user_id !== userId) {
+    const providerData = service?.providers as unknown as
+      | { user_id: string }
+      | undefined;
+    if (!service || providerData?.user_id !== userId) {
       throw new ForbiddenException('You can only delete your own services');
     }
 

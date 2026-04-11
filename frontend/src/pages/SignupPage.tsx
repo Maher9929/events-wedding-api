@@ -40,8 +40,8 @@ const SignupPage = () => {
             const userRole = res?.user?.role || role;
             if (userRole === 'provider') navigate('/provider/dashboard');
             else navigate('/client/dashboard');
-        } catch (err: any) {
-            const errorMsg = err.message || t('auth.signup.error');
+        } catch (err) {
+            const errorMsg = err instanceof Error ? err.message : t('auth.signup.error');
             setError(errorMsg);
             toastService.error(errorMsg);
         } finally {
@@ -62,12 +62,12 @@ const SignupPage = () => {
                 <input type="password" name="password" placeholder={t('auth.login.password')} className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20" required />
 
                 <div className="grid grid-cols-2 gap-3">
-                    <button type="button" onClick={() => setRole('client')}
+                    <button type="button" data-role="client" onClick={() => setRole('client')}
                         className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${role === 'client' ? 'border-primary bg-primary text-white' : 'border-gray-200 bg-white text-gray-600'
                             }`}>
                         <i className="fa-solid fa-user mx-1"></i>{t('auth.signup.client')}
                     </button>
-                    <button type="button" onClick={() => setRole('provider')}
+                    <button type="button" data-role="provider" onClick={() => setRole('provider')}
                         className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${role === 'provider' ? 'border-primary bg-primary text-white' : 'border-gray-200 bg-white text-gray-600'
                             }`}>
                         <i className="fa-solid fa-store mx-1"></i>{t('auth.signup.provider')}

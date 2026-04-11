@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
   Inject,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -21,6 +22,81 @@ export class ProvidersService {
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
   ) {}
+
+  private getPeriodRange(period: string = 'month'): {
+    startDate: string;
+    buckets: number;
+    label: (date: Date) => string;
+    bucketStart: (index: number, now: Date) => Date;
+  } {
+    const now = new Date();
+
+    if (period === 'week') {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 6);
+      start.setHours(0, 0, 0, 0);
+      return {
+        startDate: start.toISOString(),
+        buckets: 7,
+        label: (date) => date.toLocaleDateString('en-US', { weekday: 'short' }),
+        bucketStart: (index, ref) => {
+          const d = new Date(ref);
+          d.setDate(ref.getDate() - (6 - index));
+          d.setHours(0, 0, 0, 0);
+          return d;
+        },
+      };
+    }
+
+    if (period === 'year') {
+      const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+      return {
+        startDate: start.toISOString(),
+        buckets: 12,
+        label: (date) => date.toLocaleDateString('en-US', { month: 'short' }),
+        bucketStart: (index, ref) =>
+          new Date(ref.getFullYear(), ref.getMonth() - (11 - index), 1),
+      };
+    }
+
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    return {
+      startDate: start.toISOString(),
+      buckets: 6,
+      label: (date) => date.toLocaleDateString('en-US', { month: 'short' }),
+      bucketStart: (index, ref) =>
+        new Date(ref.getFullYear(), ref.getMonth() - (5 - index), 1),
+    };
+  }
+
+  private buildRevenueTrend(
+    rows: Array<{ created_at: string; amount?: number | null }>,
+    period: string,
+  ) {
+    const now = new Date();
+    const config = this.getPeriodRange(period);
+
+    return Array.from({ length: config.buckets }).map((_, index) => {
+      const bucketDate = config.bucketStart(index, now);
+      const revenue = rows
+        .filter((row) => {
+          const createdAt = new Date(row.created_at);
+          if (period === 'week') {
+            return createdAt.toDateString() === bucketDate.toDateString();
+          }
+          return (
+            createdAt.getMonth() === bucketDate.getMonth() &&
+            createdAt.getFullYear() === bucketDate.getFullYear()
+          );
+        })
+        .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+
+      return {
+        month: config.label(bucketDate),
+        revenue: Math.round(revenue * 100) / 100,
+      };
+    });
+  }
 
   async create(
     userId: string,
@@ -53,7 +129,7 @@ export class ProvidersService {
       .single();
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data;
@@ -95,19 +171,20 @@ export class ProvidersService {
 
     // Advanced filters
     if (query.available_date) {
-      // Filter providers who have availability on the given date
-      const { data: availableProviders } = await this.supabase
+      // provider_availabilities is used as a blocking calendar in this project
+      const { data: blockedProviders } = await this.supabase
         .from('provider_availabilities')
         .select('provider_id')
         .eq('date', query.available_date)
-        .eq('is_available', true);
+        .eq('is_blocked', true);
 
-      if (availableProviders && availableProviders.length > 0) {
-        const providerIds = availableProviders.map((ap) => ap.provider_id);
-        queryBuilder = queryBuilder.in('id', providerIds);
-      } else {
-        // No providers available on this date
-        return { data: [], total: 0 };
+      if (blockedProviders && blockedProviders.length > 0) {
+        const blockedIds = blockedProviders.map((ap) => ap.provider_id);
+        queryBuilder = queryBuilder.not(
+          'id',
+          'in',
+          `(${blockedIds.join(',')})`,
+        );
       }
     }
 
@@ -162,7 +239,7 @@ export class ProvidersService {
     const { data, error, count } = await queryBuilder;
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return {
@@ -179,6 +256,9 @@ export class ProvidersService {
     total_services: number;
     monthly_revenue: number;
     total_users: number;
+    active_bookings: number;
+    pending_commissions: number;
+    total_reviews: number;
   }> {
     const now = new Date();
     const monthStart = new Date(
@@ -187,7 +267,14 @@ export class ProvidersService {
       1,
     ).toISOString();
 
-    const [providersRes, servicesRes, revenueRes] = await Promise.all([
+    const [
+      providersRes,
+      servicesRes,
+      revenueRes,
+      activeBookingsRes,
+      commissionsRes,
+      reviewsRes,
+    ] = await Promise.all([
       this.supabase.from('providers').select('is_verified, rating_avg'),
       this.supabase
         .from('services')
@@ -197,9 +284,21 @@ export class ProvidersService {
         .select('amount')
         .eq('status', 'completed')
         .gte('created_at', monthStart),
+      this.supabase
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .in('status', ['pending', 'confirmed']),
+      this.supabase
+        .from('commissions')
+        .select('commission_amount')
+        .eq('status', 'pending'),
+      this.supabase
+        .from('reviews')
+        .select('id', { count: 'exact', head: true }),
     ]);
 
-    if (providersRes.error) throw new Error(providersRes.error.message);
+    if (providersRes.error)
+      throw new BadRequestException(providersRes.error.message);
 
     const providers = providersRes.data || [];
     const verified = providers.filter((p) => p.is_verified).length;
@@ -226,29 +325,19 @@ export class ProvidersService {
             .from('user_profiles')
             .select('*', { count: 'exact', head: true })
         ).count || 0,
+      active_bookings: activeBookingsRes.count || 0,
+      pending_commissions: (commissionsRes.data || []).reduce(
+        (sum, item) => sum + Number(item.commission_amount || 0),
+        0,
+      ),
+      total_reviews: reviewsRes.count || 0,
     };
   }
 
   async getProviderStats(userId: string, period: string = 'month') {
-    // 1. Fetch provider details to get provider ID
     const provider = await this.findByUserId(userId);
+    const { startDate } = this.getPeriodRange(period);
 
-    const now = new Date();
-    let startDate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1,
-    ).toISOString();
-
-    if (period === 'year') {
-      startDate = new Date(now.getFullYear(), 0, 1).toISOString();
-    } else if (period === 'week') {
-      const d = new Date(now);
-      d.setDate(d.getDate() - d.getDay()); // Start of week
-      startDate = d.toISOString();
-    }
-
-    // Default structure if provider not found
     if (!provider) {
       return {
         overview: {
@@ -261,6 +350,10 @@ export class ProvidersService {
           featuredServices: 0,
           pendingQuotes: 0,
           acceptedQuotes: 0,
+          quoteAcceptanceRate: 0,
+          repeatClients: 0,
+          upcomingBookings: 0,
+          cancellationRate: 0,
         },
         trends: {
           monthlyRevenue: [],
@@ -277,40 +370,103 @@ export class ProvidersService {
       };
     }
 
-    // Fetch active bookings
-    const { data: bookings } = await this.supabase
-      .from('bookings')
-      .select('id, amount, status, payment_status, created_at')
-      .eq('provider_id', provider.id)
-      .gte('created_at', startDate);
+    const [
+      bookingsRes,
+      quotesRes,
+      totalServicesRes,
+      featuredServicesRes,
+      recentActivityRes,
+    ] = await Promise.all([
+      this.supabase
+        .from('bookings')
+        .select(
+          'id, client_id, amount, status, payment_status, created_at, booking_date',
+        )
+        .eq('provider_id', provider.id)
+        .gte('created_at', startDate),
+      this.supabase
+        .from('quotes')
+        .select('status, created_at, total_amount')
+        .eq('provider_id', userId)
+        .gte('created_at', startDate),
+      this.supabase
+        .from('services')
+        .select('*', { count: 'exact', head: true })
+        .eq('provider_id', provider.id),
+      this.supabase
+        .from('services')
+        .select('*', { count: 'exact', head: true })
+        .eq('provider_id', provider.id)
+        .eq('is_featured', true),
+      this.supabase
+        .from('bookings')
+        .select('id, client_id, amount, status, payment_status, created_at')
+        .eq('provider_id', provider.id)
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ]);
 
-    const periodBookings = bookings || [];
-    const revenue = periodBookings
-      .filter(
-        (b) => b.status === 'completed' || b.payment_status === 'fully_paid',
-      )
-      .reduce((sum, b) => sum + (b.amount || 0), 0);
+    const periodBookings = bookingsRes.data || [];
+    const periodQuotes = quotesRes.data || [];
+    const revenueRows = periodBookings.filter(
+      (b) => b.status === 'completed' || b.payment_status === 'fully_paid',
+    );
+    const revenue = revenueRows.reduce(
+      (sum, b) => sum + Number(b.amount || 0),
+      0,
+    );
 
-    // Fetch total services for this provider
-    const { count: totalServices } = await this.supabase
-      .from('services')
-      .select('*', { count: 'exact', head: true })
-      .eq('provider_id', provider.id);
+    const recentBookings = recentActivityRes.data || [];
+    const recentClientIds = [
+      ...new Set(
+        recentBookings.map((booking) => booking.client_id).filter(Boolean),
+      ),
+    ];
+    const { data: recentClients } = recentClientIds.length
+      ? await this.supabase
+          .from('user_profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', recentClientIds)
+      : { data: [] as any[] };
 
-    // Fetch featured services
-    const { count: featuredServices } = await this.supabase
-      .from('services')
-      .select('*', { count: 'exact', head: true })
-      .eq('provider_id', provider.id)
-      .eq('is_featured', true);
+    const clientMap = new Map(
+      (recentClients || []).map((client) => [client.id, client]),
+    );
+    const recentActivity = recentBookings.map((booking) => ({
+      ...booking,
+      client: clientMap.get(booking.client_id) || null,
+    }));
 
-    // Fetch recent activity
-    const { data: recentActivity } = await this.supabase
-      .from('bookings')
-      .select('*, user_profiles(full_name, avatar_url)')
-      .eq('provider_id', provider.id)
-      .order('created_at', { ascending: false })
-      .limit(10);
+    const pendingQuotes = periodQuotes.filter(
+      (q) => q.status === 'draft' || q.status === 'sent',
+    ).length;
+    const acceptedQuotes = periodQuotes.filter(
+      (q) => q.status === 'accepted',
+    ).length;
+    const actionableQuotes = periodQuotes.filter((q) =>
+      ['sent', 'accepted', 'rejected'].includes(q.status),
+    ).length;
+    const bookingClientIds = periodBookings
+      .map((booking) => booking.client_id)
+      .filter(Boolean);
+    const repeatClients = new Set(
+      bookingClientIds.filter(
+        (clientId, index) => bookingClientIds.indexOf(clientId) !== index,
+      ),
+    ).size;
+    const upcomingBookings = periodBookings.filter(
+      (booking) =>
+        ['pending', 'confirmed'].includes(booking.status) &&
+        new Date(booking.booking_date).getTime() >= Date.now(),
+    ).length;
+    const cancellationRate =
+      periodBookings.length > 0
+        ? Math.round(
+            (periodBookings.filter((b) => b.status === 'cancelled').length /
+              periodBookings.length) *
+              1000,
+          ) / 10
+        : 0;
 
     return {
       overview: {
@@ -323,21 +479,20 @@ export class ProvidersService {
         ).length,
         totalRevenue: revenue,
         averageRating: provider.rating_avg || 0,
-        totalServices: totalServices || 0,
-        featuredServices: featuredServices || 0,
-        pendingQuotes: 0,
-        acceptedQuotes: 0,
+        totalServices: totalServicesRes.count || 0,
+        featuredServices: featuredServicesRes.count || 0,
+        pendingQuotes,
+        acceptedQuotes,
+        quoteAcceptanceRate:
+          actionableQuotes > 0
+            ? Math.round((acceptedQuotes / actionableQuotes) * 1000) / 10
+            : 0,
+        repeatClients,
+        upcomingBookings,
+        cancellationRate,
       },
       trends: {
-        monthlyRevenue: Array.from({ length: 6 }).map((_, i) => ({
-          month: new Date(
-            now.getFullYear(),
-            now.getMonth() - (5 - i),
-            1,
-          ).toLocaleString('en-US', { month: 'short' }),
-          revenue:
-            i === 5 ? revenue : Math.floor(Math.random() * (revenue + 2000)),
-        })),
+        monthlyRevenue: this.buildRevenueTrend(revenueRows, period),
         bookingStatusDistribution: {
           pending: periodBookings.filter((b) => b.status === 'pending').length,
           confirmed: periodBookings.filter((b) => b.status === 'confirmed')
@@ -364,37 +519,78 @@ export class ProvidersService {
           averageResponseTime: 0,
           totalEarnings: 0,
           clientSatisfaction: 0,
+          averageBookingValue: 0,
         },
         growth: { newClients: 0, repeatClients: 0 },
       };
     }
 
-    const { data: bookings } = await this.supabase
-      .from('bookings')
-      .select('amount, status, client_id')
-      .eq('provider_id', provider.id);
+    const [bookingsRes, quotesRes] = await Promise.all([
+      this.supabase
+        .from('bookings')
+        .select('amount, status, client_id')
+        .eq('provider_id', provider.id),
+      this.supabase
+        .from('quotes')
+        .select('status, client_id')
+        .eq('provider_id', userId),
+    ]);
 
-    const allBookings = bookings || [];
+    const allBookings = bookingsRes.data || [];
+    const allQuotes = quotesRes.data || [];
     const totalEarnings = allBookings
-      .filter((b) => b.status === 'completed')
+      .filter((b) => b.status === 'completed' || b.status === 'confirmed')
       .reduce((sum, b) => sum + (b.amount || 0), 0);
 
-    const clientIds = new Set(allBookings.map((b) => b.client_id));
-    const repeatClients = allBookings.length - clientIds.size;
+    const bookingClientIds = allBookings
+      .map((b) => b.client_id)
+      .filter(Boolean);
+    const clientIds = new Set(bookingClientIds);
+    const repeatClients = [...clientIds].filter(
+      (clientId) => bookingClientIds.filter((id) => id === clientId).length > 1,
+    ).length;
+    const acceptedQuotes = allQuotes.filter(
+      (q) => q.status === 'accepted',
+    ).length;
+    const actionableQuotes = allQuotes.filter((q) =>
+      ['sent', 'accepted', 'rejected'].includes(q.status),
+    ).length;
+    const convertedBookings = allBookings.filter((b) =>
+      ['confirmed', 'completed'].includes(b.status),
+    ).length;
+    const averageBookingValue =
+      allBookings.length > 0
+        ? Math.round(
+            (allBookings.reduce(
+              (sum, booking) => sum + Number(booking.amount || 0),
+              0,
+            ) /
+              allBookings.length) *
+              100,
+          ) / 100
+        : 0;
 
     return {
       conversionRates: {
-        quoteConversionRate: 65, // Mock values if quotes not integrated
-        bookingConversionRate: allBookings.length > 0 ? 85 : 0,
+        quoteConversionRate:
+          actionableQuotes > 0
+            ? Math.round((acceptedQuotes / actionableQuotes) * 1000) / 10
+            : 0,
+        bookingConversionRate:
+          allBookings.length > 0
+            ? Math.round((convertedBookings / allBookings.length) * 1000) / 10
+            : 0,
       },
       performance: {
         averageResponseTime: provider.response_time_hours || 2,
         totalEarnings,
-        clientSatisfaction: provider.rating_avg ? provider.rating_avg * 20 : 95, // Scale to 100
+        clientSatisfaction:
+          Math.round((provider.rating_avg || 0) * 20 * 10) / 10,
+        averageBookingValue,
       },
       growth: {
         newClients: clientIds.size,
-        repeatClients: repeatClients > 0 ? repeatClients : 0,
+        repeatClients,
       },
     };
   }
@@ -419,7 +615,7 @@ export class ProvidersService {
     return data;
   }
 
-  async findByUserId(userId: string): Promise<Provider> {
+  async findByUserId(userId: string): Promise<Provider | null> {
     const { data, error } = await this.supabase
       .from('providers')
       .select('*, services(id, is_active)')
@@ -427,14 +623,17 @@ export class ProvidersService {
       .single();
 
     if (error || !data) {
-      return null as any;
+      return null;
     }
 
-    const services = data.services || [];
+    const services = (data.services || []) as {
+      id: string;
+      is_active: boolean;
+    }[];
     return {
       ...data,
       total_services: services.length,
-      active_services: services.filter((s: any) => s.is_active).length,
+      active_services: services.filter((s) => s.is_active).length,
     };
   }
 
@@ -452,7 +651,7 @@ export class ProvidersService {
       .eq('is_verified', true);
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     // Filter by distance (simplified calculation)
@@ -483,7 +682,7 @@ export class ProvidersService {
       .limit(limit);
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
 
     return data || [];
@@ -510,7 +709,7 @@ export class ProvidersService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
@@ -587,7 +786,7 @@ export class ProvidersService {
       .eq('id', providerId);
 
     if (error) {
-      throw new Error(error.message);
+      throw new BadRequestException(error.message);
     }
   }
 
@@ -631,7 +830,7 @@ export class ProvidersService {
 
     const { data, error } = await query.order('date', { ascending: true });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
@@ -657,7 +856,7 @@ export class ProvidersService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
@@ -683,7 +882,7 @@ export class ProvidersService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
@@ -706,7 +905,7 @@ export class ProvidersService {
       .eq('id', availabilityId)
       .eq('provider_id', providerId);
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
   }
 
   private calculateDistance(
@@ -743,7 +942,7 @@ export class ProvidersService {
       .select()
       .single();
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data;
   }
 
@@ -757,7 +956,7 @@ export class ProvidersService {
       .eq('provider_id', provider.id)
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
@@ -768,7 +967,7 @@ export class ProvidersService {
       .eq('provider_id', providerId)
       .order('created_at', { ascending: false });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 
@@ -790,7 +989,7 @@ export class ProvidersService {
       .select('provider_id')
       .single();
 
-    if (docError) throw new Error(docError.message);
+    if (docError) throw new BadRequestException(docError.message);
 
     // If approved, check if all docs for this provider are approved to auto-verify
     if (status === 'approved' && doc) {
@@ -823,7 +1022,7 @@ export class ProvidersService {
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
 
-    if (error) throw new Error(error.message);
+    if (error) throw new BadRequestException(error.message);
     return data || [];
   }
 }

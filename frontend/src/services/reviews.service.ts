@@ -15,5 +15,5 @@ export const reviewsService = {
   getByProvider: (providerId: string) => apiService.get<Review[]>(`/reviews/provider/${providerId}`),
   getRating: (serviceId: string) => apiService.get<{ average: number; count: number }>(`/reviews/service/${serviceId}/rating`),
   create: (data: { service_id: string; rating: number; comment?: string }) => apiService.post<Review>('/reviews', data),
-  remove: (id: string) => apiService.delete(`/reviews/${id}`),
+  remove: (id: string) => apiService.delete(`/reviews/id/${id}`),
 };
