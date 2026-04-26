@@ -35,24 +35,24 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Créer une nouvelle catégorie' })
-  @ApiResponse({ status: 201, description: 'Catégorie créée avec succès' })
-  @ApiResponse({ status: 401, description: 'Non autorisé' })
-  @ApiResponse({ status: 403, description: 'Accès refusé (admin uniquement)' })
+  @ApiOperation({ summary: 'Create a new category' })
+  @ApiResponse({ status: 201, description: 'Category created successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden (admin only)' })
   async create(@Body() createCategoryDto: CreateCategoryDto) {
     return await this.categoriesService.create(createCategoryDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Lister toutes les catégories' })
-  @ApiResponse({ status: 200, description: 'Liste des catégories récupérée' })
+  @ApiOperation({ summary: 'List all categories' })
+  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
   async findAll(@Query() query: QueryCategoryDto) {
     return await this.categoriesService.findAll(query);
   }
 
   @Get('root')
-  @ApiOperation({ summary: 'Lister les catégories racines' })
-  @ApiResponse({ status: 200, description: 'Catégories racines récupérées' })
+  @ApiOperation({ summary: 'List root categories' })
+  @ApiResponse({ status: 200, description: 'Root categories retrieved successfully' })
   async findRootCategories() {
     return await this.categoriesService.findRootCategories();
   }

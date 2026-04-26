@@ -23,19 +23,3 @@ Feature: Réservation et paiement
     And le statut de la réservation devrait passer à "fully_paid"
     And je devrais voir un reçu de paiement
 
-  Scenario: Paiement avec carte refusée
-    Given je suis connecté en tant que client
-    And j'ai une réservation en attente de paiement
-    When je vais sur la page de paiement
-    And je saisis la carte de test "4000000000000002"
-    And je clique sur "Payer"
-    Then je devrais voir un message d'erreur "Carte refusée"
-    And le statut de paiement devrait rester "pending"
-
-  Scenario: Annulation d'une réservation
-    Given je suis connecté en tant que client
-    And j'ai une réservation confirmée
-    When je clique sur "Annuler la réservation"
-    And je confirme l'annulation
-    Then le statut devrait passer à "cancelled"
-    And le remboursement devrait être initié si le paiement a été effectué

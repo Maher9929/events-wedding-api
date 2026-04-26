@@ -14,7 +14,7 @@ VALUES
     ('c0000000-0000-0000-0000-000000000007', 'موسيقى وفرق', 'music', 'ترفيه وموسيقى حية', 'fa-music', 7),
     ('c0000000-0000-0000-0000-000000000008', 'أثاث وتجهيزات', 'furniture', 'تأجير أثاث المناسبات', 'fa-couch', 8)
 ON CONFLICT (slug) DO UPDATE SET 
-    name = EXCLUDED.name,
+    name = EXCLUDED.name,éc
     description = EXCLUDED.description,
     icon = EXCLUDED.icon,
     sort_order = EXCLUDED.sort_order;

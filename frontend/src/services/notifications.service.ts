@@ -8,13 +8,13 @@ export interface Notification {
     message: string;
     type: string;
     is_read: boolean;
-    data?: any;
+    data?: Record<string, unknown>;
     created_at: string;
 }
 
 export const notificationsService = {
     getNotifications: (params?: URLSearchParams) =>
-        apiService.get<any>(`/notifications${params ? '?' + params.toString() : ''}`),
+        apiService.get<Notification[]>(`/notifications${params ? '?' + params.toString() : ''}`),
 
     markAsRead: (id: string) =>
         apiService.patch<void>(`/notifications/id/${id}/read`, {}),
@@ -28,7 +28,7 @@ export const notificationsService = {
     deleteAllRead: () =>
         apiService.delete<void>('/notifications'),
 
-    subscribeToNotifications: (userId: string, onNewNotification: (payload: any) => void) => {
+    subscribeToNotifications: (userId: string, onNewNotification: (payload: Record<string, unknown>) => void) => {
         return supabase
             .channel(`user_notifications:${userId}`)
             .on(

@@ -6,6 +6,7 @@ import {
   Inject,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { sanitizeSearch } from '../common/sanitize';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { QueryCategoryDto } from './dto/query-category.dto';
@@ -57,7 +58,7 @@ export class CategoriesService {
     // Apply filters
     if (query.search) {
       queryBuilder = queryBuilder.or(
-        `name.ilike.%${query.search}%,description.ilike.%${query.search}%`,
+        `name.ilike.%${sanitizeSearch(query.search)}%,description.ilike.%${sanitizeSearch(query.search)}%`,
       );
     }
 

@@ -4,7 +4,6 @@ import {
   getBodyText,
   navigateTo,
   setAuthenticatedUser,
-  typeInto,
   waitForElement,
 } from './hooks';
 
@@ -34,7 +33,16 @@ Given("j'ai une réservation confirmée", async function () {
 });
 
 When('je sélectionne la date {string}', async function (date: string) {
-  await typeInto(this, 'input[type="date"]', date);
+  await this.driver.executeScript(
+    `const el = document.querySelector('input[type="date"]');
+     if (el) {
+       const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+       nativeSetter.call(el, arguments[0]);
+       el.dispatchEvent(new Event('input', { bubbles: true }));
+       el.dispatchEvent(new Event('change', { bubbles: true }));
+     }`,
+    date,
+  );
 });
 
 When('je confirme la réservation', async function () {

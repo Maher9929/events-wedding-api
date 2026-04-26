@@ -73,6 +73,30 @@ const SignupPage = () => {
                         <i className="fa-solid fa-store mx-1"></i>{t('auth.signup.provider')}
                     </button>
                 </div>
+
+                {role === 'provider' && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-right space-y-2">
+                        <p className="text-sm font-bold text-purple-800">
+                            <i className="fa-solid fa-info-circle mx-1"></i>
+                            {t('auth.signup.kyc_title', 'معلومات التحقق للمقدمي الخدمات')}
+                        </p>
+                        <div className="text-xs text-purple-700 space-y-1.5">
+                            <p className="flex items-start gap-2">
+                                <span className="mt-0.5">📄</span>
+                                <span>{t('auth.signup.kyc_documents', 'ستحتاج إلى: بطاقة هوية، رخصة تجارية، قيد المنشأة')}</span>
+                            </p>
+                            <p className="flex items-start gap-2">
+                                <span className="mt-0.5">⏱</span>
+                                <span>{t('auth.signup.kyc_timeline', 'مدة المراجعة: 24-48 ساعة')}</span>
+                            </p>
+                            <p className="flex items-start gap-2">
+                                <span className="mt-0.5">✅</span>
+                                <span>{t('auth.signup.kyc_benefits', 'المزايا: شارة التحقق، ترتيب أفضل في البحث، ثقة العملاء')}</span>
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <button type="submit" disabled={loading} className="w-full bg-primary text-white py-3 rounded-xl font-bold shadow-lg shadow-purple-500/20 card-hover disabled:opacity-50">
                     {loading ? t('common.loading') : t('auth.signup.submit')}
                 </button>

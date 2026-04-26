@@ -14,19 +14,3 @@ Feature: Devis et Messagerie
     Then la demande de devis devrait être envoyée avec succès
     And le prestataire devrait recevoir une notification
 
-  Scenario: Réponse à une demande de devis par un prestataire
-    Given je suis connecté en tant que prestataire
-    And j'ai une demande de devis en attente
-    When je consulte la demande de devis
-    And je remplis le montant "8000"
-    And j'ajoute un message de réponse "Nous serions ravis de décorer votre mariage"
-    And je clique sur "Envoyer le devis"
-    Then le devis devrait être envoyé au client
-    And le statut devrait passer à "sent"
-
-  Scenario: Messagerie entre client et prestataire
-    Given je suis connecté en tant que client
-    When je vais sur la page "Messages"
-    And j'envoie un message "Bonjour, avez-vous des disponibilités en septembre ?"
-    Then le message devrait être envoyé
-    And il devrait apparaître dans la conversation

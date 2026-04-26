@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ModerationService } from './moderation.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
@@ -19,7 +20,10 @@ import {
   UpdateReportActionDto,
   ReviewKycDto,
 } from './dto/moderation.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('moderation')
+@ApiBearerAuth()
 @Controller('moderation')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ModerationController {
@@ -27,7 +31,7 @@ export class ModerationController {
 
   @Post('reports')
   @Roles(UserRole.CLIENT, UserRole.PROVIDER, UserRole.ADMIN)
-  async createReport(@Body() reportDto: CreateReportDto, @Request() req) {
+  async createReport(@Body() reportDto: CreateReportDto, @Request() req: AuthenticatedRequest) {
     return this.moderationService.createReport(reportDto, req.user.id);
   }
 
@@ -52,7 +56,7 @@ export class ModerationController {
   async updateReport(
     @Param('id') id: string,
     @Body() action: UpdateReportActionDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.moderationService.updateReport(id, action, req.user.id);
   }
@@ -68,7 +72,7 @@ export class ModerationController {
   async reviewKycDocument(
     @Param('id') id: string,
     @Body() review: ReviewKycDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.moderationService.reviewKycDocument(
       id,

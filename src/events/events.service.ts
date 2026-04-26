@@ -23,6 +23,7 @@ import {
   UpdateTimelineItemDto,
 } from './dto/event-features.dto';
 import { CreateGuestDto, UpdateGuestDto } from './dto/event-guests.dto';
+import { sanitizeSearch } from '../common/sanitize';
 
 @Injectable()
 export class EventsService {
@@ -74,7 +75,7 @@ export class EventsService {
       .insert({
         ...createEventDto,
         client_id: clientId,
-        currency: createEventDto.currency || 'QAR',
+        currency: createEventDto.currency || 'MAD',
         status: createEventDto.status || 'planning',
         visibility: createEventDto.visibility || 'private',
         is_template: createEventDto.is_template || false,
@@ -108,7 +109,7 @@ export class EventsService {
     // Apply filters
     if (query.search) {
       queryBuilder = queryBuilder.or(
-        `title.ilike.%${query.search}%,description.ilike.%${query.search}%`,
+        `title.ilike.%${sanitizeSearch(query.search)}%,description.ilike.%${sanitizeSearch(query.search)}%`,
       );
     }
 

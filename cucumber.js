@@ -7,6 +7,7 @@ module.exports = {
       'progress',
       'summary',
       'json:test/reports/cucumber-report.json',
+      'junit:test/reports/cucumber-junit.xml',
     ],
     publishQuiet: true,
   },

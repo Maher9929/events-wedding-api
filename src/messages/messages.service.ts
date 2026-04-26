@@ -4,18 +4,46 @@ import {
   NotFoundException,
   InternalServerErrorException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { Message } from './entities/message.entity';
 import { Conversation } from './entities/conversation.entity';
+import { filterContactInfo } from '../common/content-filter';
+import { MessagesGateway } from './messages.gateway';
 
 @Injectable()
 export class MessagesService {
+  private readonly logger = new Logger(MessagesService.name);
+
   constructor(
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
+    private readonly gateway: MessagesGateway,
   ) {}
+
+  private async logFilterViolation(
+    senderId: string,
+    conversationId: string,
+    originalContent: string,
+    filteredTypes: string[],
+  ): Promise<void> {
+    try {
+      await this.supabase.from('audit_logs').insert({
+        user_id: senderId,
+        action: 'message_filtered',
+        entity: 'messages',
+        entity_id: conversationId,
+        metadata: {
+          original_content: originalContent.substring(0, 500),
+          filtered_types: filteredTypes,
+        },
+      });
+    } catch (e) {
+      this.logger.warn(`Failed to log filter violation: ${e}`);
+    }
+  }
 
   private async getConversationForUser(
     conversationId: string,
@@ -48,14 +76,14 @@ export class MessagesService {
       .maybeSingle();
 
     if (error) {
-      console.error('Error creating conversation:', error);
+      this.logger.error(`Error creating conversation: ${error.message}`);
       throw new InternalServerErrorException(
-        `فشل إنشاء المحادثة: ${error.message}`,
+        `Failed to create conversation: ${error.message}`,
       );
     }
     if (!data) {
       throw new InternalServerErrorException(
-        'لم يتم إرجاع بيانات بعد إنشاء المحادثة',
+        'No data returned after creating conversation',
       );
     }
     return data;
@@ -71,7 +99,7 @@ export class MessagesService {
       .order('last_message_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching conversations:', error);
+      this.logger.error(`Error fetching conversations: ${error.message}`);
       throw new InternalServerErrorException(error.message);
     }
     const conversations = convos || [];
@@ -101,7 +129,7 @@ export class MessagesService {
             recipient_role: otherParticipant?.role,
           };
         } catch (e) {
-          console.error(`Error enriching conversation ${c.id}:`, e);
+          this.logger.warn(`Error enriching conversation ${c.id}: ${e}`);
           return { ...c, unread_count: 0, recipient_name: 'مستخدم' };
         }
       }),
@@ -128,7 +156,7 @@ export class MessagesService {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching messages:', error);
+      this.logger.error(`Error fetching messages: ${error.message}`);
       throw new InternalServerErrorException(error.message);
     }
     return data || [];
@@ -148,7 +176,7 @@ export class MessagesService {
       .is('read_at', null);
 
     if (error) {
-      console.error('Error marking conversation read:', error);
+      this.logger.error(`Error marking conversation read: ${error.message}`);
       throw new InternalServerErrorException(error.message);
     }
     return { success: true };
@@ -188,17 +216,36 @@ export class MessagesService {
 
     await this.getConversationForUser(conversationId, senderId);
 
+    // Sanitize message content (anti-disintermediation)
+    const {
+      content: safeContent,
+      wasFiltered,
+      filteredTypes,
+    } = filterContactInfo(createMessageDto.content);
+
+    if (wasFiltered) {
+      this.logFilterViolation(
+        senderId,
+        conversationId,
+        createMessageDto.content,
+        filteredTypes,
+      );
+    }
+
     const { data: message, error } = await this.supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
         sender_id: senderId,
-        content: createMessageDto.content,
+        content: safeContent,
         type: createMessageDto.type || 'text',
         metadata: {
           ...(createMessageDto.metadata || {}),
           ...(createMessageDto.attachments?.length
             ? { attachments: createMessageDto.attachments }
+            : {}),
+          ...(wasFiltered
+            ? { content_filtered: true, filtered_types: filteredTypes }
             : {}),
         },
       })
@@ -206,7 +253,7 @@ export class MessagesService {
       .maybeSingle();
 
     if (error) {
-      console.error('Error sending message:', error);
+      this.logger.error(`Error sending message: ${error.message}`);
       throw new InternalServerErrorException(error.message);
     }
 
@@ -225,19 +272,36 @@ export class MessagesService {
       const recipients = (convo.participant_ids as string[]).filter(
         (id) => id !== senderId,
       );
-      const preview = createMessageDto.content.substring(0, 80);
+      const preview = safeContent.substring(0, 80);
       for (const recipientId of recipients) {
         try {
           await this.supabase.from('notifications').insert({
             user_id: recipientId,
             type: 'message',
-            title: 'رسالة جديدة',
+            title: 'New message',
             message: preview,
             is_read: false,
             data: { conversation_id: conversationId, sender_id: senderId },
           });
         } catch (e) {
-          console.error('Error creating notification:', e);
+          this.logger.warn(`Error creating notification: ${e}`);
+        }
+      }
+    }
+
+    // Emit real-time WebSocket events
+    if (message) {
+      this.gateway.emitNewMessage(conversationId, message);
+      if (convo?.participant_ids) {
+        const recipients = (convo.participant_ids as string[]).filter(
+          (id) => id !== senderId,
+        );
+        for (const recipientId of recipients) {
+          this.gateway.emitNotification(recipientId, {
+            type: 'message',
+            conversation_id: conversationId,
+            preview: safeContent.substring(0, 80),
+          });
         }
       }
     }
@@ -257,7 +321,7 @@ export class MessagesService {
       .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error finding existing conversation:', error);
+      this.logger.warn(`Error finding existing conversation: ${error.message}`);
     }
 
     return data || null;

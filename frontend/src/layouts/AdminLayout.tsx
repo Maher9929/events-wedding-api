@@ -17,6 +17,7 @@ const getNavItems = (t: (key: string) => string) => [
     { to: '/admin/quotes', icon: 'fa-file-invoice', label: t('common.admin.quotes') },
     { to: '/admin/commissions', icon: 'fa-coins', label: t('common.admin.commissions') },
     { to: '/admin/audit-logs', icon: 'fa-shield-halved', label: t('common.admin.audit_logs') },
+    { to: '/admin/disputes', icon: 'fa-gavel', label: t('common.admin.disputes') },
 ];
 
 const SidebarContent = ({ currentUser, pathname, setSidebarOpen }: { currentUser: { full_name?: string; email?: string; avatar_url?: string } | null, pathname: string, setSidebarOpen?: (val: boolean) => void }) => {
@@ -107,7 +108,7 @@ const AdminLayout = () => {
                     </button>
                     <h1 className="font-bold text-lg text-gray-900 md:hidden">{t('common.admin.title')}</h1>
                     <div className="hidden md:flex items-center gap-2">
-                        <span className="text-sm text-gray-500">{t('common.notifications.dates.today')}, {currentUser?.full_name || t('common.user')}</span>
+                        <span className="text-sm text-gray-500">{t('common.dates.today')}, {currentUser?.full_name || t('common.user')}</span>
                     </div>
                     <div className="flex items-center gap-3">
                         <Link

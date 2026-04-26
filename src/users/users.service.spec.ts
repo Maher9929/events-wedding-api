@@ -22,13 +22,22 @@ const mockJwtService = {
   verify: jest.fn(),
 };
 
+const mockAuditLogService = { log: jest.fn() };
+const mockAuthCache = {
+  getCachedUser: jest.fn().mockResolvedValue(null),
+  cacheUser: jest.fn().mockResolvedValue(undefined),
+  blacklistToken: jest.fn().mockResolvedValue(undefined),
+  isTokenBlacklisted: jest.fn().mockResolvedValue(false),
+  invalidateUser: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('UsersService', () => {
   let service: UsersService;
   let supabase: any;
 
   beforeEach(() => {
     supabase = createSupabaseMock();
-    service = new UsersService(supabase, mockJwtService as any);
+    service = new UsersService(supabase, mockJwtService as any, mockAuditLogService as any, mockAuthCache as any);
     jest.clearAllMocks();
   });
 

@@ -14,16 +14,19 @@ export class NotificationsService {
   private readonly fromEmail: string;
   private readonly fromName: string;
   private readonly sendgridEnabled: boolean;
+  private readonly appBaseUrl: string;
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('SENDGRID_API_KEY') || '';
     this.fromEmail =
       this.configService.get<string>('SENDGRID_FROM_EMAIL') ||
-      'noreply@dousha.com';
+      'noreply@dohaevents.com';
     this.fromName =
-      this.configService.get<string>('SENDGRID_FROM_NAME') || 'Dousha';
+      this.configService.get<string>('SENDGRID_FROM_NAME') || 'Doha Events';
     this.sendgridEnabled =
       apiKey.startsWith('SG.') && !apiKey.includes('YOUR_');
+    this.appBaseUrl =
+      this.configService.get<string>('APP_BASE_URL') || 'https://dohaevents.com';
     if (this.sendgridEnabled) {
       sgMail.setApiKey(apiKey);
     }
@@ -47,7 +50,7 @@ export class NotificationsService {
   }
 
   /**
-   * Notification de nouvelle réservation
+   * New booking notification
    */
   async notifyNewBooking(
     providerEmail: string,
@@ -57,14 +60,14 @@ export class NotificationsService {
   ): Promise<void> {
     await this.sendEmail({
       to: providerEmail,
-      subject: 'حجز جديد - Dousha',
-      body: `مرحباً،\n\nلديك حجز جديد من ${clientName} للخدمة ${serviceName} بتاريخ ${bookingDate}.\n\nيرجى تسجيل الدخول لمراجعة التفاصيل.\n\nشكراً،\nفريق Dousha`,
+      subject: 'حجز جديد - Doha Events',
+      body: `مرحباً،\n\nلديك حجز جديد من ${clientName} للخدمة ${serviceName} بتاريخ ${bookingDate}.\n\nيرجى تسجيل الدخول لمراجعة التفاصيل.\n\nشكراً،\nفريق Doha Events`,
       html: this.generateBookingEmailHTML(clientName, serviceName, bookingDate),
     });
   }
 
   /**
-   * Notification de confirmation de réservation
+   * Booking confirmation notification
    */
   async notifyBookingConfirmed(
     clientEmail: string,
@@ -73,14 +76,14 @@ export class NotificationsService {
   ): Promise<void> {
     await this.sendEmail({
       to: clientEmail,
-      subject: 'تأكيد الحجز - Dousha',
-      body: `مرحباً،\n\nتم تأكيد حجزك للخدمة ${serviceName} بتاريخ ${bookingDate}.\n\nشكراً لاستخدامك Dousha!\n\nفريق Dousha`,
+      subject: 'تأكيد الحجز - Doha Events',
+      body: `مرحباً،\n\nتم تأكيد حجزك للخدمة ${serviceName} بتاريخ ${bookingDate}.\n\nشكراً لاستخدامك Doha Events!\n\nفريق Doha Events`,
       html: this.generateConfirmationEmailHTML(serviceName, bookingDate),
     });
   }
 
   /**
-   * Notification de nouveau devis
+   * New quote notification
    */
   async notifyNewQuote(
     clientEmail: string,
@@ -90,14 +93,14 @@ export class NotificationsService {
   ): Promise<void> {
     await this.sendEmail({
       to: clientEmail,
-      subject: 'عرض سعر جديد - Dousha',
-      body: `مرحباً،\n\nلديك عرض سعر جديد من ${providerName} للخدمة ${serviceName} بمبلغ ${amount} ر.ق.\n\nيرجى تسجيل الدخول لمراجعة العرض.\n\nشكراً،\nفريق Dousha`,
+      subject: 'عرض سعر جديد - Doha Events',
+      body: `مرحباً،\n\nلديك عرض سعر جديد من ${providerName} للخدمة ${serviceName} بمبلغ ${amount} ر.ق.\n\nيرجى تسجيل الدخول لمراجعة العرض.\n\nشكراً،\nفريق Doha Events`,
       html: this.generateQuoteEmailHTML(providerName, serviceName, amount),
     });
   }
 
   /**
-   * Notification de nouveau message
+   * New message notification
    */
   async notifyNewMessage(
     recipientEmail: string,
@@ -106,14 +109,14 @@ export class NotificationsService {
   ): Promise<void> {
     await this.sendEmail({
       to: recipientEmail,
-      subject: 'رسالة جديدة - Dousha',
-      body: `مرحباً،\n\nلديك رسالة جديدة من ${senderName}:\n\n"${messagePreview}"\n\nيرجى تسجيل الدخول للرد.\n\nشكراً،\nفريق Dousha`,
+      subject: 'رسالة جديدة - Doha Events',
+      body: `مرحباً،\n\nلديك رسالة جديدة من ${senderName}:\n\n"${messagePreview}"\n\nيرجى تسجيل الدخول للرد.\n\nشكراً،\nفريق Doha Events`,
       html: this.generateMessageEmailHTML(senderName, messagePreview),
     });
   }
 
   /**
-   * Notification de validation de prestataire
+   * Provider verification notification
    */
   async notifyProviderVerified(
     providerEmail: string,
@@ -121,14 +124,14 @@ export class NotificationsService {
   ): Promise<void> {
     await this.sendEmail({
       to: providerEmail,
-      subject: 'تم التحقق من حسابك - Dousha',
-      body: `مرحباً،\n\nتهانينا! تم التحقق من حساب ${companyName} بنجاح.\n\nيمكنك الآن البدء في استقبال الحجوزات.\n\nشكراً،\nفريق Dousha`,
+      subject: 'تم التحقق من حسابك - Doha Events',
+      body: `مرحباً،\n\nتهانينا! تم التحقق من حساب ${companyName} بنجاح.\n\nيمكنك الآن البدء في استقبال الحجوزات.\n\nشكراً،\nفريق Doha Events`,
       html: this.generateVerificationEmailHTML(companyName),
     });
   }
 
   /**
-   * Rappel d'événement
+   * Event reminder notification
    */
   async notifyEventReminder(
     clientEmail: string,
@@ -138,8 +141,8 @@ export class NotificationsService {
   ): Promise<void> {
     await this.sendEmail({
       to: clientEmail,
-      subject: `تذكير: ${eventTitle} - Dousha`,
-      body: `مرحباً،\n\nتذكير بأن فعاليتك "${eventTitle}" ستكون بعد ${daysUntil} أيام (${eventDate}).\n\nتأكد من إتمام جميع الترتيبات!\n\nشكراً،\nفريق Dousha`,
+      subject: `تذكير: ${eventTitle} - Doha Events`,
+      body: `مرحباً،\n\nتذكير بأن فعاليتك "${eventTitle}" ستكون بعد ${daysUntil} أيام (${eventDate}).\n\nتأكد من إتمام جميع الترتيبات!\n\nشكراً،\nفريق Doha Events`,
       html: this.generateReminderEmailHTML(eventTitle, eventDate, daysUntil),
     });
   }
@@ -163,10 +166,10 @@ export class NotificationsService {
             <p style="margin: 10px 0;"><strong>التاريخ:</strong> ${bookingDate}</p>
           </div>
           <p style="font-size: 14px; color: #6b7280;">يرجى تسجيل الدخول لمراجعة التفاصيل الكاملة.</p>
-          <a href="https://dousha.com/vendor/dashboard" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">عرض الحجز</a>
+          <a href="${this.appBaseUrl}/vendor/dashboard" style="display: inline-block; background: #667eea; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">عرض الحجز</a>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>© 2026 Dousha. جميع الحقوق محفوظة.</p>
+          <p>© 2026 Doha Events. جميع الحقوق محفوظة.</p>
         </div>
       </div>
     `;
@@ -188,11 +191,11 @@ export class NotificationsService {
             <p style="margin: 10px 0;"><strong>الخدمة:</strong> ${serviceName}</p>
             <p style="margin: 10px 0;"><strong>التاريخ:</strong> ${bookingDate}</p>
           </div>
-          <p style="font-size: 14px; color: #6b7280;">شكراً لاستخدامك Dousha!</p>
-          <a href="https://dousha.com/client/dashboard" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">عرض حجوزاتي</a>
+          <p style="font-size: 14px; color: #6b7280;">شكراً لاستخدامك Doha Events!</p>
+          <a href="${this.appBaseUrl}/client/dashboard" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">عرض حجوزاتي</a>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>© 2026 Dousha. جميع الحقوق محفوظة.</p>
+          <p>© 2026 Doha Events. جميع الحقوق محفوظة.</p>
         </div>
       </div>
     `;
@@ -215,10 +218,10 @@ export class NotificationsService {
             <p style="margin: 10px 0;"><strong>الخدمة:</strong> ${serviceName}</p>
             <p style="margin: 10px 0;"><strong>المبلغ:</strong> ${amount} ر.ق</p>
           </div>
-          <a href="https://dousha.com/client/dashboard" style="display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">مراجعة العرض</a>
+          <a href="${this.appBaseUrl}/client/dashboard" style="display: inline-block; background: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">مراجعة العرض</a>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>© 2026 Dousha. جميع الحقوق محفوظة.</p>
+          <p>© 2026 Doha Events. جميع الحقوق محفوظة.</p>
         </div>
       </div>
     `;
@@ -239,10 +242,10 @@ export class NotificationsService {
           <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0; font-style: italic;">
             "${messagePreview}"
           </div>
-          <a href="https://dousha.com/messages" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">الرد على الرسالة</a>
+          <a href="${this.appBaseUrl}/messages" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">الرد على الرسالة</a>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>© 2026 Dousha. جميع الحقوق محفوظة.</p>
+          <p>© 2026 Doha Events. جميع الحقوق محفوظة.</p>
         </div>
       </div>
     `;
@@ -264,10 +267,10 @@ export class NotificationsService {
             <li>الظهور في نتائج البحث</li>
             <li>الحصول على شارة "موثق"</li>
           </ul>
-          <a href="https://dousha.com/vendor/dashboard" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">الذهاب إلى لوحة التحكم</a>
+          <a href="${this.appBaseUrl}/vendor/dashboard" style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">الذهاب إلى لوحة التحكم</a>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>© 2026 Dousha. جميع الحقوق محفوظة.</p>
+          <p>© 2026 Doha Events. جميع الحقوق محفوظة.</p>
         </div>
       </div>
     `;
@@ -292,10 +295,10 @@ export class NotificationsService {
             <p style="margin: 10px 0;"><strong>التاريخ:</strong> ${eventDate}</p>
           </div>
           <p style="font-size: 14px; color: #6b7280;">تأكد من إتمام جميع الترتيبات!</p>
-          <a href="https://dousha.com/client/events" style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">إدارة الفعالية</a>
+          <a href="${this.appBaseUrl}/client/events" style="display: inline-block; background: #8b5cf6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; margin-top: 20px;">إدارة الفعالية</a>
         </div>
         <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-          <p>© 2026 Dousha. جميع الحقوق محفوظة.</p>
+          <p>© 2026 Doha Events. جميع الحقوق محفوظة.</p>
         </div>
       </div>
     `;

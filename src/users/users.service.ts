@@ -8,6 +8,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { sanitizeSearch } from '../common/sanitize';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { CreateUserDto, UserRole } from './dto/create-user.dto';
@@ -84,7 +85,9 @@ export class UsersService {
       .single();
 
     if (profileError || !profile) {
-      this.logger.error(`Failed to upsert user profile: ${profileError?.message}`);
+      this.logger.error(
+        `Failed to upsert user profile: ${profileError?.message}`,
+      );
       throw new BadRequestException(
         'Failed to create user profile. Please contact support.',
       );
@@ -229,8 +232,9 @@ export class UsersService {
       .order('created_at', { ascending: sortOrder === 'asc' });
 
     if (search) {
+      const term = sanitizeSearch(search);
       queryBuilder = queryBuilder.or(
-        `full_name.ilike.%${search}%,email.ilike.%${search}%`,
+        `full_name.ilike.%${term}%,email.ilike.%${term}%`,
       );
     }
 
@@ -249,6 +253,34 @@ export class UsersService {
     }
 
     return { data: data || [], total: count || 0 };
+  }
+
+  async searchProfiles(
+    query: string,
+    requesterId: string,
+    limit: number = 8,
+  ): Promise<
+    Pick<UserProfile, 'id' | 'full_name' | 'email' | 'avatar_url' | 'role'>[]
+  > {
+    const searchTerm = query.trim();
+    if (searchTerm.length < 2) {
+      return [];
+    }
+
+    const { data, error } = await this.supabase
+      .from('user_profiles')
+      .select('id, full_name, email, avatar_url, role')
+      .neq('id', requesterId)
+      .neq('role', UserRole.ADMIN)
+      .or(`full_name.ilike.%${sanitizeSearch(searchTerm)}%,email.ilike.%${sanitizeSearch(searchTerm)}%`)
+      .order('full_name', { ascending: true })
+      .limit(Math.min(limit, 20));
+
+    if (error) {
+      throw new BadRequestException(error.message);
+    }
+
+    return data || [];
   }
 
   async findOne(id: string): Promise<UserProfile> {
@@ -361,17 +393,11 @@ export class UsersService {
    */
   async logout(jti: string | undefined, userId: string): Promise<void> {
     if (jti) {
-      this.authCache.blacklistToken(jti);
+      await this.authCache.blacklistToken(jti);
     }
-    this.authCache.invalidateUser(userId);
+    await this.authCache.invalidateUser(userId);
 
-    await this.auditLogService.log(
-      userId,
-      'user_logout',
-      'users',
-      userId,
-      {},
-    );
+    await this.auditLogService.log(userId, 'user_logout', 'users', userId, {});
   }
 
   private async generateToken(

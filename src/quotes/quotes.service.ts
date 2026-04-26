@@ -11,6 +11,7 @@ import { CreateQuoteRequestDto } from './dto/quote-request.dto';
 import { Quote } from './entities/quote.entity';
 import { QuoteRequest } from './entities/quote-request.entity';
 import { MessagesService } from '../messages/messages.service';
+import { sanitizeSearch } from '../common/sanitize';
 
 @Injectable()
 export class QuotesService {
@@ -58,7 +59,7 @@ export class QuotesService {
     }
 
     if (search) {
-      q = q.ilike('notes', `%${search}%`);
+      q = q.ilike('notes', `%${sanitizeSearch(search)}%`);
     }
 
     if (limit !== undefined && offset !== undefined) {
@@ -257,7 +258,7 @@ export class QuotesService {
     }
 
     if (search) {
-      q = q.ilike('notes', `%${search}%`);
+      q = q.ilike('notes', `%${sanitizeSearch(search)}%`);
     }
 
     if (limit !== undefined && offset !== undefined) {
@@ -315,8 +316,8 @@ export class QuotesService {
       await this.supabase.from('notifications').insert({
         user_id: quote.client_id,
         type: 'quote',
-        title: 'عرض سعر جديد',
-        message: `لديك عرض سعر جديد بمبلغ ${quote.total_amount}`,
+        title: 'New quote',
+        message: `You have a new quote for ${quote.total_amount} MAD`,
         is_read: false,
         data: { quote_id: quote.id },
       });
@@ -404,11 +405,11 @@ export class QuotesService {
     // Notify provider about quote status change
     try {
       const statusTitle =
-        status === 'accepted' ? 'تم قبول عرض السعر' : 'تم رفض عرض السعر';
+        status === 'accepted' ? 'Quote accepted' : 'Quote rejected';
       const statusMsg =
         status === 'accepted'
-          ? 'قبل العميل عرض السعر الخاص بك'
-          : 'رفض العميل عرض السعر الخاص بك';
+          ? 'The client has accepted your quote'
+          : 'The client has rejected your quote';
       await this.supabase.from('notifications').insert({
         user_id: quote.provider_id,
         type: `quote_${status}`,

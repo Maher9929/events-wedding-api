@@ -80,7 +80,7 @@ describe('PaymentsService', () => {
         data: null,
         error: { message: 'nf' },
       });
-      await expect(service.createPaymentIntent('x', 5000)).rejects.toThrow(
+      await expect(service.createPaymentIntent('x', undefined, 5000)).rejects.toThrow(
         NotFoundException,
       );
     });
@@ -96,7 +96,7 @@ describe('PaymentsService', () => {
         },
         error: null,
       });
-      await expect(service.createPaymentIntent('b1', -100)).rejects.toThrow(
+      await expect(service.createPaymentIntent('b1', undefined, -100)).rejects.toThrow(
         BadRequestException,
       );
     });
@@ -114,8 +114,9 @@ describe('PaymentsService', () => {
       });
       const result = await service.createPaymentIntent(
         'b1',
+        undefined,
         5000,
-        'qar',
+        'mad',
         'full',
       );
       expect(result).toHaveProperty('clientSecret');

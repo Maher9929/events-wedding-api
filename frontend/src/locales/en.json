@@ -49,6 +49,7 @@
             "quotes": "Quotes",
             "commissions": "Commissions",
             "audit_logs": "Audit Logs",
+            "disputes": "Disputes",
             "actions": "Actions",
             "all_roles": "All roles",
             "confirm_delete": "Confirm Delete",
@@ -386,6 +387,7 @@
         "view_receipt": "View Receipt",
         "booking_info": "Booking Information",
         "total_amount": "Total Amount",
+        "locked_price": "Service price at booking time",
         "platform_fee": "Platform Fee",
         "created_at": "Created At",
         "cancellation_reason": "Cancellation Reason",
@@ -421,8 +423,7 @@
         "Al Shamal": "North City",
         "Al Shahaniya": "Al Shahaniya",
         "Umm Salal": "Umm Salal",
-        "Al Daayen": "Al Daayen",
-        "doha": "Doha"
+        "Al Daayen": "Al Daayen"
     },
     "notifications": {
         "unread": "Unread",
@@ -1087,6 +1088,7 @@
             "experience": "Experience",
             "years": "years",
             "response_time": "Response Time",
+            "response_rate": "Response Rate",
             "categories": "Categories",
             "styles": "Event Styles",
             "languages": "Languages",
@@ -1231,7 +1233,7 @@
         "doc_types": {
             "id_card": "ID Card",
             "business_license": "Business License",
-            "tax_certificate": "Tax Certificate",
+            "business_registration": "Business Registration",
             "insurance": "Insurance",
             "portfolio": "Portfolio",
             "other": "Other"
@@ -1352,10 +1354,87 @@
         "nov": "November",
         "dec": "December"
     },
+    "messages_page": {
+        "new_conversation": "New Conversation",
+        "search_placeholder": "Search conversations...",
+        "no_conversations": "No conversations yet",
+        "no_conversations_desc": "Conversations you start from services or bookings will appear here.",
+        "click_to_view": "Click to view conversation",
+        "select_conversation": "Select a conversation",
+        "or_start_new": "Start a new conversation with a client or provider",
+        "conversation_fallback": "Conversation",
+        "active": "Online",
+        "safety_banner": "For your safety, sharing phone numbers, emails and social media links is prohibited. Use the platform only.",
+        "no_messages_yet": "No messages yet",
+        "attachment": "Attachment",
+        "download_file": "Download file",
+        "type_message": "Type your message...",
+        "send": "Send",
+        "send_error": "Failed to send message",
+        "create_success": "Conversation created successfully",
+        "create_error": "Failed to create conversation",
+        "content_filtered": "Your message was modified — sharing contact information is not allowed",
+        "first_message": "First message",
+        "first_message_placeholder": "Write your first message here...",
+        "recipient": "Search for recipient",
+        "recipient_placeholder": "Type name or email",
+        "recipient_hint": "Search by name or email",
+        "no_recipient_results": "No matching results",
+        "change_recipient": "Change"
+    },
     "dashboard": {
         "loading": "Loading dashboard..."
     },
     "user": {
         "default_name": "User"
+    },
+    "disputes": {
+        "report_problem": "Report a Problem",
+        "open_title": "Report a Problem",
+        "open_desc": "Describe the issue and our team will review it and make a decision.",
+        "reason": "Dispute Reason",
+        "description": "Problem Description",
+        "desc_placeholder": "Explain the problem in detail...",
+        "desc_required": "Please describe the problem",
+        "submit": "Submit Dispute",
+        "created": "Dispute opened — our team will review it",
+        "create_failed": "Failed to open dispute",
+        "admin_title": "Dispute Management",
+        "admin_desc": "Review and resolve disputes between clients and providers",
+        "load_failed": "Failed to load disputes",
+        "none": "No disputes",
+        "unknown_service": "Service",
+        "opened_by": "Opened by",
+        "provider_response": "Provider Response",
+        "resolution": "Resolution",
+        "resolve_btn": "Resolve Dispute",
+        "resolve_title": "Resolve Dispute",
+        "decision": "Decision",
+        "notes": "Notes",
+        "notes_placeholder": "Reason for decision...",
+        "confirm_resolve": "Confirm Resolution",
+        "resolved": "Resolved",
+        "resolve_failed": "Failed to resolve dispute",
+        "reasons": {
+            "not_delivered": "Service not delivered",
+            "quality": "Quality issue",
+            "late": "Late arrival",
+            "wrong": "Different service than agreed",
+            "overcharged": "Overcharged",
+            "no_show": "Provider did not show up",
+            "other": "Other reason"
+        },
+        "status": {
+            "open": "Open",
+            "under_review": "Under Review",
+            "resolved": "Resolved"
+        },
+        "resolutions": {
+            "refund_full": "Full refund",
+            "refund_partial": "Partial refund (50%)",
+            "no_refund": "No refund",
+            "redo": "Redo service",
+            "dismissed": "Dispute dismissed"
+        }
     }
 }

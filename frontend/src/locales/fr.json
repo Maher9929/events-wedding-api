@@ -49,6 +49,7 @@
             "quotes": "Devis",
             "commissions": "Commissions",
             "audit_logs": "Logs d'Audit",
+            "disputes": "Litiges",
             "actions": "Actions",
             "all_roles": "Tous les roles",
             "confirm_delete": "Confirmer la suppression",
@@ -386,6 +387,7 @@
         "view_receipt": "Voir le recu",
         "booking_info": "Informations de reservation",
         "total_amount": "Montant total",
+        "locked_price": "Prix du service au moment de la reservation",
         "platform_fee": "Frais de plateforme",
         "created_at": "Creee le",
         "cancellation_reason": "Raison de l'annulation",
@@ -421,8 +423,7 @@
         "Al Shamal": "Madinat ash Shamal",
         "Al Shahaniya": "Al Shahaniya",
         "Umm Salal": "Umm Salal",
-        "Al Daayen": "Al Daayen",
-        "doha": "Doha"
+        "Al Daayen": "Al Daayen"
     },
     "notifications": {
         "unread": "Non lu",
@@ -1087,6 +1088,7 @@
             "experience": "Experience",
             "years": "ans",
             "response_time": "Temps de reponse",
+            "response_rate": "Taux de reponse",
             "categories": "Categories",
             "styles": "Styles d'evenements",
             "languages": "Langues",
@@ -1231,7 +1233,7 @@
         "doc_types": {
             "id_card": "Carte d'identite",
             "business_license": "Licence commerciale",
-            "tax_certificate": "Certificat fiscal",
+            "business_registration": "Registre du commerce",
             "insurance": "Assurance",
             "portfolio": "Portfolio",
             "other": "Autre"
@@ -1352,10 +1354,87 @@
         "nov": "Novembre",
         "dec": "Decembre"
     },
+    "messages_page": {
+        "new_conversation": "Nouvelle conversation",
+        "search_placeholder": "Rechercher dans les conversations...",
+        "no_conversations": "Aucune conversation",
+        "no_conversations_desc": "Les conversations que vous demarrez depuis les services ou les reservations apparaitront ici.",
+        "click_to_view": "Cliquez pour voir la conversation",
+        "select_conversation": "Selectionnez une conversation",
+        "or_start_new": "Commencez une nouvelle conversation avec un client ou un prestataire",
+        "conversation_fallback": "Conversation",
+        "active": "En ligne",
+        "safety_banner": "Pour votre securite, le partage de numeros de telephone, d'emails et de liens de reseaux sociaux est interdit. Utilisez uniquement la plateforme.",
+        "no_messages_yet": "Pas encore de messages",
+        "attachment": "Piece jointe",
+        "download_file": "Telecharger le fichier",
+        "type_message": "Ecrivez votre message...",
+        "send": "Envoyer",
+        "send_error": "Echec de l'envoi du message",
+        "create_success": "Conversation creee avec succes",
+        "create_error": "Echec de la creation de la conversation",
+        "content_filtered": "Votre message a ete modifie — le partage d'informations de contact n'est pas autorise",
+        "first_message": "Premier message",
+        "first_message_placeholder": "Ecrivez votre premier message ici...",
+        "recipient": "Rechercher le destinataire",
+        "recipient_placeholder": "Tapez le nom ou l'email",
+        "recipient_hint": "Recherchez par nom ou email",
+        "no_recipient_results": "Aucun resultat correspondant",
+        "change_recipient": "Changer"
+    },
     "dashboard": {
         "loading": "Chargement du tableau de bord..."
     },
     "user": {
         "default_name": "Utilisateur"
+    },
+    "disputes": {
+        "report_problem": "Signaler un probleme",
+        "open_title": "Signaler un probleme",
+        "open_desc": "Decrivez le probleme et notre equipe l'examinera pour prendre une decision.",
+        "reason": "Raison du litige",
+        "description": "Description du probleme",
+        "desc_placeholder": "Expliquez le probleme en detail...",
+        "desc_required": "Veuillez decrire le probleme",
+        "submit": "Envoyer le litige",
+        "created": "Litige ouvert — notre equipe l'examinera",
+        "create_failed": "Echec de l'ouverture du litige",
+        "admin_title": "Gestion des litiges",
+        "admin_desc": "Examiner et resoudre les litiges entre clients et prestataires",
+        "load_failed": "Echec du chargement des litiges",
+        "none": "Aucun litige",
+        "unknown_service": "Service",
+        "opened_by": "Ouvert par",
+        "provider_response": "Reponse du prestataire",
+        "resolution": "Decision",
+        "resolve_btn": "Resoudre le litige",
+        "resolve_title": "Resoudre le litige",
+        "decision": "Decision",
+        "notes": "Notes",
+        "notes_placeholder": "Raison de la decision...",
+        "confirm_resolve": "Confirmer la decision",
+        "resolved": "Resolu",
+        "resolve_failed": "Echec de la resolution du litige",
+        "reasons": {
+            "not_delivered": "Service non fourni",
+            "quality": "Probleme de qualite",
+            "late": "Retard",
+            "wrong": "Service different de celui convenu",
+            "overcharged": "Surfacturation",
+            "no_show": "Le prestataire ne s'est pas presente",
+            "other": "Autre raison"
+        },
+        "status": {
+            "open": "Ouvert",
+            "under_review": "En cours d'examen",
+            "resolved": "Resolu"
+        },
+        "resolutions": {
+            "refund_full": "Remboursement complet",
+            "refund_partial": "Remboursement partiel (50%)",
+            "no_refund": "Pas de remboursement",
+            "redo": "Refaire le service",
+            "dismissed": "Litige rejete"
+        }
     }
 }

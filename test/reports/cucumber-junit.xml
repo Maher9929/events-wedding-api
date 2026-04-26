@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<testsuite name="Cucumber" time="104.808" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-04-20T09:41:17.994Z">
+  <testcase classname="Administration de la plateforme" name="Tableau de bord administrateur" time="3.048">
+    <system-out><![CDATA[Given je suis connecté en tant qu'admin.....................................passed
+When je vais sur le dashboard admin.........................................passed
+Then je devrais voir les statistiques globales..............................passed
+And je devrais voir le nombre total d'utilisateurs..........................passed
+And je devrais voir le nombre de réservations...............................passed]]></system-out>
+  </testcase>
+  <testcase classname="Authentification des utilisateurs" name="Inscription d'un nouveau client" time="2.634">
+    <system-out><![CDATA[Given je suis sur la page d'inscription.....................................passed
+When je remplis le formulaire avec un email "test_client@dousha.com" et mot de passe "Test1234!"..passed
+And je sélectionne le rôle "client".........................................passed
+And je clique sur le bouton d'inscription...................................passed
+Then je devrais être redirigé vers le dashboard client......................passed
+And je devrais voir un message de bienvenue.................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Authentification des utilisateurs" name="Connexion d'un utilisateur existant" time="2.654">
+    <system-out><![CDATA[Given je suis sur la page de connexion......................................passed
+When je saisis l'email "client@test.com" et le mot de passe "Test1234!".....passed
+And je clique sur le bouton de connexion....................................passed
+Then je devrais être redirigé vers le dashboard approprié...................passed
+And le token JWT devrait être stocké dans le localStorage...................passed]]></system-out>
+  </testcase>
+  <testcase classname="Réservation et paiement" name="Réservation d'un service" time="2.456">
+    <system-out><![CDATA[Given je suis connecté en tant que client...................................passed
+And je consulte le service "Photographie Mariage"...........................passed
+When je clique sur "Réserver"...............................................passed
+And je sélectionne la date "2026-06-15".....................................passed
+And je confirme la réservation..............................................passed
+Then la réservation devrait être créée avec le statut "pending".............passed
+And je devrais recevoir une notification de confirmation....................passed]]></system-out>
+  </testcase>
+  <testcase classname="Réservation et paiement" name="Paiement par carte bancaire (Stripe)" time="6.188">
+    <system-out><![CDATA[Given je suis connecté en tant que client...................................passed
+And j'ai une réservation en attente de paiement.............................passed
+When je vais sur la page de paiement........................................passed
+And je saisis la carte de test "4242424242424242"...........................passed
+And je saisis la date d'expiration "12/30" et le CVV "123"..................passed
+And je clique sur "Payer"...................................................passed
+Then le paiement devrait être traité avec succès............................passed
+And le statut de la réservation devrait passer à "fully_paid"...............passed
+And je devrais voir un reçu de paiement.....................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Gestion des événements" name="Création d'un événement" time="3.585">
+    <system-out><![CDATA[Given je suis connecté en tant que client...................................passed
+And je suis sur la page "Mes événements"....................................passed
+When je clique sur "Créer un événement".....................................passed
+And je remplis le titre "Mon Mariage".......................................passed
+And je sélectionne le type "wedding"........................................passed
+And je sélectionne la date "2026-09-20".....................................passed
+And je remplis le budget "50000"............................................passed
+And je remplis le nombre d'invités "200"....................................passed
+And je clique sur "Créer"...................................................passed
+Then l'événement devrait être créé avec succès..............................passed
+And je devrais être redirigé vers le tableau de bord de l'événement.........passed]]></system-out>
+  </testcase>
+  <testcase classname="Gestion des événements" name="Gestion de la checklist d'un événement" time="11.075">
+    <system-out><![CDATA[Given je suis connecté en tant que client...................................passed
+And j'ai un événement existant..............................................passed
+When je vais dans l'onglet "Checklist"......................................passed
+And j'ajoute une tâche "Réserver le traiteur"...............................passed
+Then la tâche devrait apparaître dans la liste..............................passed
+When je marque la tâche comme complétée.....................................passed
+Then la progression devrait se mettre à jour................................passed]]></system-out>
+  </testcase>
+  <testcase classname="Devis et Messagerie" name="Envoi d'une demande de devis" time="28.081">
+    <system-out><![CDATA[Given je suis connecté en tant que client...................................passed
+And je consulte le service "Décoration Florale".............................passed
+When je clique sur "Demander un devis"......................................passed
+And je remplis le message "Je souhaite un devis pour mon mariage le 20 septembre"..passed
+And je spécifie la date souhaitée "2026-09-20"..............................passed
+And je spécifie le nombre d'invités "200"...................................passed
+And je clique sur "Envoyer".................................................passed
+Then la demande de devis devrait être envoyée avec succès...................passed
+And le prestataire devrait recevoir une notification........................passed]]></system-out>
+  </testcase>
+  <testcase classname="Gestion des services" name="Affichage du catalogue de services" time="1.791">
+    <system-out><![CDATA[Given je suis sur la page d'accueil.........................................passed
+When je clique sur "Parcourir les services".................................passed
+Then je devrais voir la liste des services disponibles......................passed
+And chaque service devrait afficher un titre, un prix et une catégorie......passed]]></system-out>
+  </testcase>
+  <testcase classname="Gestion des services" name="Création d'un service par un prestataire" time="43.219">
+    <system-out><![CDATA[Given je suis connecté en tant que prestataire..............................passed
+And je suis sur la page "Mes services"......................................passed
+When je clique sur "Ajouter un service".....................................passed
+And je remplis le titre "Photographie Mariage Premium"......................passed
+And je remplis le prix "5000"...............................................passed
+And je sélectionne le type de prix "package"................................passed
+And je sélectionne la catégorie "Photographie"..............................passed
+And je clique sur "Créer"...................................................passed
+Then le service devrait apparaître dans ma liste............................passed
+And je devrais voir un message de succès....................................passed]]></system-out>
+  </testcase>
+</testsuite>

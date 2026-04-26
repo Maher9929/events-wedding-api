@@ -11,6 +11,8 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { QueryServiceDto } from './dto/query-service.dto';
 import { Service } from './entities/service.entity';
+import { filterContactInfo } from '../common/content-filter';
+import { sanitizeSearch } from '../common/sanitize';
 
 @Injectable()
 export class ServicesService {
@@ -36,10 +38,18 @@ export class ServicesService {
       throw new ForbiddenException('Provider profile not found');
     }
 
+    // Sanitize text fields to prevent contact info leakage
+    const sanitizedTitle = filterContactInfo(createServiceDto.title).content;
+    const sanitizedDesc = filterContactInfo(
+      createServiceDto.description,
+    ).content;
+
     const { data, error } = await this.supabase
       .from('services')
       .insert({
         ...createServiceDto,
+        title: sanitizedTitle,
+        description: sanitizedDesc,
         provider_id: providerId,
         currency: createServiceDto.currency || 'MAD',
         is_active: createServiceDto.is_active ?? true,
@@ -102,8 +112,9 @@ export class ServicesService {
 
     // Apply filters
     if (query.search) {
+      const term = sanitizeSearch(query.search);
       queryBuilder = queryBuilder.or(
-        `title.ilike.%${query.search}%,description.ilike.%${query.search}%,short_description.ilike.%${query.search}%`,
+        `title.ilike.%${term}%,description.ilike.%${term}%,short_description.ilike.%${term}%`,
       );
     }
 
@@ -149,6 +160,12 @@ export class ServicesService {
       queryBuilder = queryBuilder.eq('is_active', query.is_active);
     } else {
       queryBuilder = queryBuilder.eq('is_active', true);
+    }
+
+    // Public listings: only show services from verified providers
+    // Skip this filter when a provider queries their own services
+    if (!query.provider_id) {
+      queryBuilder = queryBuilder.eq('providers.is_verified', true);
     }
 
     if (query.is_featured !== undefined) {
@@ -223,7 +240,7 @@ export class ServicesService {
 
     if (query.event_style) {
       services = services.filter((service) => {
-        const eventStyles = (service.providers as any)?.event_styles;
+        const eventStyles = service.providers?.event_styles;
         return Array.isArray(eventStyles)
           ? eventStyles.includes(query.event_style)
           : true;
@@ -240,8 +257,8 @@ export class ServicesService {
 
     if (sortBy === 'review_count') {
       services = [...services].sort((a, b) => {
-        const aCount = Number((a.providers as any)?.review_count || 0);
-        const bCount = Number((b.providers as any)?.review_count || 0);
+        const aCount = Number(a.providers?.review_count || 0);
+        const bCount = Number(b.providers?.review_count || 0);
         return sortOrder === 'asc' ? aCount - bCount : bCount - aCount;
       });
     }
@@ -316,7 +333,9 @@ export class ServicesService {
         .single();
 
       if (createErr || !newProvider) {
-        this.logger.error(`Failed to auto-create provider profile: ${createErr?.message}`);
+        this.logger.error(
+          `Failed to auto-create provider profile: ${createErr?.message}`,
+        );
         throw new ForbiddenException(
           'You must have a provider profile to create services',
         );
@@ -445,6 +464,7 @@ export class ServicesService {
       )
       .eq('category_id', categoryId)
       .eq('is_active', true)
+      .eq('providers.is_verified', true)
       .order('providers.rating_avg', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit);
@@ -479,12 +499,15 @@ export class ServicesService {
       )
       .eq('is_featured', true)
       .eq('is_active', true)
+      .not('providers', 'is', null)
       .or('featured_until.is.null,featured_until.gt.now()')
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (featuredError) {
-      this.logger.warn(`Error fetching featured services: ${featuredError.message}`);
+      this.logger.warn(
+        `Error fetching featured services: ${featuredError.message}`,
+      );
     }
 
     // If we have featured services, return them
@@ -513,6 +536,7 @@ export class ServicesService {
       `,
       )
       .eq('is_active', true)
+      .not('providers', 'is', null)
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -549,9 +573,18 @@ export class ServicesService {
       throw new ForbiddenException('You can only update your own services');
     }
 
+    // Sanitize text fields if present
+    const sanitizedDto = { ...updateServiceDto };
+    if (sanitizedDto.title)
+      sanitizedDto.title = filterContactInfo(sanitizedDto.title).content;
+    if (sanitizedDto.description)
+      sanitizedDto.description = filterContactInfo(
+        sanitizedDto.description,
+      ).content;
+
     const { data, error } = await this.supabase
       .from('services')
-      .update(updateServiceDto)
+      .update(sanitizedDto)
       .eq('id', id)
       .select(
         `

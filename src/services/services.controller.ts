@@ -17,10 +17,13 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { QueryServiceDto } from './dto/query-service.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
+import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
+@ApiTags('services')
 @Controller('services')
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
@@ -28,7 +31,7 @@ export class ServicesController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
-  async create(@Body() createServiceDto: CreateServiceDto, @Request() req) {
+  async create(@Body() createServiceDto: CreateServiceDto, @Request() req: AuthenticatedRequest) {
     return await this.servicesService.createByUserId(
       req.user.id,
       createServiceDto,
@@ -61,7 +64,7 @@ export class ServicesController {
   @Get('my-services')
   @UseGuards(JwtAuthGuard)
   async findMyServices(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string,
   ) {
@@ -83,7 +86,7 @@ export class ServicesController {
   async update(
     @Param('id') id: string,
     @Body() updateServiceDto: UpdateServiceDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.servicesService.update(id, req.user.id, updateServiceDto);
   }
@@ -107,7 +110,7 @@ export class ServicesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string, @Request() req) {
+  async remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     await this.servicesService.remove(id, req.user.id);
   }
 }

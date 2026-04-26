@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { apiService } from '../services/api';
 import { servicesService } from '../services/services.service';
 import { categoriesService } from '../services/categories.service';
 import { uploadService } from '../services/upload.service';
@@ -22,6 +24,7 @@ const ProviderServicesPage = () => {
     const [uploadingPhotos, setUploadingPhotos] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { confirm, ConfirmDialogComponent } = useConfirmDialog();
+    const [providerVerified, setProviderVerified] = useState<boolean | null>(null);
     const [formData, setFormData] = useState({
         title: '',
         description: '',
@@ -33,6 +36,9 @@ const ProviderServicesPage = () => {
 
     useEffect(() => {
         loadData();
+        apiService.get<{ is_verified?: boolean }>('/providers/my-profile')
+            .then(p => setProviderVerified(p?.is_verified ?? false))
+            .catch(() => {});
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const loadData = async () => {
@@ -185,6 +191,21 @@ const ProviderServicesPage = () => {
 
     return (
         <div className="space-y-6" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
+            {/* Verification Warning */}
+            {providerVerified === false && (
+                <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-start gap-3">
+                    <i className="fa-solid fa-eye-slash text-amber-600 text-lg mt-0.5"></i>
+                    <div className="flex-1">
+                        <p className="font-bold text-amber-800">{t('provider_services.hidden_warning_title', 'خدماتك مخفية عن العملاء')}</p>
+                        <p className="text-sm text-amber-700 mt-0.5">{t('provider_services.hidden_warning_desc', 'حسابك غير موثق بعد. لن تظهر خدماتك في نتائج البحث حتى يتم التحقق.')}</p>
+                        <Link to="/provider/verification" className="inline-flex items-center gap-1 mt-2 text-sm font-bold text-amber-700 hover:text-amber-900">
+                            <i className="fa-solid fa-arrow-up-from-bracket"></i>
+                            {t('provider_services.verify_link', 'ارفع مستنداتك للتحقق')}
+                        </Link>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>

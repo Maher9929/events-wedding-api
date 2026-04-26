@@ -1,4 +1,5 @@
 import { Controller, Get, Inject } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Public } from './auth/decorators/public.decorator';
@@ -18,13 +19,20 @@ export class AppController {
 
   @Public()
   @Get('health')
-  getHealth(): any {
+  async getHealth() {
     return this.appService.getHealth();
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 30 } })
   @Get('stats')
-  async getStats() {
+  async getStats(): Promise<{
+    providers: number;
+    services: number;
+    categories: number;
+    completed_bookings: number;
+    total_events: number;
+  }> {
     const [providers, services, categories, bookings, events] =
       await Promise.all([
         this.supabase

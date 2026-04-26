@@ -46,19 +46,19 @@ export class InvoiceService {
       .fillColor('#6366f1')
       .fontSize(28)
       .font('Helvetica-Bold')
-      .text('DOUSHA', 50, 50);
+      .text('DOHA EVENTS', 50, 50);
 
     doc
       .fillColor('#1e293b')
       .fontSize(10)
       .font('Helvetica')
-      .text('Plateforme Événements & Mariages', 50, 85);
+      .text('Events & Wedding Marketplace', 50, 85);
 
     doc
       .fillColor('#6366f1')
       .fontSize(22)
       .font('Helvetica-Bold')
-      .text('FACTURE', 400, 50, { align: 'right' });
+      .text('INVOICE', 400, 50, { align: 'right' });
 
     doc
       .fillColor('#64748b')
@@ -84,7 +84,7 @@ export class InvoiceService {
       .fillColor('#1e293b')
       .fontSize(11)
       .font('Helvetica-Bold')
-      .text('FACTURÉ À:', 50, 140);
+      .text('BILLED TO:', 50, 140);
     doc
       .font('Helvetica')
       .fontSize(10)
@@ -97,12 +97,12 @@ export class InvoiceService {
       .fillColor('#1e293b')
       .fontSize(11)
       .font('Helvetica-Bold')
-      .text('PRESTATAIRE:', 300, 140);
+      .text('PROVIDER:', 300, 140);
     doc
       .font('Helvetica')
       .fontSize(10)
       .fillColor('#334155')
-      .text(provider?.company_name || 'Prestataire', 300, 158)
+      .text(provider?.company_name || 'Provider', 300, 158)
       .text(provider?.city || '', 300, 172);
 
     // ─── Booking Details ────────────────────────────────────────────────────
@@ -116,18 +116,18 @@ export class InvoiceService {
       .fontSize(10)
       .font('Helvetica-Bold')
       .text('SERVICE', 60, 239)
-      .text('DATE RÉSERVATION', 220, 239)
-      .text('STATUT PAIEMENT', 360, 239)
-      .text('MONTANT', 480, 239);
+      .text('BOOKING DATE', 220, 239)
+      .text('PAYMENT STATUS', 360, 239)
+      .text('AMOUNT', 480, 239);
 
     doc.moveTo(50, 256).lineTo(545, 256).strokeColor('#e2e8f0').stroke();
 
     // Table row
     const paymentStatusMap: Record<string, string> = {
-      pending: 'En attente',
-      deposit_paid: 'Acompte payé',
-      fully_paid: 'Payé intégralement',
-      refunded: 'Remboursé',
+      pending: 'Pending',
+      deposit_paid: 'Deposit paid',
+      fully_paid: 'Fully paid',
+      refunded: 'Refunded',
     };
 
     doc
@@ -147,7 +147,7 @@ export class InvoiceService {
         360,
         265,
       )
-      .text(`${Number(booking.amount || 0).toFixed(2)} QAR`, 480, 265);
+      .text(`${Number(booking.amount || 0).toFixed(2)} MAD`, 480, 265);
 
     // ─── Totals ─────────────────────────────────────────────────────────────
     doc.moveTo(50, 300).lineTo(545, 300).strokeColor('#e2e8f0').stroke();
@@ -161,13 +161,13 @@ export class InvoiceService {
       .fillColor('#334155')
       .fontSize(10)
       .font('Helvetica')
-      .text('Sous-total:', 380, 315)
-      .text(`${grossAmount.toFixed(2)} QAR`, 480, 315);
+      .text('Subtotal:', 380, 315)
+      .text(`${grossAmount.toFixed(2)} MAD`, 480, 315);
 
     if (platformFee > 0) {
       doc
-        .text(`Frais de plateforme (${platformFeeRate}%):`, 380, 330)
-        .text(`${platformFee.toFixed(2)} QAR`, 480, 330);
+        .text(`Platform fee (${platformFeeRate}%):`, 380, 330)
+        .text(`${platformFee.toFixed(2)} MAD`, 480, 330);
     }
 
     doc
@@ -175,7 +175,7 @@ export class InvoiceService {
       .fontSize(13)
       .font('Helvetica-Bold')
       .text('TOTAL:', 380, platformFee > 0 ? 350 : 335)
-      .text(`${grossAmount.toFixed(2)} QAR`, 480, platformFee > 0 ? 350 : 335);
+      .text(`${grossAmount.toFixed(2)} MAD`, 480, platformFee > 0 ? 350 : 335);
 
     // ─── Notes ──────────────────────────────────────────────────────────────
     if (booking.notes) {
@@ -201,7 +201,7 @@ export class InvoiceService {
       .fontSize(8)
       .font('Helvetica')
       .text(
-        'DOUSHA — Plateforme Événements & Mariages | Document généré automatiquement',
+        'DOHA EVENTS — Wedding & Events Marketplace | Auto-generated document',
         50,
         760,
         { align: 'center', width: 495 },

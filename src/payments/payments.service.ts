@@ -4,18 +4,41 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { AuditLogService } from '../common/audit-log.service';
+import { COMMISSION_RATE, DEFAULT_CURRENCY } from '../common/constants';
+
+/** Fields used by the payment helpers — keeps the service free of `any`. */
+interface BookingRecord {
+  id: string;
+  amount: number;
+  deposit_amount?: number;
+  deposit_percentage?: number;
+  balance_amount?: number;
+  platform_fee?: number;
+  payment_status: string;
+  payment_intent_id?: string;
+  payment_intent_ids?: string[];
+  status: string;
+  client_id: string;
+  provider_id: string;
+  booking_date?: string;
+  refund_policy_id?: string;
+  cancellation_reason?: string;
+  receipt_url?: string;
+}
 
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
 
-  private readonly commissionRate = 0.1;
-  private readonly defaultCurrency = 'qar';
+  private readonly logger = new Logger(PaymentsService.name);
+  private readonly commissionRate = COMMISSION_RATE;
+  private readonly defaultCurrency = DEFAULT_CURRENCY;
 
   private async getProviderContext(userId: string): Promise<{
     userId: string;
@@ -30,7 +53,7 @@ export class PaymentsService {
     return { userId, providerId: error ? null : provider?.id || null };
   }
 
-  async assertBookingAccess(bookingId: string, userId?: string): Promise<any> {
+  async assertBookingAccess(bookingId: string, userId?: string): Promise<BookingRecord> {
     const { data: booking, error } = await this.supabase
       .from('bookings')
       .select('*')
@@ -63,7 +86,7 @@ export class PaymentsService {
     return (currency || this.defaultCurrency).toLowerCase();
   }
 
-  private getBookingAmounts(booking: any) {
+  private getBookingAmounts(booking: BookingRecord) {
     const totalAmount = Number(booking.amount || 0);
     const depositAmount =
       Number(booking.deposit_amount || 0) ||
@@ -79,7 +102,7 @@ export class PaymentsService {
   }
 
   private resolveExpectedAmount(
-    booking: any,
+    booking: BookingRecord,
     paymentType: 'deposit' | 'balance' | 'full',
   ): number {
     const { totalAmount, depositAmount, balanceAmount } =
@@ -97,7 +120,7 @@ export class PaymentsService {
   }
 
   private assertPaymentEligibility(
-    booking: any,
+    booking: BookingRecord,
     paymentType: 'deposit' | 'balance' | 'full',
     amount: number,
   ): void {
@@ -165,7 +188,7 @@ export class PaymentsService {
     };
   }
 
-  private async resolveRefundAllowance(booking: any): Promise<number> {
+  private async resolveRefundAllowance(booking: BookingRecord): Promise<number> {
     const { totalPaid, totalRefunded } = await this.getCompletedPaymentTotals(
       booking.id,
     );
@@ -258,7 +281,7 @@ export class PaymentsService {
     const { data: booking, error: bookingError } = await this.supabase
       .from('bookings')
       .select(
-        'id, amount, deposit_amount, balance_amount, payment_status, payment_intent_id, payment_intent_ids, provider_id, client_id, platform_fee',
+        'id, amount, deposit_amount, balance_amount, payment_status, payment_intent_id, payment_intent_ids, provider_id, client_id, platform_fee, status',
       )
       .eq('id', bookingId)
       .single();
@@ -371,7 +394,7 @@ export class PaymentsService {
   }
 
   private async syncCommissionForBooking(
-    booking: any,
+    booking: BookingRecord,
     paymentStatus: string,
     metadata?: Record<string, unknown>,
     grossAmountOverride?: number,
@@ -417,27 +440,11 @@ export class PaymentsService {
 
   async createPaymentIntent(
     bookingId: string,
-    userIdOrAmount: string | number,
-    amountOrCurrency?: number | string,
-    currencyOrPaymentType?: string,
-    maybePaymentType?: 'deposit' | 'balance' | 'full',
+    userId: string | undefined,
+    amount: number,
+    currency?: string,
+    paymentType: 'deposit' | 'balance' | 'full' = 'full',
   ): Promise<{ clientSecret: string; paymentIntentId: string }> {
-    const userId =
-      typeof userIdOrAmount === 'string' && typeof amountOrCurrency === 'number'
-        ? userIdOrAmount
-        : undefined;
-    const amount =
-      typeof userIdOrAmount === 'number'
-        ? userIdOrAmount
-        : (amountOrCurrency as number);
-    const currency =
-      typeof userIdOrAmount === 'number'
-        ? (amountOrCurrency as string) || 'qar'
-        : currencyOrPaymentType || 'qar';
-    const paymentType =
-      typeof userIdOrAmount === 'number'
-        ? (currencyOrPaymentType as 'deposit' | 'balance' | 'full') || 'full'
-        : maybePaymentType || 'full';
 
     const booking = await this.assertBookingAccess(bookingId, userId);
     const { totalAmount, depositAmount } = this.getBookingAmounts(booking);
@@ -505,17 +512,13 @@ export class PaymentsService {
       throw new BadRequestException('No deposit required for this booking');
     }
 
-    if (userId) {
-      return this.createPaymentIntent(
-        bookingId,
-        userId,
-        depositAmount,
-        'qar',
-        'deposit',
-      );
-    }
-
-    return this.createPaymentIntent(bookingId, depositAmount, 'qar', 'deposit');
+    return this.createPaymentIntent(
+      bookingId,
+      userId,
+      depositAmount,
+      this.defaultCurrency,
+      'deposit',
+    );
   }
 
   async createBalancePaymentIntent(
@@ -533,17 +536,13 @@ export class PaymentsService {
       throw new BadRequestException('No balance remaining for this booking');
     }
 
-    if (userId) {
-      return this.createPaymentIntent(
-        bookingId,
-        userId,
-        balanceAmount,
-        'qar',
-        'balance',
-      );
-    }
-
-    return this.createPaymentIntent(bookingId, balanceAmount, 'qar', 'balance');
+    return this.createPaymentIntent(
+      bookingId,
+      userId,
+      balanceAmount,
+      this.defaultCurrency,
+      'balance',
+    );
   }
 
   async handleWebhook(payload: Buffer, signature: string): Promise<void> {
@@ -557,9 +556,10 @@ export class PaymentsService {
         signature,
         webhookSecret,
       );
-    } catch (err: any) {
-      console.error(`Webhook signature verification failed: ${err.message}`);
-      throw new BadRequestException(`Webhook Error: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Webhook signature verification failed: ${message}`);
+      throw new BadRequestException(`Webhook Error: ${message}`);
     }
 
     if (event.type === 'payment_intent.succeeded') {
@@ -585,7 +585,7 @@ export class PaymentsService {
           const latestChargeId =
             typeof intent.latest_charge === 'string'
               ? intent.latest_charge
-              : (intent.latest_charge as any)?.id;
+              : (intent.latest_charge as Stripe.Charge | null)?.id;
           if (latestChargeId) {
             const charge = await this.stripe.charges.retrieve(latestChargeId);
             if (charge.receipt_url) {
@@ -692,7 +692,7 @@ export class PaymentsService {
     const reason = maybeReason !== undefined ? maybeReason : userIdOrReason;
     const requestedAmount = maybeReason !== undefined ? maybeAmount : undefined;
 
-    let booking: any;
+    let booking: BookingRecord;
     try {
       booking = await this.assertBookingAccess(bookingId, userId);
     } catch (error) {
@@ -753,7 +753,7 @@ export class PaymentsService {
     const latestChargeId =
       typeof intent.latest_charge === 'string'
         ? intent.latest_charge
-        : (intent.latest_charge as any)?.id;
+        : (intent.latest_charge as Stripe.Charge | null)?.id;
 
     if (!latestChargeId) {
       throw new BadRequestException('No charge found for this payment');
@@ -762,7 +762,7 @@ export class PaymentsService {
     const refund = await this.stripe.refunds.create({
       charge: latestChargeId,
       amount: Math.round(refundAmount * 100),
-      reason: (reason as any) || 'requested_by_customer',
+      reason: (reason as Stripe.RefundCreateParams.Reason) || 'requested_by_customer',
     });
 
     const { totalPaid, totalRefunded } =

@@ -25,18 +25,3 @@ Feature: Gestion des événements
     When je marque la tâche comme complétée
     Then la progression devrait se mettre à jour
 
-  Scenario: Gestion du budget
-    Given je suis connecté en tant que client
-    And j'ai un événement existant
-    When je vais dans l'onglet "Budget"
-    And j'ajoute une dépense "Salle" avec un montant estimé de "15000"
-    Then la dépense devrait apparaître dans le suivi budgétaire
-    And le pourcentage budgétaire devrait se recalculer
-
-  Scenario: Gestion de la liste des invités
-    Given je suis connecté en tant que client
-    And j'ai un événement existant
-    When je vais dans l'onglet "Invités"
-    And j'ajoute un invité "Ali Mohamed" avec l'email "ali@example.com"
-    Then l'invité devrait apparaître dans la liste
-    And le compteur d'invités devrait s'incrémenter

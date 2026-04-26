@@ -10,16 +10,20 @@ import {
   Request,
   Res,
 } from '@nestjs/common';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { PaymentsService } from './payments.service';
 import { InvoiceService } from './invoice.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import type { Response } from 'express';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import type { Request as ExpressRequest, Response } from 'express';
 import {
   ConfirmPaymentDto,
   CreatePaymentIntentDto,
   RefundPaymentDto,
 } from './dto/payment-request.dto';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(
@@ -29,9 +33,10 @@ export class PaymentsController {
 
   @Post('create-intent/:bookingId')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
   async createPaymentIntent(
     @Param('bookingId') bookingId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() body: CreatePaymentIntentDto,
   ) {
     return this.paymentsService.createPaymentIntent(
@@ -47,7 +52,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async createDepositPaymentIntent(
     @Param('bookingId') bookingId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.paymentsService.createDepositPaymentIntent(
       bookingId,
@@ -59,7 +64,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async createBalancePaymentIntent(
     @Param('bookingId') bookingId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.paymentsService.createBalancePaymentIntent(
       bookingId,
@@ -71,7 +76,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async confirmPayment(
     @Param('bookingId') bookingId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() body: ConfirmPaymentDto,
   ) {
     await this.paymentsService.confirmPayment(
@@ -86,16 +91,17 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async getPaymentStatus(
     @Param('bookingId') bookingId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.paymentsService.getPaymentStatus(bookingId, req.user.id);
   }
 
   @Post('refund/:bookingId')
   @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
   async refundPayment(
     @Param('bookingId') bookingId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Body() body: RefundPaymentDto,
   ) {
     return this.paymentsService.refundPayment(
@@ -107,8 +113,9 @@ export class PaymentsController {
   }
 
   @Post('webhook')
+  @SkipThrottle()
   async handleWebhook(
-    @Req() req: any,
+    @Req() req: ExpressRequest & { rawBody: Buffer },
     @Headers('stripe-signature') signature: string,
   ) {
     await this.paymentsService.handleWebhook(req.rawBody, signature);
@@ -118,7 +125,7 @@ export class PaymentsController {
   @UseGuards(JwtAuthGuard)
   async downloadInvoice(
     @Param('bookingId') bookingId: string,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Res() res: Response,
   ) {
     await this.paymentsService.assertBookingAccess(bookingId, req.user.id);

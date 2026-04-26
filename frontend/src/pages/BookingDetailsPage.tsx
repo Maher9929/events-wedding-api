@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { bookingsService, type Booking } from '../services/bookings.service';
+import { disputesService } from '../services/disputes.service';
 import { toastService } from '../services/toast.service';
 
 const BookingDetailsPage = () => {
@@ -13,6 +14,28 @@ const BookingDetailsPage = () => {
     const [cancelling, setCancelling] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
     const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showDisputeModal, setShowDisputeModal] = useState(false);
+    const [disputeReason, setDisputeReason] = useState('service_not_delivered');
+    const [disputeDesc, setDisputeDesc] = useState('');
+    const [submittingDispute, setSubmittingDispute] = useState(false);
+
+    const handleOpenDispute = async () => {
+        if (!id || !disputeDesc.trim()) {
+            toastService.error(t('disputes.desc_required', 'يرجى وصف المشكلة'));
+            return;
+        }
+        setSubmittingDispute(true);
+        try {
+            await disputesService.create({ booking_id: id, reason: disputeReason, description: disputeDesc });
+            setShowDisputeModal(false);
+            setDisputeDesc('');
+            toastService.success(t('disputes.created', 'تم فتح النزاع — سيراجعه فريق الإدارة'));
+        } catch (_error) {
+            toastService.error(t('disputes.create_failed', 'فشل فتح النزاع'));
+        } finally {
+            setSubmittingDispute(false);
+        }
+    };
 
     const locale = i18n.language?.startsWith('ar') ? 'ar-EG' : i18n.language?.startsWith('en') ? 'en-US' : 'fr-FR';
     const currency = t('common.currency', 'QAR');
@@ -170,6 +193,16 @@ const BookingDetailsPage = () => {
                             </span>
                         </div>
 
+                        {booking.locked_price && booking.locked_price !== totalAmount && (
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-500 flex items-center gap-2">
+                                    <i className="fa-solid fa-lock text-primary w-4"></i>
+                                    {t('bookings.locked_price', 'Service price at booking')}
+                                </span>
+                                <span className="text-sm text-gray-400 line-through">{booking.locked_price.toLocaleString(locale)} {currency}</span>
+                            </div>
+                        )}
+
                         <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-500 flex items-center gap-2">
                                 <i className="fa-solid fa-coins text-primary w-4"></i>
@@ -294,6 +327,16 @@ const BookingDetailsPage = () => {
                             {t('bookings.cancel', 'Cancel booking')}
                         </button>
                     )}
+
+                    {['confirmed', 'completed'].includes(booking.status) && (
+                        <button
+                            onClick={() => setShowDisputeModal(true)}
+                            className="w-full py-3.5 rounded-2xl bg-amber-50 border-2 border-amber-200 text-amber-700 font-bold flex items-center justify-center gap-2 hover:bg-amber-100 transition-colors"
+                        >
+                            <i className="fa-solid fa-flag"></i>
+                            {t('disputes.report_problem', 'الإبلاغ عن مشكلة')}
+                        </button>
+                    )}
                 </div>
             </main>
 
@@ -327,6 +370,63 @@ const BookingDetailsPage = () => {
                                 className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
                             >
                                 {t('common.cancel', 'Cancel')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDisputeModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-t-3xl md:rounded-3xl w-full max-w-md p-6 shadow-2xl">
+                        <h3 className="font-bold text-lg text-gray-900 mb-1">
+                            <i className="fa-solid fa-flag text-amber-500 me-2"></i>
+                            {t('disputes.open_title', 'الإبلاغ عن مشكلة')}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-4">{t('disputes.open_desc', 'صف المشكلة وسيراجعها فريق الإدارة ويتخذ القرار المناسب.')}</p>
+
+                        <div className="mb-3">
+                            <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('disputes.reason', 'سبب النزاع')} *</label>
+                            <select
+                                value={disputeReason}
+                                onChange={e => setDisputeReason(e.target.value)}
+                                className="w-full h-11 bg-bglight rounded-xl px-3 text-sm border-none focus:ring-2 focus:ring-amber-200"
+                            >
+                                <option value="service_not_delivered">{t('disputes.reasons.not_delivered', 'لم يتم تقديم الخدمة')}</option>
+                                <option value="quality_issue">{t('disputes.reasons.quality', 'مشكلة في الجودة')}</option>
+                                <option value="late_arrival">{t('disputes.reasons.late', 'تأخر في الوصول')}</option>
+                                <option value="wrong_service">{t('disputes.reasons.wrong', 'خدمة مختلفة عن المتفق عليها')}</option>
+                                <option value="overcharged">{t('disputes.reasons.overcharged', 'مبلغ زائد')}</option>
+                                <option value="provider_no_show">{t('disputes.reasons.no_show', 'المزود لم يحضر')}</option>
+                                <option value="other">{t('disputes.reasons.other', 'سبب آخر')}</option>
+                            </select>
+                        </div>
+
+                        <div className="mb-4">
+                            <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('disputes.description', 'وصف المشكلة')} *</label>
+                            <textarea
+                                value={disputeDesc}
+                                onChange={e => setDisputeDesc(e.target.value)}
+                                rows={4}
+                                placeholder={t('disputes.desc_placeholder', 'اشرح المشكلة بالتفصيل...')}
+                                className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-amber-200 resize-none text-sm"
+                            />
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleOpenDispute}
+                                disabled={submittingDispute}
+                                className="flex-1 py-3 rounded-xl bg-amber-500 text-white font-bold hover:bg-amber-600 transition-colors disabled:opacity-50"
+                            >
+                                {submittingDispute ? <i className="fa-solid fa-spinner fa-spin me-1"></i> : <i className="fa-solid fa-paper-plane me-1"></i>}
+                                {t('disputes.submit', 'إرسال النزاع')}
+                            </button>
+                            <button
+                                onClick={() => setShowDisputeModal(false)}
+                                className="flex-1 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors"
+                            >
+                                {t('common.cancel', 'إلغاء')}
                             </button>
                         </div>
                     </div>

@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
-    container_name: dousha-backend
+    container_name: doha-events-backend
     restart: unless-stopped
     env_file:
       - .env
@@ -24,7 +24,7 @@ services:
       retries: 3
       start_period: 20s
     networks:
-      - dousha-network
+      - doha-events-network
 
   frontend:
     build:
@@ -35,7 +35,7 @@ services:
         VITE_SUPABASE_URL: ${SUPABASE_URL}
         VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
         VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
-    container_name: dousha-frontend
+    container_name: doha-events-frontend
     restart: unless-stopped
     depends_on:
       backend:
@@ -48,11 +48,11 @@ services:
       timeout: 5s
       retries: 3
     networks:
-      - dousha-network
+      - doha-events-network
 
   redis:
     image: redis:7-alpine
-    container_name: dousha-redis
+    container_name: doha-events-redis
     restart: unless-stopped
     profiles: ["cache"]
     ports:
@@ -61,11 +61,11 @@ services:
     volumes:
       - redis_data:/data
     networks:
-      - dousha-network
+      - doha-events-network
 
   prometheus:
     image: prom/prometheus:latest
-    container_name: dousha-prometheus
+    container_name: doha-events-prometheus
     restart: unless-stopped
     profiles: ["observability"]
     ports:
@@ -79,23 +79,23 @@ services:
       - --web.console.libraries=/etc/prometheus/console_libraries
       - --web.console.templates=/etc/prometheus/consoles
     networks:
-      - dousha-network
+      - doha-events-network
 
   grafana:
     image: grafana/grafana:latest
-    container_name: dousha-grafana
+    container_name: doha-events-grafana
     restart: unless-stopped
     profiles: ["observability"]
     depends_on:
       - prometheus
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin123
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-changeme}
     ports:
       - "3001:3000"
     volumes:
       - grafana_data:/var/lib/grafana
     networks:
-      - dousha-network
+      - doha-events-network
 
 volumes:
   redis_data:
@@ -103,5 +103,5 @@ volumes:
   grafana_data:
 
 networks:
-  dousha-network:
+  doha-events-network:
     driver: bridge

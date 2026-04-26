@@ -37,12 +37,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload) {
     // Check if token was blacklisted (user logged out)
-    if (payload.jti && this.authCache.isTokenBlacklisted(payload.jti)) {
+    if (payload.jti && (await this.authCache.isTokenBlacklisted(payload.jti))) {
       throw new UnauthorizedException('Token has been revoked.');
     }
 
     // Try cache first (avoids DB queries on every request)
-    const cached = this.authCache.getCachedUser(payload.sub);
+    const cached = await this.authCache.getCachedUser(payload.sub);
     if (cached) {
       return {
         sub: payload.sub,
@@ -77,7 +77,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     // Store in cache (TTL 5 min)
-    this.authCache.cacheUser(payload.sub, profile.role, providerId);
+    await this.authCache.cacheUser(payload.sub, profile.role, providerId);
 
     return {
       sub: payload.sub,

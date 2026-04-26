@@ -66,25 +66,38 @@ async function bootstrap() {
   // Global Exception Filter
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Swagger configuration
-  const config = new DocumentBuilder()
-    .setTitle('Events & Wedding Marketplace API')
-    .setDescription(
-      "API complète pour la marketplace d'événements et de mariage",
-    )
-    .setVersion('1.0')
-    .addTag('users')
-    .addTag('categories')
-    .addTag('providers')
-    .addTag('services')
-    .addTag('events')
-    .addBearerAuth()
-    .build();
+  // Swagger configuration — disabled in production
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Doha Events — Wedding & Events Marketplace API')
+      .setDescription(
+        'Full API for the events & wedding marketplace',
+      )
+      .setVersion('1.0')
+      .addTag('users')
+      .addTag('categories')
+      .addTag('providers')
+      .addTag('services')
+      .addTag('events')
+      .addTag('bookings')
+      .addTag('reviews')
+      .addTag('quotes')
+      .addTag('messages')
+      .addTag('disputes')
+      .addTag('notifications')
+      .addTag('payments')
+      .addTag('moderation')
+      .addTag('provider-analytics')
+      .addTag('storage')
+      .addTag('admin')
+      .addBearerAuth()
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document);
+  }
 
-  // Écouter sur toutes les interfaces
+  // Listen on all network interfaces
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();

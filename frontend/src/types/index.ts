@@ -58,7 +58,7 @@ export interface ServiceItem {
     deposit_required?: boolean;
     deposit_percentage?: number;
   };
-  cancellation_policy?: string;
+  cancellation_policy?: string | { notice_days?: number; refund_percentage?: number; description?: string };
   rating?: number;
   review_count?: number;
   is_featured?: boolean;
@@ -90,6 +90,10 @@ export interface Provider {
   languages?: string[];
   years_experience?: number;
   response_time_hours?: number;
+  total_requests?: number;
+  total_responses?: number;
+  response_rate?: number;
+  avg_response_minutes?: number;
   website?: string;
   address?: string;
   created_at: string;
@@ -144,7 +148,7 @@ export interface Message {
   message_type?: string;
   created_at: string;
   sender?: { id: string; full_name?: string; avatar_url?: string };
-  metadata?: { attachments?: Attachment[] };
+  metadata?: { attachments?: Attachment[]; content_filtered?: boolean; filtered_types?: string[] };
 }
 
 /** Booking status */
@@ -166,6 +170,7 @@ export interface Booking {
   end_time?: string;
   status: BookingStatus;
   amount: number;
+  locked_price?: number;
   deposit_amount?: number;
   balance_amount?: number;
   platform_fee?: number;

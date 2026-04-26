@@ -13,4 +13,8 @@ export const bookingsService = {
   findOne: (id: string) => apiService.get<Booking>(`/bookings/id/${id}`),
   updateStatus: (id: string, data: { status: string; cancellation_reason?: string }) =>
     apiService.patch<Booking>(`/bookings/id/${id}/status`, data),
+  getUnavailableDates: (providerId: string, start: string, end: string) =>
+    apiService.get<{ unavailable_dates: string[]; partial_dates: string[] }>(
+      `/bookings/unavailable-dates/${providerId}?start=${start}&end=${end}`
+    ),
 };

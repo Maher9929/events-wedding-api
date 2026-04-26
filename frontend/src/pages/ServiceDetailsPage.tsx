@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { servicesService } from '../services/services.service';
@@ -41,6 +41,21 @@ const ServiceDetailsPage = () => {
     const [isFavorite] = useState(false); // Used in render, left for future expansion
     const [togglingFav, setTogglingFav] = useState(false);
     const today = new Date().toISOString().split('T')[0];
+    const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
+    const [partialDates, setPartialDates] = useState<string[]>([]);
+    const [dateWarning, setDateWarning] = useState('');
+
+    const loadUnavailableDates = useCallback(async (providerId: string) => {
+        try {
+            const start = today;
+            const endDate = new Date();
+            endDate.setMonth(endDate.getMonth() + 6);
+            const end = endDate.toISOString().split('T')[0];
+            const res = await bookingsService.getUnavailableDates(providerId, start, end);
+            setUnavailableDates(res.unavailable_dates || []);
+            setPartialDates(res.partial_dates || []);
+        } catch { /* non-critical */ }
+    }, [today]);
 
     useEffect(() => {
         if (service) {
@@ -54,12 +69,16 @@ const ServiceDetailsPage = () => {
         if (!id) return;
         setLoading(true);
         servicesService.findById(id)
-            .then((data) => setService((data as { data?: ExtendedServiceItem }).data || (data as ExtendedServiceItem)))
+            .then((data) => {
+                const svc = (data as { data?: ExtendedServiceItem }).data || (data as ExtendedServiceItem);
+                setService(svc);
+                if (svc?.provider_id) loadUnavailableDates(svc.provider_id);
+            })
             .catch(() => toastService.error(t('service.errors.load_failed', 'فشل تحميل تفاصيل الخدمة')))
             .finally(() => setLoading(false));
         loadReviews();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, t]);
+    }, [id, t, loadUnavailableDates]);
 
     const handleToggleFavorite = async () => {
         if (!isAuthenticated) { navigate('/auth/login'); return; }
@@ -279,6 +298,38 @@ const ServiceDetailsPage = () => {
                     </p>
                 </section>
 
+                {/* Cancellation Policy */}
+                {(() => {
+                    const raw = service.cancellation_policy;
+                    const policy = typeof raw === 'object' && raw ? raw : null;
+                    const noticeDays = policy?.notice_days ?? 7;
+                    const refundPct = policy?.refund_percentage ?? 0;
+                    const description = policy?.description;
+                    return (
+                        <section className="px-5 py-5 bg-white mb-2">
+                            <h3 className="text-lg font-bold text-gray-900 mb-3">
+                                <i className="fa-solid fa-file-contract text-primary mx-2"></i>
+                                {t('service.details.cancellation_policy', 'سياسة الإلغاء')}
+                            </h3>
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <div className="bg-orange-50 rounded-xl p-3 text-center">
+                                    <i className="fa-solid fa-clock text-orange-500 text-lg mb-1"></i>
+                                    <p className="text-2xl font-bold text-gray-900">{noticeDays}</p>
+                                    <p className="text-xs text-gray-500">{t('service.details.notice_days', 'أيام إشعار مسبق')}</p>
+                                </div>
+                                <div className="bg-green-50 rounded-xl p-3 text-center">
+                                    <i className="fa-solid fa-percent text-green-500 text-lg mb-1"></i>
+                                    <p className="text-2xl font-bold text-gray-900">{refundPct}%</p>
+                                    <p className="text-xs text-gray-500">{t('service.details.refund_percentage', 'نسبة الاسترداد')}</p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-500 leading-relaxed">
+                                {description || t('service.details.default_cancellation_notice', 'يمكن إلغاء الحجز قبل {{days}} أيام من الموعد مع استرداد {{pct}}% من المبلغ.', { days: noticeDays, pct: refundPct })}
+                            </p>
+                        </section>
+                    );
+                })()}
+
                 {/* Booking Section */}
                 <section className="px-5 py-5 bg-white mb-2">
                     <h3 className="text-lg font-bold text-gray-900 mb-4">
@@ -292,9 +343,24 @@ const ServiceDetailsPage = () => {
                                 type="date"
                                 value={bookingDate}
                                 min={today}
-                                onChange={e => setBookingDate(e.target.value)}
-                                className="w-full h-12 bg-bglight rounded-2xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-none"
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    setBookingDate(val);
+                                    if (unavailableDates.includes(val)) {
+                                        setDateWarning(t('bookings.date_unavailable', 'هذا التاريخ غير متاح — المزود محجوز بالكامل'));
+                                    } else if (partialDates.includes(val)) {
+                                        setDateWarning(t('bookings.date_partial', 'هذا التاريخ محجوز جزئياً — تأكد من توافق الأوقات'));
+                                    } else {
+                                        setDateWarning('');
+                                    }
+                                }}
+                                className={`w-full h-12 bg-bglight rounded-2xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 border-none ${unavailableDates.includes(bookingDate) ? 'ring-2 ring-red-400' : ''}`}
                             />
+                            {dateWarning && (
+                                <p className={`text-xs mt-1 ${unavailableDates.includes(bookingDate) ? 'text-red-500' : 'text-amber-500'}`}>
+                                    <i className="fa-solid fa-circle-exclamation mx-1"></i>{dateWarning}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-gray-700 mb-1.5">{t('bookings.notes', 'ملاحظات')} ({t('common.optional', 'اختياري')})</label>
@@ -315,6 +381,7 @@ const ServiceDetailsPage = () => {
                                 onClick={async () => {
                                     if (!isAuthenticated) { navigate('/auth/login'); return; }
                                     if (!bookingDate) { toastService.error(t('bookings.errors.select_date', 'يرجى اختيار تاريخ الفعالية')); return; }
+                                    if (unavailableDates.includes(bookingDate)) { toastService.error(t('bookings.date_unavailable', 'هذا التاريخ غير متاح')); return; }
                                     setBookingLoading(true);
                                     try {
                                         const booking = await bookingsService.create({
@@ -335,7 +402,7 @@ const ServiceDetailsPage = () => {
                                         setBookingLoading(false);
                                     }
                                 }}
-                                disabled={bookingLoading}
+                                disabled={bookingLoading || unavailableDates.includes(bookingDate)}
                                 className="px-6 py-3 rounded-2xl gradient-purple text-white font-bold text-sm shadow-md hover:opacity-90 transition-opacity disabled:opacity-50"
                             >
                                 {bookingLoading ? <i className="fa-solid fa-spinner fa-spin"></i> : <i className="fa-solid fa-calendar-plus mx-1"></i>}
@@ -450,6 +517,7 @@ const ServiceDetailsPage = () => {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                         return;
                     }
+                    if (unavailableDates.includes(bookingDate)) { toastService.error(t('bookings.date_unavailable', 'هذا التاريخ غير متاح')); return; }
                     setBookingLoading(true);
                     try {
                         const booking = await bookingsService.create({
@@ -470,7 +538,7 @@ const ServiceDetailsPage = () => {
                         setBookingLoading(false);
                     }
                 }}
-                    disabled={bookingLoading}
+                    disabled={bookingLoading || unavailableDates.includes(bookingDate)}
                     className="px-6 py-3 rounded-xl gradient-purple text-white font-bold shadow-lg card-hover text-sm disabled:opacity-50">
                     {bookingLoading ? <><i className="fa-solid fa-spinner fa-spin me-1"></i> {t('common.loading', 'جاري...')}</> : t('service.details.book_now', 'احجز الآن')}
                 </button>

@@ -113,7 +113,7 @@ const ProviderProfilePage = () => {
 
                     <p className="text-gray-700 mb-4">{provider.description}</p>
 
-                    <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                         <div className="text-center p-3 bg-gray-50 rounded-xl">
                             <i className="fa-solid fa-users text-primary text-lg mb-1"></i>
                             <p className="text-xs text-gray-500">{t('provider.profile.max_capacity', 'السعة القصوى')}</p>
@@ -127,7 +127,12 @@ const ProviderProfilePage = () => {
                         <div className="text-center p-3 bg-gray-50 rounded-xl">
                             <i className="fa-solid fa-clock text-primary text-lg mb-1"></i>
                             <p className="text-xs text-gray-500">{t('provider.profile.response_time', 'وقت الاستجابة')}</p>
-                            <p className="font-bold text-gray-900">{provider.response_time_hours || 24}{t('common.hours_suffix', 'س')}</p>
+                            <p className="font-bold text-gray-900">{provider.avg_response_minutes ? `${Math.round(provider.avg_response_minutes / 60)}${t('common.hours_suffix', 'س')}` : `${provider.response_time_hours || 24}${t('common.hours_suffix', 'س')}`}</p>
+                        </div>
+                        <div className="text-center p-3 bg-gray-50 rounded-xl">
+                            <i className="fa-solid fa-chart-line text-primary text-lg mb-1"></i>
+                            <p className="text-xs text-gray-500">{t('provider.profile.response_rate', 'معدل الاستجابة')}</p>
+                            <p className={`font-bold ${(provider.response_rate || 0) >= 80 ? 'text-green-600' : (provider.response_rate || 0) >= 50 ? 'text-amber-600' : 'text-gray-900'}`}>{provider.response_rate || 0}%</p>
                         </div>
                     </div>
 

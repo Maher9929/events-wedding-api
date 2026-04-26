@@ -7,6 +7,9 @@ import {
   Inject,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { filterContactInfo } from '../common/content-filter';
+import { sanitizeSearch } from '../common/sanitize';
+import { maskProviderData } from '../common/data-masking';
 import { CreateProviderDto } from './dto/create-provider.dto';
 import { UpdateProviderDto } from './dto/update-provider.dto';
 import { QueryProviderDto } from './dto/query-provider.dto';
@@ -146,11 +149,10 @@ export class ProvidersService {
 
     // Apply filters
     if (query.search) {
-      queryBuilder = queryBuilder.or(`
-        company_name.ilike.%${query.search}%, 
-        description.ilike.%${query.search}%, 
-        city.ilike.%${query.search}%
-      `);
+      const term = sanitizeSearch(query.search);
+      queryBuilder = queryBuilder.or(
+        `company_name.ilike.%${term}%,description.ilike.%${term}%,city.ilike.%${term}%`,
+      );
     }
 
     if (query.city) {
@@ -243,7 +245,9 @@ export class ProvidersService {
     }
 
     return {
-      data: data || [],
+      data: (data || []).map((p) =>
+        maskProviderData(p as unknown as Record<string, any>),
+      ) as Provider[],
       total: count || 0,
     };
   }
@@ -615,6 +619,11 @@ export class ProvidersService {
     return data;
   }
 
+  async findOnePublic(id: string): Promise<Record<string, any>> {
+    const data = await this.findOne(id);
+    return maskProviderData(data as unknown as Record<string, any>);
+  }
+
   async findByUserId(userId: string): Promise<Provider | null> {
     const { data, error } = await this.supabase
       .from('providers')
@@ -726,9 +735,20 @@ export class ProvidersService {
       );
     }
 
+    // Sanitize text fields to prevent contact info leakage
+    const sanitizedDto = { ...updateProviderDto };
+    if (sanitizedDto.company_name)
+      sanitizedDto.company_name = filterContactInfo(
+        sanitizedDto.company_name,
+      ).content;
+    if (sanitizedDto.description)
+      sanitizedDto.description = filterContactInfo(
+        sanitizedDto.description,
+      ).content;
+
     const { data, error } = await this.supabase
       .from('providers')
-      .update(updateProviderDto)
+      .update(sanitizedDto)
       .eq('id', id)
       .select()
       .single();

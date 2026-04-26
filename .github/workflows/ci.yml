@@ -29,12 +29,20 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
-      - name: Run tests
-        run: npm run test --if-present
+      - name: Run tests with coverage
+        run: npm run test -- --coverage --forceExit
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: coverage/
+          retention-days: 5
 
       - name: Build
         run: npm run build
@@ -103,7 +111,7 @@ jobs:
           context: .
           file: Dockerfile
           push: false
-          tags: dousha-backend:test
+          tags: doha-events-backend:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -113,6 +121,6 @@ jobs:
           context: ./frontend
           file: frontend/Dockerfile
           push: false
-          tags: dousha-frontend:test
+          tags: doha-events-frontend:test
           cache-from: type=gha
           cache-to: type=gha,mode=max

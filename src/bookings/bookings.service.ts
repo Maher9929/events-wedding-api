@@ -16,11 +16,13 @@ import { Booking } from './entities/booking.entity';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { AuditLogService } from '../common/audit-log.service';
+import { sanitizeSearch } from '../common/sanitize';
+import { COMMISSION_RATE } from '../common/constants';
 
 @Injectable()
 export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
-  private readonly commissionRate = 0.1;
+  private readonly commissionRate = COMMISSION_RATE;
 
   private stripe: Stripe;
 
@@ -408,6 +410,10 @@ export class BookingsService {
 
     const refundPolicyId = await this.getDefaultRefundPolicyId();
 
+    const lockedPrice = service?.base_price
+      ? Number(service.base_price)
+      : finalAmount;
+
     const { data, error } = await this.supabase
       .from('bookings')
       .insert({
@@ -415,6 +421,7 @@ export class BookingsService {
         provider_id: resolvedProviderId,
         service_id: dto.service_id,
         amount: finalAmount,
+        locked_price: lockedPrice,
         deposit_amount: depositAmount,
         balance_amount: balanceAmount,
         platform_fee: platformFee,
@@ -469,16 +476,16 @@ export class BookingsService {
     await this.createNotification(
       providerNotificationUserId,
       'booking_request',
-      'طلب حجز جديد',
-      `لديك طلب حجز جديد بانتظار موافقتك`,
+      'New booking request',
+      'You have a new booking request awaiting your approval',
       data.id,
     );
     // Create in-app notification for client
     await this.createNotification(
       clientId,
       'booking_created',
-      'تم إرسال طلب الحجز',
-      `تم إرسال طلب حجزك بنجاح وهو قيد المراجعة`,
+      'Booking request sent',
+      'Your booking request has been sent successfully and is under review',
       data.id,
     );
 
@@ -642,7 +649,46 @@ export class BookingsService {
       updateData.cancelled_at = new Date().toISOString();
     }
 
-    if ('refund' in dto && (dto as Record<string, unknown>).refund) {
+    // --- Automatic cancellation policy enforcement ---
+    if (dto.status === 'cancelled' && booking.service_id) {
+      const { data: svc } = await this.supabase
+        .from('services')
+        .select('cancellation_policy')
+        .eq('id', booking.service_id)
+        .maybeSingle();
+
+      const raw = svc?.cancellation_policy;
+      const policy =
+        typeof raw === 'object' && raw
+          ? (raw as { notice_days?: number; refund_percentage?: number })
+          : null;
+      const noticeDays = policy?.notice_days ?? 7;
+      const refundPct = policy?.refund_percentage ?? 0;
+
+      const now = new Date();
+      const deadline = new Date(booking.booking_date);
+      deadline.setDate(deadline.getDate() - noticeDays);
+
+      const isPaidBooking =
+        booking.payment_status === 'deposit_paid' ||
+        booking.payment_status === 'fully_paid';
+
+      if (isPaidBooking) {
+        if (now <= deadline) {
+          // Cancelled before deadline → apply refund percentage
+          const refundAmount =
+            Math.round((((booking.amount || 0) * refundPct) / 100) * 100) / 100;
+          updateData.payment_status =
+            refundPct > 0 ? 'refunded' : booking.payment_status;
+          updateData.refund_amount = refundAmount;
+          updateData.refund_percentage = refundPct;
+        } else {
+          // Cancelled after deadline → no refund
+          updateData.refund_amount = 0;
+          updateData.refund_percentage = 0;
+        }
+      }
+    } else if ('refund' in dto && (dto as Record<string, unknown>).refund) {
       updateData.payment_status = 'refunded';
     }
 
@@ -669,12 +715,17 @@ export class BookingsService {
     const notifyUserId = isClient ? booking.provider_id : booking.client_id;
     const statusMessages: Record<string, { title: string; message: string }> = {
       confirmed: {
-        title: 'تم تأكيد الحجز',
-        message: 'تم تأكيد طلب الحجز بنجاح',
+        title: 'Booking confirmed',
+        message: 'The booking request has been confirmed successfully',
       },
-      rejected: { title: 'تم رفض الحجز', message: 'تم رفض طلب الحجز' },
-      cancelled: { title: 'تم إلغاء الحجز', message: 'تم إلغاء طلب الحجز' },
-      completed: { title: 'تم إكمال الحجز', message: 'تم إكمال الخدمة بنجاح' },
+      rejected: { title: 'Booking rejected', message: 'The booking request has been rejected' },
+      cancelled: {
+        title: 'Booking cancelled',
+        message: updateData.refund_amount
+          ? `Booking cancelled — refund ${Number(updateData.refund_percentage)}% (${Number(updateData.refund_amount)} MAD)`
+          : 'Booking cancelled — no refund',
+      },
+      completed: { title: 'Booking completed', message: 'The service has been completed successfully' },
     };
     const notif = statusMessages[dto.status];
     if (notif && notifyUserId) {
@@ -706,7 +757,51 @@ export class BookingsService {
       await this.auditLogService.log(userId, auditAction, 'bookings', id, {
         status: dto.status,
         cancellation_reason: dto.cancellation_reason,
+        refund_amount: updateData.refund_amount,
+        refund_percentage: updateData.refund_percentage,
       });
+    }
+
+    // Update provider response stats when they confirm or reject
+    if (['confirmed', 'rejected'].includes(dto.status) && isProvider) {
+      try {
+        const responseMinutes = Math.round(
+          (Date.now() - new Date(booking.created_at).getTime()) / 60000,
+        );
+        const { data: provider } = await this.supabase
+          .from('providers')
+          .select('total_requests, total_responses, avg_response_minutes')
+          .eq('id', booking.provider_id)
+          .maybeSingle();
+
+        if (provider) {
+          const newResponses = (provider.total_responses || 0) + 1;
+          const newRequests = Math.max(
+            provider.total_requests || 0,
+            newResponses,
+          );
+          const oldAvg = provider.avg_response_minutes || 0;
+          const newAvg = Math.round(
+            (oldAvg * (newResponses - 1) + responseMinutes) / newResponses,
+          );
+          const rate =
+            newRequests > 0
+              ? Math.round((newResponses / newRequests) * 10000) / 100
+              : 0;
+
+          await this.supabase
+            .from('providers')
+            .update({
+              total_responses: newResponses,
+              total_requests: newRequests,
+              response_rate: rate,
+              avg_response_minutes: newAvg,
+            })
+            .eq('id', booking.provider_id);
+        }
+      } catch (e) {
+        this.logger.warn(`Failed to update response stats: ${e}`);
+      }
     }
 
     return data;
@@ -783,8 +878,8 @@ export class BookingsService {
     await this.createNotification(
       booking.client_id,
       'payment_received',
-      'تم استلام الدفعة',
-      `تم استلام دفعة ${paymentType === 'deposit' ? 'التأمين' : paymentType === 'balance' ? 'المتبقي' : 'الكامل'} بنجاح`,
+      'Payment received',
+      `${paymentType === 'deposit' ? 'Deposit' : paymentType === 'balance' ? 'Balance' : 'Full'} payment received successfully`,
       bookingId,
     );
 
@@ -969,8 +1064,9 @@ export class BookingsService {
       query = query.eq('status', status);
     }
     if (search) {
+      const term = sanitizeSearch(search);
       query = query.or(
-        `notes.ilike.%${search}%,requirements.ilike.%${search}%`,
+        `notes.ilike.%${term}%,requirements.ilike.%${term}%`,
       );
     }
     if (limit) {
@@ -1014,8 +1110,9 @@ export class BookingsService {
       query = query.eq('payment_status', paymentStatus);
     }
     if (search) {
+      const term = sanitizeSearch(search);
       query = query.or(
-        `notes.ilike.%${search}%,requirements.ilike.%${search}%`,
+        `notes.ilike.%${term}%,requirements.ilike.%${term}%`,
       );
     }
     if (limit) {
@@ -1132,6 +1229,67 @@ export class BookingsService {
       cancelled,
       total_revenue: totalRevenue,
       monthly_revenue: monthlyRevenue,
+    };
+  }
+
+  /**
+   * Returns dates where a provider is unavailable (booked or blocked).
+   * Used by the frontend to disable dates in the booking calendar.
+   */
+  async getUnavailableDates(
+    providerId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<{ unavailable_dates: string[]; partial_dates: string[] }> {
+    // Dates with confirmed/pending bookings
+    const { data: bookings } = await this.supabase
+      .from('bookings')
+      .select('booking_date, start_time, end_time')
+      .eq('provider_id', providerId)
+      .gte('booking_date', startDate)
+      .lte('booking_date', endDate)
+      .in('status', ['pending', 'confirmed']);
+
+    // Dates explicitly blocked by the provider
+    const { data: blocked } = await this.supabase
+      .from('provider_availabilities')
+      .select('date, start_time, end_time, is_blocked')
+      .eq('provider_id', providerId)
+      .eq('is_blocked', true)
+      .gte('date', startDate)
+      .lte('date', endDate);
+
+    // Full-day bookings (no start/end time) = fully unavailable
+    // Time-slot bookings = partial (others can still book different times)
+    const fullDaySet = new Set<string>();
+    const partialSet = new Set<string>();
+
+    for (const b of bookings || []) {
+      const day = new Date(b.booking_date).toISOString().slice(0, 10);
+      if (!b.start_time && !b.end_time) {
+        fullDaySet.add(day);
+      } else {
+        partialSet.add(day);
+      }
+    }
+
+    for (const b of blocked || []) {
+      const day = b.date;
+      if (!b.start_time && !b.end_time) {
+        fullDaySet.add(day);
+      } else {
+        partialSet.add(day);
+      }
+    }
+
+    // Remove partial dates that are also full-day blocked
+    for (const d of fullDaySet) {
+      partialSet.delete(d);
+    }
+
+    return {
+      unavailable_dates: [...fullDaySet].sort(),
+      partial_dates: [...partialSet].sort(),
     };
   }
 }

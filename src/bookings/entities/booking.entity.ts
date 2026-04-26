@@ -10,6 +10,8 @@ export class Booking {
   end_time?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'rejected';
   amount: number;
+  locked_price?: number;
+  locked_price_type?: string;
   deposit_amount?: number;
   balance_amount?: number;
   platform_fee?: number;

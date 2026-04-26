@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { UserRole } from './dto/create-user.dto';
 
 const mockUsersService = {
   register: jest.fn(),
@@ -37,7 +38,7 @@ describe('UsersController', () => {
         email: 't@t.com',
         password: 'P@ss1234',
         full_name: 'Test',
-        role: 'client' as const,
+        role: UserRole.CLIENT,
       };
       const expected = {
         access_token: 'jwt',

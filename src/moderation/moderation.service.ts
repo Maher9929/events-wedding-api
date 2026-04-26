@@ -5,6 +5,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import {
+  CreateReportDto,
+  UpdateReportActionDto,
+} from './dto/moderation.dto';
 
 export interface ReportDto {
   reporter_id: string;
@@ -27,6 +31,16 @@ export interface ModerationAction {
   duration_days?: number;
 }
 
+interface ModerationReport {
+  id: string;
+  reporter_id: string;
+  reported_type: ReportDto['reported_type'];
+  reported_id: string;
+  reason: string;
+  description?: string;
+  status: string;
+}
+
 @Injectable()
 export class ModerationService {
   constructor(
@@ -34,7 +48,7 @@ export class ModerationService {
     private readonly supabase: SupabaseClient,
   ) {}
 
-  async createReport(reportDto: any, reporterId: string) {
+  async createReport(reportDto: CreateReportDto, reporterId: string) {
     const { data, error } = await this.supabase
       .from('moderation_reports')
       .insert({
@@ -78,11 +92,7 @@ export class ModerationService {
     return data || [];
   }
 
-  async updateReport(
-    reportId: string,
-    action: any,
-    moderatorId: string,
-  ) {
+  async updateReport(reportId: string, action: UpdateReportActionDto, moderatorId: string) {
     // Get the report first
     const { data: report, error: reportError } = await this.supabase
       .from('moderation_reports')
@@ -98,7 +108,7 @@ export class ModerationService {
     const { data: updatedReport, error: updateError } = await this.supabase
       .from('moderation_reports')
       .update({
-        status: action.action === 'approve' ? 'approved' : 'rejected',
+        status: action.status,
         moderator_id: moderatorId,
         moderator_notes: action.notes,
         moderated_at: new Date().toISOString(),
@@ -109,14 +119,20 @@ export class ModerationService {
 
     if (updateError) throw new BadRequestException(updateError.message);
 
-    // Apply moderation action based on decision
-    await this.applyModerationAction(report, action, moderatorId);
+    // Apply moderation action if an action was specified
+    if (action.action_taken) {
+      const moderationAction: ModerationAction = {
+        action: action.action_taken as ModerationAction['action'],
+        notes: action.notes,
+      };
+      await this.applyModerationAction(report, moderationAction, moderatorId);
+    }
 
     return updatedReport;
   }
 
   private async applyModerationAction(
-    report: any,
+    report: ModerationReport,
     action: ModerationAction,
     moderatorId: string,
   ) {
@@ -261,8 +277,8 @@ export class ModerationService {
     await this.supabase.from('notifications').insert({
       user_id: entityId,
       type: 'moderation_warning',
-      title: 'Avertissement de modération',
-      message: notes || 'Votre contenu a reçu un avertissement de modération.',
+      title: 'Moderation warning',
+      message: notes || 'Your content has received a moderation warning.',
       created_at: new Date().toISOString(),
     });
   }

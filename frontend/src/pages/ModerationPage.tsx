@@ -155,7 +155,7 @@ const ModerationPage = () => {
         switch (type) {
             case 'id_card': return t('moderation.doc_types.id_card', 'ID Card');
             case 'business_license': return t('moderation.doc_types.business_license', 'Business License');
-            case 'tax_certificate': return t('moderation.doc_types.tax_certificate', 'Tax Certificate');
+            case 'business_registration': return t('moderation.doc_types.business_registration', 'Business Registration');
             case 'insurance': return t('moderation.doc_types.insurance', 'Insurance');
             case 'portfolio': return t('moderation.doc_types.portfolio', 'Portfolio');
             case 'other': return t('moderation.doc_types.other', 'Other');

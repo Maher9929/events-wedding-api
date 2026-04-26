@@ -1,6 +1,6 @@
-# DOUSHA - Marketplace de Services de Mariage (Demo)
+# DOHA EVENTS - Marketplace de Services de Mariage (Demo)
 
-Ceci est la présentation technique du projet **DOUSHA**, une plateforme complète facilitant l'organisation de mariages.
+Ceci est la présentation technique du projet **Doha Events**, une plateforme complète facilitant l'organisation de mariages.
 
 ## 🚀 Fonctionnalités Clés
 - **Système Multi-Rôles :** Client, Prestataire (Provider), et Administrateur.
@@ -15,9 +15,9 @@ Ceci est la présentation technique du projet **DOUSHA**, une plateforme complè
 ## 🔑 Identifiants de Test (Demo)
 | Rôle | Email | Mot de Passe |
 | :--- | :--- | :--- |
-| **Administrateur** | `admin@dousha.qa` | `Dousha2026!` |
-| **Client** | `client@dousha.com` | `Dousha2026!` |
-| **Prestataire** | `provider@dousha.com` | `Dousha2026!` |
+| **Administrateur** | `admin@dohaevents.com` | `DohaEvents2026!` |
+| **Client** | `client@dohaevents.com` | `DohaEvents2026!` |
+| **Prestataire** | `provider@dohaevents.com` | `DohaEvents2026!` |
 
 ## 🛠️ Architecture Technique
 - **Frontend :** React.js + Tailwind CSS + i18next

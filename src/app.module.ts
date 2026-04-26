@@ -5,6 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SupabaseProvider } from './config/supabase.config';
+import { AuditLogController } from './common/audit-log.controller';
+import { AuditLogService } from './common/audit-log.service';
 import { StorageController } from './common/storage.controller';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -18,9 +20,10 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
+import { DisputesModule } from './disputes/disputes.module';
 
 @Module({
-  controllers: [AppController, StorageController],
+  controllers: [AppController, StorageController, AuditLogController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -43,10 +46,12 @@ import { PaymentsModule } from './payments/payments.module';
     BookingsModule,
     NotificationsModule,
     PaymentsModule,
+    DisputesModule,
   ],
   providers: [
     AppService,
     SupabaseProvider,
+    AuditLogService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

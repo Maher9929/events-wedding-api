@@ -27,6 +27,10 @@ export class Provider {
   languages?: string[];
   years_experience?: number;
   response_time_hours?: number;
+  total_requests?: number;
+  total_responses?: number;
+  response_rate?: number;
+  avg_response_minutes?: number;
   created_at: Date;
   updated_at: Date;
 }

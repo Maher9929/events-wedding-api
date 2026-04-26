@@ -43,6 +43,7 @@ const ProviderDashboardPage = lazy(() => import('./pages/ProviderDashboardPage')
 const ProviderCalendarPage = lazy(() => import('./pages/ProviderCalendarPage'));
 const ProviderServicesPage = lazy(() => import('./pages/ProviderServicesPage'));
 const ProviderReviewsPage = lazy(() => import('./pages/ProviderReviewsPage'));
+const ProviderVerificationPage = lazy(() => import('./pages/ProviderVerificationPage'));
 
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('./pages/AdminUsersPage'));
@@ -56,6 +57,7 @@ const AdminQuotesPage = lazy(() => import('./pages/AdminQuotesPage'));
 const AdminCommissionsPage = lazy(() => import('./pages/AdminCommissionsPage'));
 const AdminAuditLogsPage = lazy(() => import('./pages/AdminAuditLogsPage'));
 const ModerationPage = lazy(() => import('./pages/ModerationPage'));
+const AdminDisputesPage = lazy(() => import('./pages/AdminDisputesPage'));
 
 function App() {
   return (
@@ -122,6 +124,7 @@ function App() {
               <Route path="payment/:bookingId" element={<PaymentPage />} />
               <Route path="services" element={<ProviderServicesPage />} />
               <Route path="reviews" element={<ProviderReviewsPage />} />
+              <Route path="verification" element={<ProviderVerificationPage />} />
             </Route>
 
             <Route
@@ -144,6 +147,7 @@ function App() {
               <Route path="commissions" element={<AdminCommissionsPage />} />
               <Route path="audit-logs" element={<AdminAuditLogsPage />} />
               <Route path="moderation" element={<ModerationPage />} />
+              <Route path="disputes" element={<AdminDisputesPage />} />
               <Route path="messages" element={<MessagesPage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="profile" element={<ProfilePage />} />

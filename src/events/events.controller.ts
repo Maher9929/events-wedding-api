@@ -27,6 +27,7 @@ import {
 } from './dto/event-features.dto';
 import { CreateGuestDto, UpdateGuestDto } from './dto/event-guests.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
@@ -39,7 +40,7 @@ export class EventsController {
   @Post()
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async create(@Body() createEventDto: CreateEventDto, @Request() req) {
+  async create(@Body() createEventDto: CreateEventDto, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.create(req.user.id, createEventDto);
   }
 
@@ -72,7 +73,7 @@ export class EventsController {
   @Get('my-events')
   @UseGuards(JwtAuthGuard)
   async findMyEvents(
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
     @Query('status') status?: string,
     @Query('sort_order') sortOrder?: string,
     @Query('limit') limit?: string,
@@ -107,7 +108,7 @@ export class EventsController {
   async update(
     @Param('id') id: string,
     @Body() updateEventDto: UpdateEventDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.update(id, req.user.id, updateEventDto);
   }
@@ -124,7 +125,7 @@ export class EventsController {
       | 'in_progress'
       | 'completed'
       | 'cancelled',
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.updateStatus(id, req.user.id, status);
   }
@@ -133,14 +134,14 @@ export class EventsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CLIENT, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string, @Request() req) {
+  async remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     await this.eventsService.remove(id, req.user.id);
   }
 
   // ─── Budget Endpoints ─────────────────────────────────────────────────────
   @Get('id/:id/budget')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getBudget(@Param('id') id: string, @Request() req) {
+  async getBudget(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.getBudget(id, req.user.id);
   }
 
@@ -149,7 +150,7 @@ export class EventsController {
   async addBudgetItem(
     @Param('id') id: string,
     @Body() dto: CreateBudgetDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.addBudgetItem(id, req.user.id, dto);
   }
@@ -159,21 +160,21 @@ export class EventsController {
   async updateBudgetItem(
     @Param('itemId') itemId: string,
     @Body() dto: UpdateBudgetDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.updateBudgetItem(itemId, req.user.id, dto);
   }
 
   @Delete('budget/:itemId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async removeBudgetItem(@Param('itemId') itemId: string, @Request() req) {
+  async removeBudgetItem(@Param('itemId') itemId: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.removeBudgetItem(itemId, req.user.id);
   }
 
   // ─── Checklist Endpoints ──────────────────────────────────────────────────
   @Get('id/:id/tasks')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getTasks(@Param('id') id: string, @Request() req) {
+  async getTasks(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.getTasks(id, req.user.id);
   }
 
@@ -182,7 +183,7 @@ export class EventsController {
   async addTask(
     @Param('id') id: string,
     @Body() dto: CreateTaskDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.addTask(id, req.user.id, dto);
   }
@@ -192,21 +193,21 @@ export class EventsController {
   async updateTask(
     @Param('taskId') taskId: string,
     @Body() dto: UpdateTaskDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.updateTask(taskId, req.user.id, dto);
   }
 
   @Delete('tasks/:taskId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async removeTask(@Param('taskId') taskId: string, @Request() req) {
+  async removeTask(@Param('taskId') taskId: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.removeTask(taskId, req.user.id);
   }
 
   // ─── Timeline Endpoints ───────────────────────────────────────────────────
   @Get('id/:id/timeline')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async getTimeline(@Param('id') id: string, @Request() req) {
+  async getTimeline(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.getTimeline(id, req.user.id);
   }
 
@@ -215,7 +216,7 @@ export class EventsController {
   async addTimelineItem(
     @Param('id') id: string,
     @Body() dto: CreateTimelineItemDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.addTimelineItem(id, req.user.id, dto);
   }
@@ -225,7 +226,7 @@ export class EventsController {
   async updateTimelineItem(
     @Param('itemId') itemId: string,
     @Body() dto: UpdateTimelineItemDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.updateTimelineItem(
       itemId,
@@ -236,7 +237,7 @@ export class EventsController {
 
   @Delete('timeline/:itemId')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  async removeTimelineItem(@Param('itemId') itemId: string, @Request() req) {
+  async removeTimelineItem(@Param('itemId') itemId: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.removeTimelineItem(itemId, req.user.id);
   }
 
@@ -245,7 +246,7 @@ export class EventsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all guests for an event' })
-  async getGuests(@Param('id') id: string, @Request() req) {
+  async getGuests(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.getGuests(id, req.user.id);
   }
 
@@ -253,7 +254,7 @@ export class EventsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get guest statistics for an event' })
-  async getGuestStats(@Param('id') id: string, @Request() req) {
+  async getGuestStats(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return await this.eventsService.getGuestStats(id, req.user.id);
   }
 
@@ -265,7 +266,7 @@ export class EventsController {
   async addGuest(
     @Param('id') id: string,
     @Body() dto: CreateGuestDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.addGuest(id, req.user.id, dto);
   }
@@ -278,7 +279,7 @@ export class EventsController {
   async updateGuest(
     @Param('guestId') guestId: string,
     @Body() dto: UpdateGuestDto,
-    @Request() req,
+    @Request() req: AuthenticatedRequest,
   ) {
     return await this.eventsService.updateGuest(guestId, req.user.id, dto);
   }
@@ -289,7 +290,7 @@ export class EventsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove a guest from an event' })
-  async removeGuest(@Param('guestId') guestId: string, @Request() req) {
+  async removeGuest(@Param('guestId') guestId: string, @Request() req: AuthenticatedRequest) {
     await this.eventsService.removeGuest(guestId, req.user.id);
   }
 }

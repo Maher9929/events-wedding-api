@@ -13,6 +13,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -29,6 +30,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
  * All uploads go through the backend (service_role key) so the frontend
  * never needs direct Supabase Storage write access.
  */
+@ApiTags('storage')
+@ApiBearerAuth()
 @Controller('storage')
 @UseGuards(JwtAuthGuard)
 export class StorageController {
@@ -64,7 +67,9 @@ export class StorageController {
     @UploadedFile() file: Express.Multer.File,
     @Body('folder') folder?: string,
   ) {
-    this.logger.log(`Upload request: file=${file?.originalname}, size=${file?.size}, folder=${folder}`);
+    this.logger.log(
+      `Upload request: file=${file?.originalname}, size=${file?.size}, folder=${folder}`,
+    );
     if (!file) {
       throw new BadRequestException('No file provided');
     }
@@ -96,7 +101,9 @@ export class StorageController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body('folder') folder?: string,
   ) {
-    this.logger.log(`Upload-multiple request: files=${files?.length}, folder=${folder}`);
+    this.logger.log(
+      `Upload-multiple request: files=${files?.length}, folder=${folder}`,
+    );
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
     }
@@ -156,10 +163,7 @@ export class StorageController {
    * Delete a file from Supabase Storage.
    */
   @Delete(':bucket/*')
-  async deleteFile(
-    @Param('bucket') bucket: string,
-    @Param('*') path: string,
-  ) {
+  async deleteFile(@Param('bucket') bucket: string, @Param('*') path: string) {
     if (!bucket || !path) {
       throw new BadRequestException('bucket and path are required');
     }
@@ -176,10 +180,7 @@ export class StorageController {
   /**
    * Internal helper — uploads a file buffer to Supabase Storage and returns metadata.
    */
-  private async uploadToSupabase(
-    file: Express.Multer.File,
-    folder: string,
-  ) {
+  private async uploadToSupabase(file: Express.Multer.File, folder: string) {
     const bucket = 'attachments';
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 12);

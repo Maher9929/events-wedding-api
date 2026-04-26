@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiService, type Conversation } from '../services/api';
 import { messagesService } from '../services/messages.service';
@@ -62,6 +62,13 @@ const ProviderDashboardPage = () => {
     const [recentConversations, setRecentConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
+    const [providerVerified, setProviderVerified] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        apiService.get<{ is_verified?: boolean }>('/providers/my-profile')
+            .then(p => setProviderVerified(p?.is_verified ?? false))
+            .catch(() => setProviderVerified(null));
+    }, []);
 
     const loadDashboardData = useCallback(async () => {
         try {
@@ -158,6 +165,26 @@ const ProviderDashboardPage = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Verification Banner */}
+                {providerVerified === false && (
+                    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 mb-6 flex items-start gap-3">
+                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                            <i className="fa-solid fa-shield-exclamation text-amber-600 text-lg"></i>
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-bold text-amber-800">{t('provider_dashboard.unverified_title', 'حسابك غير موثق')}</p>
+                            <p className="text-sm text-amber-700 mt-0.5">{t('provider_dashboard.unverified_desc', 'خدماتك مخفية عن العملاء حتى يتم التحقق من حسابك. قم برفع مستنداتك للحصول على شارة التحقق.')}</p>
+                            <Link
+                                to="/provider/verification"
+                                className="inline-flex items-center gap-1 mt-2 px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold hover:bg-amber-700 transition-colors"
+                            >
+                                <i className="fa-solid fa-arrow-up-from-bracket"></i>
+                                {t('provider_dashboard.verify_now', 'التحقق الآن')}
+                            </Link>
+                        </div>
+                    </div>
+                )}
 
                 {/* Overview Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

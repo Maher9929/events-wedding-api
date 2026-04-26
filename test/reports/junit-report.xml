@@ -1,0 +1,605 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="278" failures="0" errors="0" time="4.911">
+  <testsuite name="src\auth\auth-cache.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="1.898" tests="12">
+    <testcase classname="AuthCacheService (in-memory mode) &gt; cacheUser / getCachedUser" name="should return null for uncached user" time="0.016">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; cacheUser / getCachedUser" name="should cache and retrieve a user" time="0.003">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; cacheUser / getCachedUser" name="should cache user with provider_id" time="0.002">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; cacheUser / getCachedUser" name="should overwrite previous cache entry" time="0.002">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; cacheUser / getCachedUser" name="should return null for expired entry" time="0.001">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; invalidateUser" name="should remove user from cache" time="0.001">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; invalidateUser" name="should not throw when invalidating uncached user" time="0.008">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; blacklistToken / isTokenBlacklisted" name="should return false for non-blacklisted token" time="0.002">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; blacklistToken / isTokenBlacklisted" name="should blacklist a token" time="0.002">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; blacklistToken / isTokenBlacklisted" name="should handle multiple blacklisted tokens" time="0.011">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; blacklistToken / isTokenBlacklisted" name="should prune oldest entry when max size is reached" time="0.001">
+    </testcase>
+    <testcase classname="AuthCacheService (in-memory mode) &gt; onModuleDestroy" name="should not throw when redis is null" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\app.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="2.138" tests="6">
+    <testcase classname="AppService" name="should be defined" time="0.035">
+    </testcase>
+    <testcase classname="AppService &gt; getHello" name="should return API title" time="0.001">
+    </testcase>
+    <testcase classname="AppService &gt; getHealth" name="should return healthy when DB and cache are up" time="0.002">
+    </testcase>
+    <testcase classname="AppService &gt; getHealth" name="should return degraded when DB is down but cache is up" time="0.003">
+    </testcase>
+    <testcase classname="AppService &gt; getHealth" name="should return degraded when cache is down but DB is up" time="0.001">
+    </testcase>
+    <testcase classname="AppService &gt; getHealth" name="should return unhealthy when both are down" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\notifications\notifications.controller.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="2.45" tests="14">
+    <testcase classname="NotificationsController" name="should be defined" time="0.012">
+    </testcase>
+    <testcase classname="NotificationsController &gt; getMyNotifications" name="should return notifications list" time="0.003">
+    </testcase>
+    <testcase classname="NotificationsController &gt; getMyNotifications" name="should return empty on error" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsController &gt; getMyNotifications" name="should pass unread filter" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsController &gt; getMyNotifications" name="should pass type filter" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsController &gt; getUnreadCount" name="should return unread count" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsController &gt; getUnreadCount" name="should return 0 on error" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsController &gt; markAsRead" name="should mark notification as read" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsController &gt; markAsRead" name="should return success false on error" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsController &gt; markAllAsRead" name="should mark all as read" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsController &gt; markAllAsRead" name="should return success false on error" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsController &gt; deleteOne" name="should delete a notification without error" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsController &gt; deleteAll" name="should delete all read notifications" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsController &gt; cleanupOld" name="should delete old read notifications" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\messages\messages.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="2.626" tests="14">
+    <testcase classname="MessagesService" name="should be defined" time="0.008">
+    </testcase>
+    <testcase classname="MessagesService &gt; createConversation" name="should create a conversation successfully" time="0.003">
+    </testcase>
+    <testcase classname="MessagesService &gt; createConversation" name="should sort participant ids" time="0.002">
+    </testcase>
+    <testcase classname="MessagesService &gt; createConversation" name="should throw InternalServerErrorException on DB error" time="0.024">
+    </testcase>
+    <testcase classname="MessagesService &gt; createConversation" name="should throw InternalServerErrorException when no data returned" time="0.009">
+    </testcase>
+    <testcase classname="MessagesService &gt; getConversations" name="should return empty array for falsy userId" time="0.001">
+    </testcase>
+    <testcase classname="MessagesService &gt; getConversations" name="should throw on DB error" time="0.002">
+    </testcase>
+    <testcase classname="MessagesService &gt; getMessages" name="should return empty array for falsy conversationId" time="0.001">
+    </testcase>
+    <testcase classname="MessagesService &gt; sendMessage" name="should throw BadRequestException when senderId is empty" time="0.004">
+    </testcase>
+    <testcase classname="MessagesService &gt; sendMessage" name="should throw BadRequestException when content is empty" time="0.009">
+    </testcase>
+    <testcase classname="MessagesService &gt; sendMessage" name="should throw BadRequestException when no conversation_id or recipient_id" time="0.001">
+    </testcase>
+    <testcase classname="MessagesService &gt; markConversationRead" name="should throw NotFoundException when conversation not found" time="0.002">
+    </testcase>
+    <testcase classname="MessagesService &gt; markConversationRead" name="should mark as read successfully" time="0.001">
+    </testcase>
+    <testcase classname="MessagesService &gt; markConversationRead" name="should throw on update error" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\messages\messages.gateway.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="2.716" tests="10">
+    <testcase classname="MessagesGateway" name="should be defined" time="0.009">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; handleConnection" name="should disconnect client without token" time="0.002">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; handleConnection" name="should authenticate client with valid token" time="0.01">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; handleConnection" name="should disconnect on invalid token" time="0.004">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; handleDisconnect" name="should clean up online user tracking" time="0.003">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; emitNewMessage" name="should emit to conversation room" time="0.002">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; emitNotification" name="should emit to user room" time="0.002">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; handleJoinConversation" name="should join the conversation room" time="0.002">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; handleTyping" name="should emit typing event to conversation" time="0.002">
+    </testcase>
+    <testcase classname="MessagesGateway &gt; getOnlineUserCount" name="should return 0 when no users connected" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\payments\payments.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:01" time="0.554" tests="11">
+    <testcase classname="PaymentsService" name="should be defined" time="0.001">
+    </testcase>
+    <testcase classname="PaymentsService &gt; createPaymentIntent" name="should throw NotFoundException when booking not found" time="0.077">
+    </testcase>
+    <testcase classname="PaymentsService &gt; createPaymentIntent" name="should throw BadRequestException for negative amount" time="0.002">
+    </testcase>
+    <testcase classname="PaymentsService &gt; createPaymentIntent" name="should create intent for valid full payment" time="0.002">
+    </testcase>
+    <testcase classname="PaymentsService &gt; createDepositPaymentIntent" name="should throw NotFoundException for missing booking" time="0.001">
+    </testcase>
+    <testcase classname="PaymentsService &gt; createDepositPaymentIntent" name="should throw BadRequestException if already paid" time="0.001">
+    </testcase>
+    <testcase classname="PaymentsService &gt; getPaymentStatus" name="should return status for booking" time="0.001">
+    </testcase>
+    <testcase classname="PaymentsService &gt; getPaymentStatus" name="should return defaults when not found" time="0.001">
+    </testcase>
+    <testcase classname="PaymentsService &gt; refundPayment" name="should throw for missing booking" time="0.001">
+    </testcase>
+    <testcase classname="PaymentsService &gt; refundPayment" name="should throw if no payment_intent_id" time="0.002">
+    </testcase>
+    <testcase classname="PaymentsService &gt; refundPayment" name="should reject a refund amount above the allowed refundable total" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\reviews\reviews.controller.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:58" time="3.217" tests="10">
+    <testcase classname="ReviewsController" name="should be defined" time="0.009">
+    </testcase>
+    <testcase classname="ReviewsController &gt; create" name="should create a review with user id" time="0.009">
+    </testcase>
+    <testcase classname="ReviewsController &gt; findAll" name="should return reviews with parsed params" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsController &gt; findAll" name="should handle undefined params" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsController &gt; findByService" name="should return reviews for a service" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsController &gt; findByProvider" name="should return reviews for a provider" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsController &gt; getAverageRating" name="should return average rating for a service" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsController &gt; reportReview" name="should report a review" time="0.004">
+    </testcase>
+    <testcase classname="ReviewsController &gt; remove" name="should delete a review" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsController &gt; remove" name="should propagate ForbiddenException" time="0.047">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\bookings\bookings.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:01" time="0.636" tests="9">
+    <testcase classname="BookingsService" name="should be defined" time="0.003">
+    </testcase>
+    <testcase classname="BookingsService &gt; findOne" name="should return booking when found" time="0.002">
+    </testcase>
+    <testcase classname="BookingsService &gt; findOne" name="should throw NotFoundException when booking not found" time="0.067">
+    </testcase>
+    <testcase classname="BookingsService &gt; findOne" name="should throw NotFoundException when user cannot access booking" time="0.002">
+    </testcase>
+    <testcase classname="BookingsService &gt; updateStatus" name="should reject confirmation by non-provider" time="0.003">
+    </testcase>
+    <testcase classname="BookingsService &gt; updateStatus" name="should reject cancellation by non-client (provider)" time="0.003">
+    </testcase>
+    <testcase classname="BookingsService &gt; updateStatus" name="should reject confirming already completed booking" time="0.002">
+    </testcase>
+    <testcase classname="BookingsService &gt; updateStatus" name="should require cancellation_reason when cancelling" time="0.033">
+    </testcase>
+    <testcase classname="BookingsService &gt; updateStatus" name="should reject completing a non-confirmed booking" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\categories\categories.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:01" time="0.447" tests="17">
+    <testcase classname="CategoriesService" name="should be defined" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesService &gt; create" name="should throw ConflictException when slug already exists" time="0.037">
+    </testcase>
+    <testcase classname="CategoriesService &gt; create" name="should create category successfully" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesService &gt; create" name="should throw BadRequestException on insert error" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findOne" name="should return category when found" time="0.022">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findOne" name="should throw NotFoundException when not found" time="0.027">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findBySlug" name="should return category by slug" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findBySlug" name="should throw NotFoundException for unknown slug" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findRootCategories" name="should return root categories" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findRootCategories" name="should return empty array when none exist" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findRootCategories" name="should throw on DB error" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesService &gt; findChildren" name="should return child categories" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesService &gt; update" name="should update category" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesService &gt; update" name="should throw NotFoundException on update failure" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesService &gt; remove" name="should throw ConflictException when category has children" time="0.004">
+    </testcase>
+    <testcase classname="CategoriesService &gt; remove" name="should delete category successfully" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesService &gt; remove" name="should throw NotFoundException when delete fails" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\users\users.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="3.074" tests="4">
+    <testcase classname="UsersService" name="should be defined" time="0.026">
+    </testcase>
+    <testcase classname="UsersService &gt; register" name="should throw ConflictException if email already exists" time="0.023">
+    </testcase>
+    <testcase classname="UsersService &gt; findOne" name="should return a user when found" time="0.004">
+    </testcase>
+    <testcase classname="UsersService &gt; findOne" name="should throw NotFoundException when user not found" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\quotes\quotes.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:01" time="1.351" tests="18">
+    <testcase classname="QuotesService" name="should be defined" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; findOne" name="should return a quote when found" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; findOne" name="should throw NotFoundException when quote not found" time="0.057">
+    </testcase>
+    <testcase classname="QuotesService &gt; create" name="should throw BadRequestException when provider and client are the same" time="0.016">
+    </testcase>
+    <testcase classname="QuotesService &gt; create" name="should create a quote successfully" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; create" name="should throw NotFoundException when quote_request_id does not exist" time="0.003">
+    </testcase>
+    <testcase classname="QuotesService &gt; findByUser" name="should return quotes for user" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; findByUser" name="should filter by status" time="0.001">
+    </testcase>
+    <testcase classname="QuotesService &gt; findByUser" name="should throw on DB error" time="0.001">
+    </testcase>
+    <testcase classname="QuotesService &gt; send" name="should throw NotFoundException when quote not found" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; send" name="should throw BadRequestException when quote is not a draft" time="0.001">
+    </testcase>
+    <testcase classname="QuotesService &gt; send" name="should throw BadRequestException when quote is expired" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; send" name="should send quote successfully" time="0.001">
+    </testcase>
+    <testcase classname="QuotesService &gt; updateStatus" name="should throw NotFoundException when quote not found" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; updateStatus" name="should throw ForbiddenException for expired quote on accept" time="0.017">
+    </testcase>
+    <testcase classname="QuotesService &gt; updateStatus" name="should throw ForbiddenException for non-sent quote" time="0.001">
+    </testcase>
+    <testcase classname="QuotesService &gt; remove" name="should delete a quote" time="0.002">
+    </testcase>
+    <testcase classname="QuotesService &gt; remove" name="should throw NotFoundException on error" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\events\events.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:02" time="0.582" tests="15">
+    <testcase classname="EventsService" name="should be defined" time="0.004">
+    </testcase>
+    <testcase classname="EventsService &gt; create" name="should create an event successfully" time="0.003">
+    </testcase>
+    <testcase classname="EventsService &gt; create" name="should throw BadRequestException on DB error" time="0.047">
+    </testcase>
+    <testcase classname="EventsService &gt; findOne" name="should return an event when found" time="0.007">
+    </testcase>
+    <testcase classname="EventsService &gt; findOne" name="should throw NotFoundException when event not found" time="0.001">
+    </testcase>
+    <testcase classname="EventsService &gt; findByClient" name="should return events for a client" time="0.001">
+    </testcase>
+    <testcase classname="EventsService &gt; findByClient" name="should return empty array when no events" time="0.002">
+    </testcase>
+    <testcase classname="EventsService &gt; findByClient" name="should throw on DB error" time="0.002">
+    </testcase>
+    <testcase classname="EventsService &gt; getStats" name="should return stats grouped by type and status" time="0.002">
+    </testcase>
+    <testcase classname="EventsService &gt; getStats" name="should return empty stats when no events" time="0.001">
+    </testcase>
+    <testcase classname="EventsService &gt; getStats" name="should throw on DB error" time="0.001">
+    </testcase>
+    <testcase classname="EventsService &gt; assertEventOwnership (indirect)" name="should throw ForbiddenException when user is not the owner" time="0.002">
+    </testcase>
+    <testcase classname="EventsService &gt; update" name="should update an event successfully" time="0.001">
+    </testcase>
+    <testcase classname="EventsService &gt; remove" name="should throw ForbiddenException when not the owner" time="0.001">
+    </testcase>
+    <testcase classname="EventsService &gt; remove" name="should delete an event successfully" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\categories\categories.controller.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="3.44" tests="11">
+    <testcase classname="CategoriesController" name="should be defined" time="0.012">
+    </testcase>
+    <testcase classname="CategoriesController &gt; create" name="should create a category" time="0.004">
+    </testcase>
+    <testcase classname="CategoriesController &gt; findAll" name="should return paginated categories" time="0.003">
+    </testcase>
+    <testcase classname="CategoriesController &gt; findRootCategories" name="should return root categories" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesController &gt; findBySlug" name="should return category by slug" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesController &gt; findBySlug" name="should propagate NotFoundException" time="0.018">
+    </testcase>
+    <testcase classname="CategoriesController &gt; findOne" name="should return category by id" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesController &gt; findChildren" name="should return child categories" time="0.002">
+    </testcase>
+    <testcase classname="CategoriesController &gt; update" name="should update a category" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesController &gt; remove" name="should delete a category" time="0.001">
+    </testcase>
+    <testcase classname="CategoriesController &gt; remove" name="should propagate ConflictException for categories with children" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\events\events.controller.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="3.603" tests="12">
+    <testcase classname="EventsController" name="should be defined" time="0.01">
+    </testcase>
+    <testcase classname="EventsController &gt; create" name="should create an event with authenticated user id" time="0.039">
+    </testcase>
+    <testcase classname="EventsController &gt; findAll" name="should return paginated events" time="0.002">
+    </testcase>
+    <testcase classname="EventsController &gt; findUpcoming" name="should return upcoming events with default limit" time="0.002">
+    </testcase>
+    <testcase classname="EventsController &gt; findUpcoming" name="should parse custom limit" time="0.002">
+    </testcase>
+    <testcase classname="EventsController &gt; findTemplates" name="should return template events" time="0.002">
+    </testcase>
+    <testcase classname="EventsController &gt; findByEventType" name="should return events by type" time="0.002">
+    </testcase>
+    <testcase classname="EventsController &gt; findMyEvents" name="should return events for the authenticated user" time="0.002">
+    </testcase>
+    <testcase classname="EventsController &gt; findOne" name="should return a single event" time="0.002">
+    </testcase>
+    <testcase classname="EventsController &gt; findOne" name="should propagate NotFoundException" time="0.052">
+    </testcase>
+    <testcase classname="EventsController &gt; remove" name="should delete an event" time="0.014">
+    </testcase>
+    <testcase classname="EventsController &gt; remove" name="should propagate ForbiddenException" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\notifications\notifications.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:02" time="0.471" tests="17">
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="should be defined" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="should not call sgMail.send" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="notifyNewBooking should not throw" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="notifyBookingConfirmed should not throw" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="notifyNewQuote should not throw" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="notifyNewMessage should not throw" time="0">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="notifyProviderVerified should not throw" time="0">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is disabled" name="notifyEventReminder should not throw" time="0">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="should set the API key" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="sendEmail should call sgMail.send with correct params" time="0.002">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="notifyNewBooking should send email" time="0">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="notifyBookingConfirmed should send email" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="notifyNewQuote should send email with amount" time="0">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="notifyNewMessage should send email" time="0">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="notifyProviderVerified should send email" time="0.001">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="notifyEventReminder should send email" time="0">
+    </testcase>
+    <testcase classname="NotificationsService &gt; when SendGrid is enabled" name="should silently catch send errors" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\common\common.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:02" time="0.111" tests="14">
+    <testcase classname="filterContactInfo" name="should block phone numbers" time="0.002">
+    </testcase>
+    <testcase classname="filterContactInfo" name="should block email addresses" time="0.002">
+    </testcase>
+    <testcase classname="filterContactInfo" name="should block social media links" time="0.001">
+    </testcase>
+    <testcase classname="filterContactInfo" name="should not filter clean content" time="0.002">
+    </testcase>
+    <testcase classname="filterContactInfo" name="should block whatsapp keyword + number combo" time="0.001">
+    </testcase>
+    <testcase classname="filterContactInfo" name="should handle multiple violation types in one string" time="0.002">
+    </testcase>
+    <testcase classname="maskProviderData" name="should mask website and social_media" time="0">
+    </testcase>
+    <testcase classname="maskProviderData" name="should mask user_profiles email" time="0.001">
+    </testcase>
+    <testcase classname="maskProviderData" name="should not mutate original object" time="0">
+    </testcase>
+    <testcase classname="maskEmail" name="should mask middle characters" time="0.001">
+    </testcase>
+    <testcase classname="maskEmail" name="should handle short local part" time="0.001">
+    </testcase>
+    <testcase classname="maskEmail" name="should handle invalid input" time="0.001">
+    </testcase>
+    <testcase classname="maskPhone" name="should mask middle digits" time="0.001">
+    </testcase>
+    <testcase classname="maskPhone" name="should handle short input" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\disputes\disputes.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:02" time="0.362" tests="8">
+    <testcase classname="DisputesService" name="should be defined" time="0.002">
+    </testcase>
+    <testcase classname="DisputesService &gt; create" name="should throw NotFoundException when booking not found" time="0.025">
+    </testcase>
+    <testcase classname="DisputesService &gt; create" name="should throw ForbiddenException when user is not the client" time="0.001">
+    </testcase>
+    <testcase classname="DisputesService &gt; create" name="should throw BadRequestException for pending booking" time="0">
+    </testcase>
+    <testcase classname="DisputesService &gt; create" name="should throw BadRequestException if active dispute already exists" time="0.001">
+    </testcase>
+    <testcase classname="DisputesService &gt; create" name="should create dispute successfully" time="0.008">
+    </testcase>
+    <testcase classname="DisputesService &gt; getMyDisputes" name="should return disputes for user" time="0.002">
+    </testcase>
+    <testcase classname="DisputesService &gt; getMyDisputes" name="should throw on DB error" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\common\dto-validation.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:01" time="0.926" tests="28">
+    <testcase classname="CreateUserDto validation" name="should pass with valid data" time="0.01">
+    </testcase>
+    <testcase classname="CreateUserDto validation" name="should fail when email is missing" time="0.002">
+    </testcase>
+    <testcase classname="CreateUserDto validation" name="should fail when email is invalid" time="0.002">
+    </testcase>
+    <testcase classname="CreateUserDto validation" name="should fail when password is too short" time="0.002">
+    </testcase>
+    <testcase classname="CreateUserDto validation" name="should fail when password is missing" time="0.001">
+    </testcase>
+    <testcase classname="CreateUserDto validation" name="should fail with invalid role" time="0.002">
+    </testcase>
+    <testcase classname="CreateUserDto validation" name="should pass with valid role" time="0.001">
+    </testcase>
+    <testcase classname="CreateBookingDto validation" name="should pass with valid data" time="0.002">
+    </testcase>
+    <testcase classname="CreateBookingDto validation" name="should fail when provider_id is missing" time="0.003">
+    </testcase>
+    <testcase classname="CreateBookingDto validation" name="should fail when booking_date is not a date string" time="0.001">
+    </testcase>
+    <testcase classname="CreateBookingDto validation" name="should fail when amount is negative" time="0">
+    </testcase>
+    <testcase classname="CreateBookingDto validation" name="should fail when amount is missing" time="0">
+    </testcase>
+    <testcase classname="CreateBookingDto validation" name="should fail with invalid status enum" time="0.001">
+    </testcase>
+    <testcase classname="CreateBookingDto validation" name="should pass with valid optional fields" time="0.001">
+    </testcase>
+    <testcase classname="UpdateBookingStatusDto validation" name="should pass with valid status" time="0.001">
+    </testcase>
+    <testcase classname="UpdateBookingStatusDto validation" name="should fail with missing status" time="0">
+    </testcase>
+    <testcase classname="UpdateBookingStatusDto validation" name="should fail with invalid status" time="0.001">
+    </testcase>
+    <testcase classname="CreateReviewDto validation" name="should pass with valid data" time="0.001">
+    </testcase>
+    <testcase classname="CreateReviewDto validation" name="should fail when service_id is missing" time="0">
+    </testcase>
+    <testcase classname="CreateReviewDto validation" name="should fail when rating is below 1" time="0.001">
+    </testcase>
+    <testcase classname="CreateReviewDto validation" name="should fail when rating is above 5" time="0.001">
+    </testcase>
+    <testcase classname="CreateReviewDto validation" name="should fail when rating is missing" time="0">
+    </testcase>
+    <testcase classname="CreateReviewDto validation" name="should pass with optional comment" time="0">
+    </testcase>
+    <testcase classname="CreateMessageDto validation" name="should pass with valid data" time="0.001">
+    </testcase>
+    <testcase classname="CreateMessageDto validation" name="should fail when content is empty" time="0.001">
+    </testcase>
+    <testcase classname="CreateMessageDto validation" name="should fail when content is missing" time="0.002">
+    </testcase>
+    <testcase classname="CreateMessageDto validation" name="should fail with invalid type enum" time="0.001">
+    </testcase>
+    <testcase classname="CreateMessageDto validation" name="should pass with valid type" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\providers\providers.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:02" time="0.551" tests="19">
+    <testcase classname="ProvidersService" name="should be defined" time="0.002">
+    </testcase>
+    <testcase classname="ProvidersService &gt; create" name="should throw ConflictException when provider already exists" time="0.118">
+    </testcase>
+    <testcase classname="ProvidersService &gt; create" name="should create provider successfully" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; create" name="should throw BadRequestException on insert error" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; findOne" name="should return provider when found" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; findOne" name="should throw NotFoundException when not found" time="0.002">
+    </testcase>
+    <testcase classname="ProvidersService &gt; findByUserId" name="should return provider with service counts" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; findByUserId" name="should return null when not found" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; update" name="should throw ForbiddenException when user is not the owner" time="0.002">
+    </testcase>
+    <testcase classname="ProvidersService &gt; update" name="should update provider successfully" time="0.004">
+    </testcase>
+    <testcase classname="ProvidersService &gt; updateVerification" name="should verify a provider" time="0.002">
+    </testcase>
+    <testcase classname="ProvidersService &gt; updateVerification" name="should throw NotFoundException on error" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; updateRating" name="should calculate new average correctly" time="0.008">
+    </testcase>
+    <testcase classname="ProvidersService &gt; updateRating" name="should throw NotFoundException when provider not found" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; findTopRated" name="should return top rated providers" time="0.001">
+    </testcase>
+    <testcase classname="ProvidersService &gt; findTopRated" name="should return empty array when none exist" time="0.002">
+    </testcase>
+    <testcase classname="ProvidersService &gt; findTopRated" name="should throw on DB error" time="0.004">
+    </testcase>
+    <testcase classname="ProvidersService &gt; updateByUserId" name="should throw NotFoundException when provider not found" time="0.005">
+    </testcase>
+    <testcase classname="ProvidersService &gt; updateByUserId" name="should update provider by user id" time="0.009">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\users\users.controller.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="3.643" tests="3">
+    <testcase classname="UsersController" name="should be defined" time="0.051">
+    </testcase>
+    <testcase classname="UsersController &gt; register" name="should call usersService.register" time="0.017">
+    </testcase>
+    <testcase classname="UsersController &gt; login" name="should call usersService.login" time="0.012">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\reviews\reviews.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:02" time="0.412" tests="14">
+    <testcase classname="ReviewsService" name="should be defined" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsService &gt; create" name="should throw ForbiddenException when service not found" time="0.018">
+    </testcase>
+    <testcase classname="ReviewsService &gt; create" name="should throw ForbiddenException when no completed booking exists" time="0.006">
+    </testcase>
+    <testcase classname="ReviewsService &gt; create" name="should throw ConflictException when already reviewed" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsService &gt; create" name="should create review successfully" time="0.004">
+    </testcase>
+    <testcase classname="ReviewsService &gt; getAverageRating" name="should return 0 average when no reviews" time="0.002">
+    </testcase>
+    <testcase classname="ReviewsService &gt; getAverageRating" name="should compute correct average" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsService &gt; getAverageRating" name="should throw on DB error" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsService &gt; findByService" name="should return reviews for a service" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsService &gt; findByService" name="should return empty array when no reviews" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsService &gt; remove" name="should throw ForbiddenException when not the author" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsService &gt; remove" name="should throw ForbiddenException when review not found" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsService &gt; reportReview" name="should report a review successfully" time="0.001">
+    </testcase>
+    <testcase classname="ReviewsService &gt; reportReview" name="should throw on DB error" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\bookings\bookings.controller.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:42:59" time="3.636" tests="8">
+    <testcase classname="BookingsController" name="should be defined" time="0.015">
+    </testcase>
+    <testcase classname="BookingsController &gt; create" name="should create a booking with authenticated user id" time="0.004">
+    </testcase>
+    <testcase classname="BookingsController &gt; findAll" name="should return all bookings for admin" time="0.002">
+    </testcase>
+    <testcase classname="BookingsController &gt; findAll" name="should parse numeric limit and offset" time="0.002">
+    </testcase>
+    <testcase classname="BookingsController &gt; findMyBookings" name="should return bookings for the authenticated user" time="0.002">
+    </testcase>
+    <testcase classname="BookingsController &gt; findByProvider" name="should resolve &quot;me&quot; to the user provider_id" time="0.001">
+    </testcase>
+    <testcase classname="BookingsController &gt; findByProvider" name="should use explicit provider id" time="0.002">
+    </testcase>
+    <testcase classname="BookingsController &gt; getAdminStats" name="should return admin stats" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="src\services\services.service.spec.ts" errors="0" failures="0" skipped="0" timestamp="2026-04-26T13:43:02" time="0.276" tests="4">
+    <testcase classname="ServicesService" name="should be defined" time="0">
+    </testcase>
+    <testcase classname="ServicesService &gt; findOne" name="should return a service when found" time="0">
+    </testcase>
+    <testcase classname="ServicesService &gt; findOne" name="should throw NotFoundException when service not found" time="0.011">
+    </testcase>
+    <testcase classname="ServicesService &gt; create" name="should create a service when provider is valid" time="0.003">
+    </testcase>
+  </testsuite>
+</testsuites>

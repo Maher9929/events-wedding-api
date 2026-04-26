@@ -17,6 +17,7 @@ const ProviderLayout = () => {
     { path: '/provider/bookings', label: t('common.provider.bookings'), icon: 'fa-calendar-check' },
     { path: '/provider/quotes', label: t('common.provider.quotes'), icon: 'fa-file-contract' },
     { path: '/provider/reviews', label: t('common.provider.reviews'), icon: 'fa-star' },
+    { path: '/provider/verification', label: t('common.provider.verification', 'التحقق'), icon: 'fa-shield-check' },
     { path: '/provider/profile', label: t('common.provider.profile'), icon: 'fa-user' },
   ];
 

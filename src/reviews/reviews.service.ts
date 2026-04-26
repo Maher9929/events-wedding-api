@@ -6,6 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { sanitizeSearch } from '../common/sanitize';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { Review } from './entities/review.entity';
 
@@ -100,7 +101,7 @@ export class ReviewsService {
     }
 
     if (search) {
-      q = q.ilike('comment', `%${search}%`);
+      q = q.ilike('comment', `%${sanitizeSearch(search)}%`);
     }
 
     if (limit !== undefined && offset !== undefined) {

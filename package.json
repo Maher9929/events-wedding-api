@@ -21,9 +21,11 @@
     "test:cucumber": "cucumber-js",
     "test:selenium": "cucumber-js --tags @selenium",
     "test:report": "node test/generate-report.js",
-    "test:ui": "node test/run-cucumber.js"
+    "test:ui": "node test/run-cucumber.js",
+    "test:junit": "jest --reporters=default --reporters=jest-junit --forceExit"
   },
   "dependencies": {
+    "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
     "@nestjs/core": "^11.0.1",
@@ -31,8 +33,10 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.19",
     "@nestjs/swagger": "^11.2.6",
     "@nestjs/throttler": "^6.5.0",
+    "@nestjs/websockets": "^11.1.19",
     "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^10.42.0",
     "@supabase/supabase-js": "^2.95.3",
@@ -40,14 +44,18 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/pdfkit": "^0.17.5",
     "bcryptjs": "^3.0.3",
+    "cache-manager": "^7.2.8",
+    "cache-manager-ioredis-yet": "^2.1.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
     "helmet": "^8.1.0",
+    "ioredis": "^5.10.1",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdfkit": "^0.17.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
     "stripe": "^20.3.1",
     "swagger-ui-express": "^5.0.1"
   },
@@ -71,6 +79,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
     "jest": "^30.0.0",
+    "jest-junit": "^16.0.0",
     "prettier": "^3.4.2",
     "selenium-webdriver": "^4.41.0",
     "source-map-support": "^0.5.21",
@@ -97,6 +106,20 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "reporters": [
+      "default",
+      [
+        "jest-junit",
+        {
+          "outputDirectory": "test/reports",
+          "outputName": "junit-report.xml",
+          "classNameTemplate": "{classname}",
+          "titleTemplate": "{title}",
+          "ancestorSeparator": " > ",
+          "suiteNameTemplate": "{filepath}"
+        }
+      ]
+    ]
   }
 }

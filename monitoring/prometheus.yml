@@ -11,7 +11,7 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  - job_name: 'dousha-backend'
+  - job_name: 'doha-events-backend'
     static_configs:
       - targets: ['backend:3000']
     metrics_path: '/metrics'

@@ -1,4 +1,4 @@
-import { toast, type ToastOptions } from 'react-toastify';
+import { toast, type ToastOptions, type Id as ToastId } from 'react-toastify';
 
 const defaultOptions: ToastOptions = {
   position: 'top-right',
@@ -31,7 +31,7 @@ export const toastService = {
     return toast.loading(message, { ...defaultOptions });
   },
 
-  update: (toastId: any, type: 'success' | 'error' | 'info', message: string) => {
+  update: (toastId: ToastId, type: 'success' | 'error' | 'info', message: string) => {
     toast.update(toastId, {
       render: message,
       type,

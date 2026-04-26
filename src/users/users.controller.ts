@@ -26,6 +26,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Public } from '../auth/decorators/public.decorator';
@@ -39,9 +40,9 @@ export class UsersController {
   @Public()
   @Post('register')
   @Throttle({ default: { ttl: 60000, limit: 3 } })
-  @ApiOperation({ summary: "Inscription d'un nouvel utilisateur" })
-  @ApiResponse({ status: 201, description: 'Utilisateur créé avec succès' })
-  @ApiResponse({ status: 409, description: 'Email déjà utilisé' })
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
   async register(@Body() registerDto: RegisterDto) {
     return await this.usersService.register(registerDto);
   }
@@ -50,9 +51,9 @@ export class UsersController {
   @Post('login')
   @Throttle({ default: { ttl: 60000, limit: 5 } })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Connexion utilisateur' })
-  @ApiResponse({ status: 200, description: 'Connexion réussie' })
-  @ApiResponse({ status: 401, description: 'Identifiants invalides' })
+  @ApiOperation({ summary: 'User login' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return await this.usersService.login(loginDto);
   }
@@ -61,9 +62,9 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Déconnexion — invalide le token courant' })
-  @ApiResponse({ status: 200, description: 'Déconnecté avec succès' })
-  async logout(@Request() req: { user: { id: string; jti?: string } }) {
+  @ApiOperation({ summary: 'Logout — invalidate the current token' })
+  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  async logout(@Request() req: AuthenticatedRequest) {
     await this.usersService.logout(req.user.jti, req.user.id);
     return { message: 'Logged out' };
   }
@@ -71,27 +72,30 @@ export class UsersController {
   @Post('refresh')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Renouveler le token JWT' })
-  @ApiResponse({ status: 200, description: 'Nouveau token généré' })
-  async refresh(@Request() req: { user: { id: string } }) {
+  @ApiOperation({ summary: 'Refresh the JWT token' })
+  @ApiResponse({ status: 200, description: 'New token generated' })
+  async refresh(@Request() req: AuthenticatedRequest) {
     return await this.usersService.refreshToken(req.user.id);
   }
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Obtenir le profil utilisateur' })
-  @ApiResponse({ status: 200, description: 'Profil utilisateur récupéré' })
-  @ApiResponse({ status: 401, description: 'Non autorisé' })
-  async getProfile(@Request() req: { user: { id: string } }) {
+  @ApiOperation({ summary: 'Get the current user profile' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getProfile(@Request() req: AuthenticatedRequest) {
     return await this.usersService.findOne(req.user.id);
   }
 
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Mettre à jour le profil utilisateur' })
-  async updateProfile(@Request() req: { user: { id: string } }, @Body() updateData: UpdateUserDto) {
+  @ApiOperation({ summary: 'Update the current user profile' })
+  async updateProfile(
+    @Request() req: AuthenticatedRequest,
+    @Body() updateData: UpdateUserDto,
+  ) {
     return await this.usersService.update(req.user.id, updateData);
   }
 
@@ -114,6 +118,20 @@ export class UsersController {
     );
   }
 
+  @Get('search')
+  @UseGuards(JwtAuthGuard)
+  async searchProfiles(
+    @Request() req: AuthenticatedRequest,
+    @Query('q') query?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return await this.usersService.searchProfiles(
+      query || '',
+      req.user.id,
+      limit ? parseInt(limit, 10) : undefined,
+    );
+  }
+
   @Get('id/:id')
   @UseGuards(JwtAuthGuard)
   async findOne(@Param('id') id: string) {
@@ -125,10 +143,10 @@ export class UsersController {
   async update(
     @Param('id') id: string,
     @Body() updateData: UpdateUserDto,
-    @Request() req: { user: { id: string; role: string } },
+    @Request() req: AuthenticatedRequest,
   ) {
     // Users can only update their own profile unless they're admin
-    if (req.user.id !== id && req.user.role !== UserRole.ADMIN) {
+    if (req.user.id !== id && req.user.role !== (UserRole.ADMIN as string)) {
       throw new ForbiddenException('Unauthorized');
     }
     return await this.usersService.update(id, updateData);
@@ -144,7 +162,10 @@ export class UsersController {
 
   @Post('avatar')
   @UseGuards(JwtAuthGuard)
-  async uploadAvatar(@Request() req: { user: { id: string } }, @Body('avatar_url') avatarUrl: string) {
+  async uploadAvatar(
+    @Request() req: AuthenticatedRequest,
+    @Body('avatar_url') avatarUrl: string,
+  ) {
     if (!avatarUrl) throw new BadRequestException('avatar_url is required');
     const updated = await this.usersService.update(req.user.id, {
       avatar_url: avatarUrl,

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { messagesService } from '../services/messages.service';
+import { messagesService, type UserSearchResult } from '../services/messages.service';
 import { authService } from '../services/auth.service';
 import type { Conversation, Message } from '../services/api';
 import { toastService } from '../services/toast.service';
@@ -21,6 +21,11 @@ const MessagesPage = () => {
     const [sending, setSending] = useState(false);
     const [showNewConvo, setShowNewConvo] = useState(false);
     const [recipientId, setRecipientId] = useState('');
+    const [recipientSearch, setRecipientSearch] = useState('');
+    const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+    const [selectedRecipient, setSelectedRecipient] = useState<UserSearchResult | null>(null);
+    const [searchingUsers, setSearchingUsers] = useState(false);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [firstMsg, setFirstMsg] = useState('');
     const [search, setSearch] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -104,7 +109,12 @@ const MessagesPage = () => {
         setSending(true);
         try {
             const sent = await messagesService.sendMessage({ conversation_id: selectedId, content: newMessage });
-            if (sent?.id) setMessages(prev => [...prev, sent]);
+            if (sent?.id) {
+                setMessages(prev => [...prev, sent]);
+                if (sent.metadata?.content_filtered) {
+                    toastService.warning(t('messages_page.content_filtered', 'تم تعديل رسالتك — لا يُسمح بمشاركة معلومات الاتصال'));
+                }
+            }
             setNewMessage('');
             setConversations(prev => prev.map(c =>
                 c.id === selectedId ? { ...c, last_message_at: new Date().toISOString() } : c
@@ -114,6 +124,30 @@ const MessagesPage = () => {
         } finally {
             setSending(false);
         }
+    };
+
+    // Search users by name/email with debounce
+    const handleRecipientSearch = (query: string) => {
+        setRecipientSearch(query);
+        setSelectedRecipient(null);
+        setRecipientId('');
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        if (query.trim().length < 2) { setSearchResults([]); return; }
+        searchTimeoutRef.current = setTimeout(async () => {
+            setSearchingUsers(true);
+            try {
+                const results = await messagesService.searchUsers(query);
+                setSearchResults(Array.isArray(results) ? results : []);
+            } catch { setSearchResults([]); }
+            finally { setSearchingUsers(false); }
+        }, 300);
+    };
+
+    const selectRecipient = (user: UserSearchResult) => {
+        setSelectedRecipient(user);
+        setRecipientId(user.id);
+        setRecipientSearch(user.full_name);
+        setSearchResults([]);
     };
 
     const handleNewConversation = async () => {
@@ -135,6 +169,8 @@ const MessagesPage = () => {
             }
             setShowNewConvo(false);
             setRecipientId('');
+            setRecipientSearch('');
+            setSelectedRecipient(null);
             setFirstMsg('');
             toastService.success(t('messages_page.create_success'));
         } catch (_error) {
@@ -292,6 +328,12 @@ const MessagesPage = () => {
                             </div>
                         </div>
 
+                        {/* Safety Banner */}
+                        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 flex items-center gap-2 text-amber-800 text-xs flex-shrink-0">
+                            <i className="fa-solid fa-shield-halved text-amber-500"></i>
+                            <span>{t('messages_page.safety_banner', 'لحمايتك، مشاركة أرقام الهاتف والبريد الإلكتروني محظورة. يرجى التواصل عبر المنصة فقط.')}</span>
+                        </div>
+
                         {/* Messages */}
                         <div className="flex-1 overflow-y-auto p-4 space-y-3">
                             {loadingMsgs && (
@@ -432,16 +474,69 @@ const MessagesPage = () => {
                             </button>
                         </div>
                         <div className="space-y-4">
-                            <div>
-                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('messages_page.recipient_id')}</label>
-                                <input
-                                    type="text"
-                                    placeholder={t('messages_page.recipient_id_placeholder')}
-                                    value={recipientId}
-                                    onChange={e => setRecipientId(e.target.value)}
-                                    className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                />
-                                <p className="text-xs text-gray-400 mt-1">{t('messages_page.recipient_id_hint')}</p>
+                            <div className="relative">
+                                <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('messages_page.recipient', 'ابحث عن المستلم')}</label>
+                                {selectedRecipient ? (
+                                    <div className="flex items-center gap-3 h-11 border border-primary/30 bg-purple-50 rounded-xl px-4">
+                                        {selectedRecipient.avatar_url ? (
+                                            <img src={selectedRecipient.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+                                        ) : (
+                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xs font-bold">
+                                                {selectedRecipient.full_name?.charAt(0)}
+                                            </div>
+                                        )}
+                                        <span className="flex-1 text-sm font-bold text-gray-800 truncate">{selectedRecipient.full_name}</span>
+                                        <button
+                                            onClick={() => { setSelectedRecipient(null); setRecipientId(''); setRecipientSearch(''); }}
+                                            className="text-xs text-primary font-bold hover:underline"
+                                        >
+                                            {t('messages_page.change_recipient', 'تغيير')}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder={t('messages_page.recipient_placeholder', 'اكتب الاسم أو البريد الإلكتروني')}
+                                                value={recipientSearch}
+                                                onChange={e => handleRecipientSearch(e.target.value)}
+                                                className="w-full h-11 border border-gray-200 rounded-xl px-4 pe-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                            />
+                                            {searchingUsers && (
+                                                <i className="fa-solid fa-spinner fa-spin absolute left-3 top-3.5 text-gray-400 text-sm"></i>
+                                            )}
+                                        </div>
+                                        {searchResults.length > 0 && (
+                                            <div className="absolute z-10 left-0 right-0 top-[4.5rem] bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                                                {searchResults.map(user => (
+                                                    <button
+                                                        key={user.id}
+                                                        onClick={() => selectRecipient(user)}
+                                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-right"
+                                                    >
+                                                        {user.avatar_url ? (
+                                                            <img src={user.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                                                        ) : (
+                                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                                                {user.full_name?.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-bold text-gray-800 truncate">{user.full_name}</p>
+                                                            <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                                                        </div>
+                                                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{user.role}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {recipientSearch.length >= 2 && !searchingUsers && searchResults.length === 0 && (
+                                            <p className="text-xs text-gray-400 mt-1">{t('messages_page.no_recipient_results', 'لا توجد نتائج مطابقة')}</p>
+                                        )}
+                                    </>
+                                )}
+                                <p className="text-xs text-gray-400 mt-1">{t('messages_page.recipient_hint', 'ابحث بالاسم أو البريد الإلكتروني')}</p>
                             </div>
                             <div>
                                 <label className="text-sm font-bold text-gray-700 block mb-1.5">{t('messages_page.first_message')}</label>

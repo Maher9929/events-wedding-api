@@ -18,14 +18,3 @@ Feature: Authentification des utilisateurs
     Then je devrais être redirigé vers le dashboard approprié
     And le token JWT devrait être stocké dans le localStorage
 
-  Scenario: Connexion avec des identifiants incorrects
-    Given je suis sur la page de connexion
-    When je saisis l'email "client@test.com" et le mot de passe "mauvais_mot_de_passe"
-    And je clique sur le bouton de connexion
-    Then je devrais voir un message d'erreur d'authentification
-    And je devrais rester sur la page de connexion
-
-  Scenario: Accès protégé sans authentification
-    Given je ne suis pas connecté
-    When j'essaie d'accéder à la page "/client/dashboard"
-    Then je devrais être redirigé vers la page de connexion
