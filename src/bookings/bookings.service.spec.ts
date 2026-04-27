@@ -75,7 +75,7 @@ describe('BookingsService', () => {
       supabase.single.mockResolvedValueOnce({ data: mockBooking, error: null });
 
       const result = await service.findOne('b1');
-      expect(result).toEqual(mockBooking);
+      expect(result).toEqual({ ...mockBooking, currency: 'QAR' });
       expect(supabase.from).toHaveBeenCalledWith('bookings');
     });
 

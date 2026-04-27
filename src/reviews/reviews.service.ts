@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { sanitizeSearch } from '../common/sanitize';
+import { addReviewAliases, normalizeReview, mapArray } from '../common/response-compat';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { Review } from './entities/review.entity';
 
@@ -71,7 +72,7 @@ export class ReviewsService {
     // Update provider rating
     await this.updateProviderRating(dto.service_id);
 
-    return data;
+    return addReviewAliases(data);
   }
 
   async findAll(
@@ -110,7 +111,7 @@ export class ReviewsService {
 
     const { data, error, count } = await q;
     if (error) throw new BadRequestException(error.message);
-    return { data: data || [], total: count || 0 };
+    return { data: mapArray(data || [], normalizeReview), total: count || 0 };
   }
 
   async findByService(serviceId: string): Promise<Review[]> {
@@ -126,7 +127,7 @@ export class ReviewsService {
       .order('created_at', { ascending: false });
 
     if (error) throw new BadRequestException(error.message);
-    return data || [];
+    return mapArray(data || [], normalizeReview);
   }
 
   async getAverageRating(
@@ -189,7 +190,7 @@ export class ReviewsService {
 
     const { data, error, count } = await q;
     if (error) throw new BadRequestException(error.message);
-    return { data: data || [], total: count || 0 };
+    return { data: mapArray(data || [], normalizeReview), total: count || 0 };
   }
 
   async remove(id: string, clientId: string): Promise<void> {

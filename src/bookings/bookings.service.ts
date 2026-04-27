@@ -18,6 +18,7 @@ import Stripe from 'stripe';
 import { AuditLogService } from '../common/audit-log.service';
 import { sanitizeSearch } from '../common/sanitize';
 import { COMMISSION_RATE } from '../common/constants';
+import { addBookingAliases, mapArray } from '../common/response-compat';
 
 @Injectable()
 export class BookingsService {
@@ -332,7 +333,8 @@ export class BookingsService {
 
   async create(clientId: string, dto: CreateBookingDto): Promise<Booking> {
     const { provider, service } = await this.resolveProviderAndService(dto);
-    const resolvedProviderId = provider.id;
+    const resolvedProviderId = provider.user_id;
+    const providerTableId = provider.id;
     const providerNotificationUserId = provider.user_id;
 
     await this.validateQuoteForBooking(
@@ -341,7 +343,7 @@ export class BookingsService {
       providerNotificationUserId,
     );
     await this.assertProviderAvailability(
-      resolvedProviderId,
+      providerTableId,
       dto.booking_date,
       dto.start_time,
       dto.end_time,
@@ -489,7 +491,7 @@ export class BookingsService {
       data.id,
     );
 
-    return data;
+    return addBookingAliases(data);
   }
 
   private async createNotification(
@@ -572,7 +574,7 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    return data;
+    return addBookingAliases(data);
   }
 
   async updateStatus(
@@ -804,7 +806,7 @@ export class BookingsService {
       }
     }
 
-    return data;
+    return addBookingAliases(data);
   }
 
   async applyPaymentToBooking(
@@ -832,7 +834,7 @@ export class BookingsService {
 
     if (existingPayment) {
       this.logger.warn(`Payment intent ${paymentIntentId} already processed`);
-      return booking;
+      return addBookingAliases(booking);
     }
 
     // Record the payment
@@ -1044,7 +1046,7 @@ export class BookingsService {
     if (error) {
       throw new BadRequestException(error.message);
     }
-    return { data: data || [], total: count || 0 };
+    return { data: mapArray(data || [], addBookingAliases), total: count || 0 };
   }
 
   async findByClient(
@@ -1081,7 +1083,7 @@ export class BookingsService {
     if (error) {
       throw new BadRequestException(error.message);
     }
-    return { data: data || [], total: count || 0 };
+    return { data: mapArray(data || [], addBookingAliases), total: count || 0 };
   }
 
   async findByProvider(
@@ -1127,7 +1129,7 @@ export class BookingsService {
     if (error) {
       throw new BadRequestException(error.message);
     }
-    return { data: data || [], total: count || 0 };
+    return { data: mapArray(data || [], addBookingAliases), total: count || 0 };
   }
 
   async getStats(

@@ -15,6 +15,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@ne
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { addNotificationAliases, mapArray } from '../common/response-compat';
 
 @ApiTags('notifications')
 @ApiBearerAuth()
@@ -60,7 +61,7 @@ export class NotificationsController {
 
     const { data, error, count } = await q;
     if (error) return { data: [], total: 0 };
-    return { data: data || [], total: count || 0 };
+    return { data: mapArray(data || [], addNotificationAliases), total: count || 0 };
   }
 
   @Get('unread-count')
@@ -90,7 +91,7 @@ export class NotificationsController {
       .single();
 
     if (error) return { success: false };
-    return { success: true, data };
+    return { success: true, data: addNotificationAliases(data) };
   }
 
   @Patch('read-all')
