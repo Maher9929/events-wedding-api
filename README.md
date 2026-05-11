@@ -31,11 +31,12 @@ Web marketplace connecting event organizers with service providers for events (w
 │  React + Vite    │────>│  NestJS + TS     │────>│  PostgreSQL      │
 │  TailwindCSS     │     │  JWT Auth        │     │  Auth + Storage  │
 │  i18n (AR/FR/EN) │     │  Swagger API     │     │  Realtime        │
+│  Chatbot UI      │     │  Chatbot Service │     │                  │
 └──────────────────┘     └────────┬─────────┘     └──────────────────┘
                                   │
                          ┌────────┴─────────┐
-                         │     Stripe       │
-                         │  Payments API    │
+                         │  Stripe + Gemini │
+                         │  Payments + AI   │
                          └──────────────────┘
 ```
 
@@ -52,10 +53,11 @@ Web marketplace connecting event organizers with service providers for events (w
 | **Database** | Supabase PostgreSQL |
 | **Authentication** | JWT + Supabase Auth |
 | **Payments** | Stripe (PaymentIntents, webhooks, refunds) |
+| **AI Assistant** | Google Gemini 2.5 Flash (client-only chatbot) |
 | **Storage** | Supabase Storage |
 | **Styling** | TailwindCSS |
-| **Unit Tests** | Jest + jest-junit (278 tests, 23 suites) |
-| **E2E Tests** | Cucumber + Selenium WebDriver (10 scenarios) |
+| **Unit Tests** | Jest + jest-junit (301 tests, 25 suites) |
+| **E2E Tests** | Cucumber + Selenium WebDriver (11 scenarios) |
 | **CI/CD** | GitHub Actions (ci.yml + cd.yml) + Jenkins (Jenkinsfile) |
 | **Containerization** | Docker + Docker Compose |
 | **Monitoring** | Sentry, Prometheus, Grafana |
@@ -81,6 +83,7 @@ Web marketplace connecting event organizers with service providers for events (w
 | `notifications` | Real-time application notifications |
 | `disputes` | Disputes between clients and providers |
 | `categories` | Service category management |
+| `chatbot` | AI assistant (Google Gemini) for client support |
 | `common` | Content filtering, data masking, audit logs, storage, interceptors, filters |
 
 ---
@@ -158,6 +161,10 @@ STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 
+# Chatbot (Google Gemini AI)
+CHATBOT_API_KEY=your_gemini_api_key
+CHATBOT_MODEL=gemini-2.5-flash
+
 # App URL (used in email templates)
 APP_BASE_URL=https://yourdomain.com
 
@@ -225,7 +232,7 @@ npm run test:cov                  # With coverage
 npm run test:junit                # Generates test/reports/junit-report.xml
 ```
 
-**278 tests** across **23 suites**:
+**301 tests** across **25 suites**:
 
 | Suite | Tests | Description |
 |-------|-------|-------------|
@@ -251,6 +258,8 @@ npm run test:junit                # Generates test/reports/junit-report.xml
 | `notifications.service.spec.ts` | 5 | Email notifications |
 | `notifications.controller.spec.ts` | 13 | Notifications CRUD (get, read, delete, cleanup) |
 | `messages.gateway.spec.ts` | 8 | WebSocket gateway (auth, rooms, emit, typing) |
+| `env.validation.spec.ts` | 14 | Environment variable validation |
+| `provider-stats.controller.spec.ts` | 8 | Provider statistics endpoint |
 
 ### E2E Tests (Selenium + Cucumber)
 
@@ -258,7 +267,7 @@ npm run test:junit                # Generates test/reports/junit-report.xml
 npm run test:ui                   # Starts backend + frontend + tests + report
 ```
 
-**10 scenarios** across **6 features**:
+**11 scenarios** across **7 features**:
 
 | Feature | Scenarios |
 |---------|-----------|
@@ -268,6 +277,7 @@ npm run test:ui                   # Starts backend + frontend + tests + report
 | `events.feature` | Event creation, Checklist |
 | `quotes-messaging.feature` | Quote request |
 | `admin.feature` | Admin dashboard |
+| `chatbot.feature` | Chatbot visibility (client-only), message interaction |
 
 ### Reports
 
@@ -373,6 +383,7 @@ Full Swagger documentation: **http://localhost:3000/api**
 | `POST` | `/disputes` | Open a dispute | JWT |
 | `GET` | `/notifications` | My notifications | JWT |
 | `GET` | `/categories` | List categories | No |
+| `POST` | `/chatbot/ask` | Ask AI assistant (client-only) | No (rate-limited) |
 
 ---
 
@@ -395,6 +406,7 @@ backend/
 │   ├── notifications/      # Notifications
 │   ├── disputes/           # Disputes
 │   ├── categories/         # Categories
+│   ├── chatbot/            # AI assistant (Google Gemini)
 │   ├── common/             # Shared utilities
 │   │   ├── content-filter.ts       # Anti-disintermediation
 │   │   ├── data-masking.ts         # Sensitive data masking
@@ -410,6 +422,7 @@ backend/
 │   ├── src/
 │   │   ├── pages/          # React pages
 │   │   ├── components/     # Reusable components
+│   │   ├── chatbot/        # Chatbot UI (client-only)
 │   │   ├── services/       # API services (auth, messages, events...)
 │   │   ├── locales/        # ar.json, fr.json, en.json
 │   │   └── types/          # TypeScript types
@@ -417,6 +430,7 @@ backend/
 │
 ├── test/
 │   ├── features/           # Gherkin .feature files
+│   │   ├── chatbot.feature # Chatbot E2E tests
 │   │   └── step-definitions/   # Selenium steps + hooks
 │   ├── reports/            # Generated reports (JUnit, HTML, screenshots)
 │   ├── run-cucumber.js     # E2E orchestrator
