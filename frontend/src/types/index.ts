@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Centralized type definitions for the DOUSHA frontend
+// Centralized type definitions for the Doha Events frontend
 // ─────────────────────────────────────────────────────────────
 
 /** Roles available in the platform */
@@ -36,6 +36,8 @@ export interface ProviderSummary {
   company_name?: string;
   business_name?: string;
   is_verified?: boolean;
+  rating_avg?: number;
+  review_count?: number;
 }
 
 /** A service offered by a provider */

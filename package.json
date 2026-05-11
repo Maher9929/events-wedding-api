@@ -1,8 +1,8 @@
 {
-  "name": "backend",
-  "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "name": "doha-events-marketplace-backend",
+  "version": "0.1.0",
+  "description": "NestJS API for the Doha Events & Wedding Services Marketplace.",
+  "author": "Maher",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -20,9 +20,12 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:cucumber": "cucumber-js",
     "test:selenium": "cucumber-js --tags @selenium",
+    "test:acceptance": "node test/run-cucumber.js",
     "test:report": "node test/generate-report.js",
     "test:ui": "node test/run-cucumber.js",
-    "test:junit": "jest --reporters=default --reporters=jest-junit --forceExit"
+    "test:junit": "jest --reporters=default --reporters=jest-junit --forceExit",
+    "db:security:audit": "node scripts/audit-supabase-security.js",
+    "predeploy:check": "node scripts/predeploy-check.js"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^3.1.0",
@@ -40,9 +43,7 @@
     "@sendgrid/mail": "^8.1.6",
     "@sentry/node": "^10.42.0",
     "@supabase/supabase-js": "^2.95.3",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/passport-jwt": "^4.0.1",
-    "@types/pdfkit": "^0.17.5",
+
     "bcryptjs": "^3.0.3",
     "cache-manager": "^7.2.8",
     "cache-manager-ioredis-yet": "^2.1.2",
@@ -60,6 +61,9 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/pdfkit": "^0.17.5",
     "@cucumber/cucumber": "^12.7.0",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",

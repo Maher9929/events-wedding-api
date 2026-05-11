@@ -1,4 +1,5 @@
-import { apiService, type ServiceItem } from './api';
+import { apiService, type PaginatedResponse, type ServiceItem } from './api';
+import { unwrapList } from './response.utils';
 
 type ServiceQueryParams = {
   city?: string;
@@ -30,16 +31,16 @@ const buildQueryString = (params?: ServiceQueryParams) => {
 };
 
 export const servicesService = {
-  getAll: (params?: ServiceQueryParams) => {
+  getAll: async (params?: ServiceQueryParams) => {
     const qs = buildQueryString(params);
-    return apiService.get<ServiceItem[]>(qs ? `/services?${qs}` : '/services');
+    return unwrapList(await apiService.get<ServiceItem[] | PaginatedResponse<ServiceItem>>(qs ? `/services?${qs}` : '/services'));
   },
   getFeatured: (limit = 10) => apiService.get<ServiceItem[]>(`/services/featured?limit=${limit}`),
-  getByCategory: (categoryId: string, params?: ServiceQueryParams) => {
+  getByCategory: async (categoryId: string, params?: ServiceQueryParams) => {
     const qs = buildQueryString(params);
-    return apiService.get<ServiceItem[]>(qs ? `/services/category/${categoryId}?${qs}` : `/services/category/${categoryId}`);
+    return unwrapList(await apiService.get<ServiceItem[] | PaginatedResponse<ServiceItem>>(qs ? `/services/category/${categoryId}?${qs}` : `/services/category/${categoryId}`));
   },
-  getMyServices: (params = '') => apiService.get<ServiceItem[]>(`/services/my-services${params}`),
+  getMyServices: async (params = '') => unwrapList(await apiService.get<ServiceItem[] | PaginatedResponse<ServiceItem>>(`/services/my-services${params}`)),
   findById: (id: string) => apiService.get<ServiceItem>(`/services/id/${id}`),
   create: (data: Partial<ServiceItem>) => apiService.post<ServiceItem>('/services', data),
   update: (id: string, data: Partial<ServiceItem>) => apiService.patch<ServiceItem>(`/services/id/${id}`, data),

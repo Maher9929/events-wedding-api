@@ -10,7 +10,7 @@ type TranslationTree = Record<string, unknown>;
 
 const normalizeLanguage = (value?: string | null) => {
     const code = value?.split('-')[0]?.toLowerCase();
-    return code && ['ar', 'fr', 'en'].includes(code) ? code : 'ar';
+    return code && ['ar', 'fr', 'en'].includes(code) ? code : 'fr';
 };
 
 const mergeTranslations = (base: TranslationTree, overrides: TranslationTree): TranslationTree => {
@@ -55,8 +55,8 @@ i18n
         nonExplicitSupportedLngs: true,
         cleanCode: true,
         load: 'languageOnly',
-        lng: storedLanguage || 'ar',
-        fallbackLng: 'ar',
+        lng: storedLanguage || 'fr',
+        fallbackLng: 'fr',
         returnEmptyString: false,
         interpolation: {
             escapeValue: false,

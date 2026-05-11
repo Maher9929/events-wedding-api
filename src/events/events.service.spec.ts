@@ -51,7 +51,7 @@ describe('EventsService', () => {
         title: 'Wedding',
         client_id: 'u1',
         status: 'planning',
-        currency: 'MAD',
+        currency: 'QAR',
       };
 
       supabase.single.mockResolvedValueOnce({ data: eventData, error: null });
@@ -63,7 +63,7 @@ describe('EventsService', () => {
       } as any);
 
       expect(result.id).toBe('e1');
-      expect(result.currency).toBe('MAD');
+      expect(result.currency).toBe('QAR');
       expect(supabase.from).toHaveBeenCalledWith('events');
     });
 

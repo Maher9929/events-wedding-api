@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUrl } from 'class-validator';
+import { UserRole } from './create-user.dto';
 
 export class UpdateUserDto {
   @IsString()
@@ -20,4 +21,9 @@ export class UpdateUserDto {
   @IsUrl()
   @IsOptional()
   avatar_url?: string;
+}
+
+export class UpdateUserRoleDto {
+  @IsEnum(UserRole)
+  role: UserRole;
 }

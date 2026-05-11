@@ -3,13 +3,8 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
-
-jest.mock('stripe', () => {
-  return jest.fn().mockImplementation(() => ({
-    paymentIntents: { create: jest.fn(), retrieve: jest.fn() },
-  }));
-});
 
 function createSupabaseMock() {
   const chain: any = {};
@@ -33,17 +28,98 @@ function createSupabaseMock() {
   return chain;
 }
 
-const mockConfig = {
-  get: jest.fn((k: string) => {
-    const map: Record<string, string> = {
-      STRIPE_SECRET_KEY: 'sk_test',
-      COMMISSION_RATE: '0.1',
-    };
-    return map[k];
-  }),
+const mockAuditLogService = { log: jest.fn() };
+const mockProviderContext = {
+  getProviderContext: jest
+    .fn()
+    .mockResolvedValue({ userId: '', providerId: null }),
+  assertProviderScope: jest.fn(),
+  canAccessBooking: jest.fn().mockResolvedValue(true),
+  resolveProviderUserId: jest.fn().mockResolvedValue(''),
+};
+const mockCommissionService = { upsert: jest.fn(), cancel: jest.fn() };
+const mockNotificationService = {
+  notify: jest.fn(),
+  notifyBoth: jest.fn(),
+  notifyPayment: jest.fn(),
+  notifyStatusChange: jest.fn(),
 };
 
-const mockAuditLogService = { log: jest.fn() };
+function createSupabaseFlowMock(results: {
+  maybeSingle?: Array<{ data: any; error: any }>;
+  single?: Array<{ data: any; error: any }>;
+  awaited?: Array<{ data: any; error: any }>;
+}) {
+  const queues = {
+    maybeSingle: [...(results.maybeSingle || [])],
+    single: [...(results.single || [])],
+    awaited: [...(results.awaited || [])],
+  };
+
+  const supabaseMock = {
+    builders: [] as any[],
+    from: jest.fn((table: string) => {
+      const builder: any = {
+        table,
+        insertPayload: undefined,
+        updatePayload: undefined,
+      };
+
+      const chain =
+        (method: string) =>
+        (...args: any[]) => {
+          builder[`${method}Calls`].push(args);
+          return builder;
+        };
+
+      for (const method of [
+        'select',
+        'eq',
+        'neq',
+        'in',
+        'gte',
+        'lt',
+        'lte',
+        'order',
+        'range',
+        'limit',
+        'delete',
+      ]) {
+        builder[`${method}Calls`] = [];
+        builder[method] = jest.fn(chain(method));
+      }
+
+      builder.insert = jest.fn((payload: unknown) => {
+        builder.insertPayload = payload;
+        return builder;
+      });
+      builder.update = jest.fn((payload: unknown) => {
+        builder.updatePayload = payload;
+        return builder;
+      });
+      builder.maybeSingle = jest.fn(() =>
+        Promise.resolve(
+          queues.maybeSingle.shift() || { data: null, error: null },
+        ),
+      );
+      builder.single = jest.fn(() =>
+        Promise.resolve(queues.single.shift() || { data: null, error: null }),
+      );
+      builder.then = (
+        resolve: (value: { data: any; error: any }) => unknown,
+        reject: (reason?: unknown) => unknown,
+      ) =>
+        Promise.resolve(
+          queues.awaited.shift() || { data: null, error: null },
+        ).then(resolve, reject);
+
+      supabaseMock.builders.push(builder);
+      return builder;
+    }),
+  };
+
+  return supabaseMock;
+}
 
 describe('BookingsService', () => {
   let service: BookingsService;
@@ -53,8 +129,10 @@ describe('BookingsService', () => {
     supabase = createSupabaseMock();
     service = new BookingsService(
       supabase,
-      mockConfig as any,
       mockAuditLogService as any,
+      mockProviderContext as any,
+      mockCommissionService as any,
+      mockNotificationService as any,
     );
     jest.clearAllMocks();
   });
@@ -98,8 +176,8 @@ describe('BookingsService', () => {
         status: 'pending',
       };
       supabase.single.mockResolvedValueOnce({ data: mockBooking, error: null });
-      // canAccessBooking → getProviderContext → no provider for stranger
-      supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      // canAccessBooking → stranger has no access
+      mockProviderContext.canAccessBooking.mockResolvedValueOnce(false);
 
       await expect(service.findOne('b1', 'stranger')).rejects.toThrow(
         NotFoundException,
@@ -204,6 +282,173 @@ describe('BookingsService', () => {
       await expect(
         service.updateStatus('b1', 'prov1', { status: 'completed' }),
       ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('create availability checks', () => {
+    const providerProfileId = '11111111-1111-4111-8111-111111111111';
+    const providerUserId = '22222222-2222-4222-8222-222222222222';
+    const serviceId = '33333333-3333-4333-8333-333333333333';
+    const clientId = '44444444-4444-4444-8444-444444444444';
+
+    const baseDto = {
+      service_id: serviceId,
+      provider_id: providerProfileId,
+      booking_date: '2030-06-01T10:00:00.000Z',
+      start_time: '10:00',
+      end_time: '12:00',
+      amount: 1000,
+    };
+
+    function createServiceWithFlow(flowSupabase: any) {
+      return new BookingsService(
+        flowSupabase,
+        mockAuditLogService as any,
+        mockProviderContext as any,
+        mockCommissionService as any,
+        mockNotificationService as any,
+      );
+    }
+
+    it('rejects bookings when provider has a blocked availability slot', async () => {
+      const flowSupabase = createSupabaseFlowMock({
+        maybeSingle: [
+          {
+            data: { id: providerProfileId, user_id: providerUserId },
+            error: null,
+          },
+          {
+            data: {
+              id: serviceId,
+              provider_id: providerProfileId,
+              base_price: 1000,
+              cancellation_policy: null,
+            },
+            error: null,
+          },
+        ],
+        awaited: [
+          {
+            data: [
+              {
+                start_time: '09:00',
+                end_time: '11:00',
+                is_blocked: true,
+                reason: 'Provider blocked this slot',
+              },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const flowService = createServiceWithFlow(flowSupabase);
+
+      await expect(flowService.create(clientId, baseDto)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(flowSupabase.from).not.toHaveBeenCalledWith('refund_policies');
+      expect(
+        flowSupabase.builders.some(
+          (builder: any) =>
+            builder.table === 'bookings' && builder.insertPayload,
+        ),
+      ).toBe(false);
+    });
+
+    it('rejects bookings when another booking overlaps the requested time', async () => {
+      const flowSupabase = createSupabaseFlowMock({
+        maybeSingle: [
+          {
+            data: { id: providerProfileId, user_id: providerUserId },
+            error: null,
+          },
+          {
+            data: {
+              id: serviceId,
+              provider_id: providerProfileId,
+              base_price: 1000,
+              cancellation_policy: null,
+            },
+            error: null,
+          },
+        ],
+        awaited: [
+          { data: [], error: null },
+          {
+            data: [
+              {
+                id: 'existing-booking',
+                start_time: '11:30',
+                end_time: '13:00',
+                status: 'confirmed',
+              },
+            ],
+            error: null,
+          },
+        ],
+      });
+      const flowService = createServiceWithFlow(flowSupabase);
+
+      await expect(flowService.create(clientId, baseDto)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(
+        flowSupabase.builders.some(
+          (builder: any) =>
+            builder.table === 'bookings' && builder.insertPayload,
+        ),
+      ).toBe(false);
+    });
+
+    it('stores bookings with provider user id after checking profile availability', async () => {
+      const createdBooking = {
+        id: 'booking-1',
+        client_id: clientId,
+        provider_id: providerUserId,
+        service_id: serviceId,
+        amount: 1000,
+        payment_status: 'pending',
+      };
+      const flowSupabase = createSupabaseFlowMock({
+        maybeSingle: [
+          {
+            data: { id: providerProfileId, user_id: providerUserId },
+            error: null,
+          },
+          {
+            data: {
+              id: serviceId,
+              provider_id: providerProfileId,
+              base_price: 1000,
+              cancellation_policy: null,
+            },
+            error: null,
+          },
+          { data: { id: 'refund-policy-1' }, error: null },
+        ],
+        awaited: [
+          { data: [], error: null },
+          { data: [], error: null },
+        ],
+        single: [{ data: createdBooking, error: null }],
+      });
+      const flowService = createServiceWithFlow(flowSupabase);
+
+      const result = await flowService.create(clientId, baseDto);
+
+      expect(result.id).toBe('booking-1');
+      const bookingInsert = flowSupabase.builders.find(
+        (builder: any) => builder.table === 'bookings' && builder.insertPayload,
+      );
+      expect(bookingInsert.insertPayload.provider_id).toBe(providerUserId);
+
+      const availabilityQuery = flowSupabase.builders.find(
+        (builder: any) => builder.table === 'provider_availabilities',
+      );
+      expect(availabilityQuery.eq).toHaveBeenCalledWith(
+        'provider_id',
+        providerProfileId,
+      );
     });
   });
 });

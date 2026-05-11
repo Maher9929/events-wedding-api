@@ -336,19 +336,19 @@ ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
 -- Allow full access via service_role key (used by backend)
 -- These policies allow the backend (using service_role key) to do everything
-CREATE POLICY "Service role full access" ON user_profiles FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON categories FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON providers FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON services FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON events FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON event_budgets FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON event_tasks FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON event_timeline_items FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON conversations FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON messages FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON quotes FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON reviews FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON bookings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON user_profiles FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON categories FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON providers FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON services FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON events FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON event_budgets FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON event_tasks FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON event_timeline_items FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON conversations FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON messages FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON quotes FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON reviews FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON bookings FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ============================================================
 -- DONE! All 13 tables created.

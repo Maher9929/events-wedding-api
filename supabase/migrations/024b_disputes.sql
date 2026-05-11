@@ -34,7 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_disputes_status ON disputes(status);
 CREATE INDEX IF NOT EXISTS idx_disputes_created_at ON disputes(created_at);
 
 ALTER TABLE disputes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON disputes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON disputes FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ============================================================
 -- DONE: Migration 024

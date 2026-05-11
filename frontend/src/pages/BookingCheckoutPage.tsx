@@ -1,317 +1,557 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { bookingsService } from '../services/bookings.service';
 import { servicesService } from '../services/services.service';
 import { useAuth } from '../hooks/useAuth';
 import type { ServiceItem, Booking } from '../services/api';
+import { getThumbnailUrl } from '../utils/image.utils';
 
 interface PromoResult {
-    id: string;
-    discount_type: string;
-    discount_value: number;
+  id: string;
+  discount_type: string;
+  discount_value: number;
 }
 
 const BookingCheckoutPage = () => {
-    const { t, i18n } = useTranslation();
-    const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const { isAuthenticated } = useAuth();
-    const [step] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [bookingDate, setBookingDate] = useState('');
-    const [notes, setNotes] = useState('');
-    const [service, setService] = useState<ServiceItem | null>(null);
-    const [promoCode, setPromoCode] = useState('');
-    const [promoValidating, setPromoValidating] = useState(false);
-    const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
-    const [promoError, setPromoError] = useState('');
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [bookingDate, setBookingDate] = useState('');
+  const [notes, setNotes] = useState('');
+  const [service, setService] = useState<ServiceItem | null>(null);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoValidating, setPromoValidating] = useState(false);
+  const [promoResult, setPromoResult] = useState<PromoResult | null>(null);
+  const [promoError, setPromoError] = useState('');
+  const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>(
+    'full',
+  );
 
-    const serviceId = searchParams.get('service') || '';
-    const providerId = searchParams.get('provider') || '';
-    const amount = Number(searchParams.get('amount')) || 0;
+  const serviceId = searchParams.get('service') || '';
+  const providerId = searchParams.get('provider') || '';
+  const quoteId = searchParams.get('quote') || '';
+  const eventId = searchParams.get('event') || '';
+  const amount = Number(searchParams.get('amount')) || 0;
+  const isArabic = i18n.language === 'ar';
+  const today = new Date().toISOString().split('T')[0];
 
-    useEffect(() => {
-        const dateParam = searchParams.get('date');
-        const notesParam = searchParams.get('notes');
-        if (dateParam) setBookingDate(dateParam);
-        if (notesParam) setNotes(notesParam);
-        if (serviceId) {
-            servicesService.findById(serviceId)
-                .then((data) => setService((data as { data?: ServiceItem }).data || (data as ServiceItem)))
-                .catch(() => { /* service info is supplementary, checkout still works */ });
-        }
-    }, [searchParams, serviceId]);
+  useEffect(() => {
+    const dateParam = searchParams.get('date');
+    const notesParam = searchParams.get('notes');
+    if (dateParam) setBookingDate(dateParam);
+    if (notesParam) setNotes(notesParam);
+    if (serviceId) {
+      servicesService
+        .findById(serviceId)
+        .then((data) =>
+          setService((data as { data?: ServiceItem }).data || data),
+        )
+        .catch(() => {
+          /* service info is supplementary, checkout still works */
+        });
+    }
+  }, [searchParams, serviceId]);
 
-    const today = new Date().toISOString().split('T')[0];
+  const discountAmount = promoResult
+    ? promoResult.discount_type === 'percentage'
+      ? Math.round((amount * promoResult.discount_value) / 100)
+      : Math.min(promoResult.discount_value, amount)
+    : 0;
+  const finalAmount = Math.max(0, amount - discountAmount);
 
-    const discountAmount = promoResult
-        ? promoResult.discount_type === 'percentage'
-            ? Math.round(amount * promoResult.discount_value / 100)
-            : Math.min(promoResult.discount_value, amount)
-        : 0;
-    const finalAmount = Math.max(0, amount - discountAmount);
+  const depositPercentage =
+    service?.availability_settings?.deposit_percentage || 20;
+  const requireDeposit =
+    service?.availability_settings?.deposit_required ?? true;
+  const depositAmount = requireDeposit
+    ? Math.round(finalAmount * (depositPercentage / 100))
+    : 0;
+  const effectivePaymentType: 'deposit' | 'full' =
+    requireDeposit && paymentOption === 'deposit' ? 'deposit' : 'full';
+  const amountToPay =
+    effectivePaymentType === 'deposit' ? depositAmount : finalAmount;
 
-    const depositPercentage = service?.availability_settings?.deposit_percentage || 20;
-    const requireDeposit = service?.availability_settings?.deposit_required ?? true;
-    const depositAmount = requireDeposit ? Math.round(finalAmount * (depositPercentage / 100)) : 0;
+  useEffect(() => {
+    setPaymentOption(requireDeposit ? 'deposit' : 'full');
+  }, [requireDeposit]);
 
-    const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>('full');
+  const handleValidatePromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoValidating(true);
+    setPromoError('');
+    setPromoResult(null);
+    try {
+      setPromoError(
+        t('bookings.checkout.promo_disabled', 'أكواد الخصم غير مفعلة مؤقتاً'),
+      );
+    } catch (err) {
+      setPromoError(
+        err instanceof Error
+          ? err.message
+          : t('bookings.checkout.invalid_promo', 'كود الخصم غير صالح'),
+      );
+    } finally {
+      setPromoValidating(false);
+    }
+  };
 
-    useEffect(() => {
-        setPaymentOption(requireDeposit ? 'deposit' : 'full');
-    }, [requireDeposit]);
+  const handleBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      void navigate('/auth/login');
+      return;
+    }
+    if (bookingDate < today) {
+      setError(
+        t('bookings.errors.past_date', 'يجب أن يكون تاريخ الحجز في المستقبل'),
+      );
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const result = await bookingsService.create({
+        event_id: eventId || undefined,
+        quote_id: quoteId || undefined,
+        service_id: serviceId,
+        provider_id: providerId,
+        booking_date: bookingDate,
+        amount,
+        deposit_amount: depositAmount,
+        notes,
+        promo_code_id: promoResult?.id || undefined,
+      });
+      const bookingId =
+        (result as { id?: string; data?: Booking }).id ||
+        (result as { data?: Booking }).data?.id ||
+        '';
+      const params = new URLSearchParams({
+        ...(bookingId && { booking_id: bookingId }),
+        ...(service?.title && { service: service.title }),
+        ...(bookingDate && { date: bookingDate }),
+        ...(amountToPay && { amount: String(amountToPay) }),
+        ...(effectivePaymentType && { paymentType: effectivePaymentType }),
+      });
+      if (amountToPay > 0 && bookingId) {
+        void navigate(`/client/payment/${bookingId}?${params.toString()}`);
+      } else {
+        void navigate(
+          `/client/booking-success/${bookingId}?${params.toString()}`,
+        );
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : t('bookings.errors.create_failed', 'حدث خطأ أثناء الحجز'),
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleValidatePromo = async () => {
-        if (!promoCode.trim()) return;
-        setPromoValidating(true);
-        setPromoError('');
-        setPromoResult(null);
-        try {
-            setPromoError(t('bookings.checkout.promo_disabled', 'أكواد الخصم غير مفعلة مؤقتاً'));
-        } catch (err) {
-            setPromoError(err instanceof Error ? err.message : t('bookings.checkout.invalid_promo', 'كود الخصم غير صالح'));
-        } finally {
-            setPromoValidating(false);
-        }
-    };
+  const inputClass =
+    'w-full rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3.5 text-gray-900 outline-none transition focus:border-primary/40 focus:bg-white focus:ring-4 focus:ring-primary/10';
 
-    const handleBooking = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!isAuthenticated) {
-            navigate('/auth/login');
-            return;
-        }
-        if (bookingDate < today) {
-            setError(t('bookings.errors.past_date', 'يجب أن يكون تاريخ الحجز في المستقبل'));
-            return;
-        }
-        setLoading(true);
-        setError('');
-        try {
-            const effectivePaymentType: 'deposit' | 'full' = requireDeposit && paymentOption === 'deposit' ? 'deposit' : 'full';
-            const amountToPay = effectivePaymentType === 'deposit' ? depositAmount : finalAmount;
-
-            const result = await bookingsService.create({
-                service_id: serviceId,
-                provider_id: providerId,
-                booking_date: bookingDate,
-                amount: amount, 
-                deposit_amount: depositAmount,
-                notes: notes,
-                promo_code_id: promoResult?.id || undefined,
-            });
-            const bookingId = (result as { id?: string; data?: Booking }).id || (result as { data?: Booking }).data?.id || '';
-            const params = new URLSearchParams({
-                ...(bookingId && { booking_id: bookingId }),
-                ...(service?.title && { service: service.title }),
-                ...(bookingDate && { date: bookingDate }),
-                ...(amountToPay && { amount: String(amountToPay) }),
-                ...(effectivePaymentType && { paymentType: effectivePaymentType })
-            });
-            if (amountToPay > 0 && bookingId) {
-                navigate(`/client/payment/${bookingId}?${params.toString()}`);
-            } else {
-                navigate(`/client/booking-success/${bookingId}?${params.toString()}`);
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : t('bookings.errors.create_failed', 'حدث خطأ أثناء الحجز'));
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-bglight font-tajawal pb-20" dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
-            <header className="bg-white p-4 shadow-sm sticky top-0 z-50">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center">
-                        <i className="fa-solid fa-arrow-right"></i>
-                    </button>
-                    <h1 className="font-bold text-lg">{t('bookings.checkout.title', 'إتمام الحجز')}</h1>
-                </div>
-            </header>
-
-            <main className="p-5">
-                <div className="flex items-center justify-center mb-8">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 1 ? 'bg-primary text-white' : 'bg-gray-200'}`}>1</div>
-                    <div className={`w-16 h-1 bg-gray-200 mx-2 ${step >= 2 ? 'bg-primary' : ''}`}></div>
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step >= 2 ? 'bg-primary text-white' : 'bg-gray-200'}`}>2</div>
-                </div>
-
-                <div className="glass-effect border border-white/50 rounded-3xl p-6 shadow-premium mb-4 animate-fade-in-up">
-                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                        <i className="fa-regular fa-calendar-check text-primary"></i>
-                        {t('bookings.checkout.details', 'تفاصيل الحجز')}
-                    </h3>
-                    {service ? (
-                        <>
-                            <div className="mb-4 pb-4 border-b border-gray-100">
-                                <div className="flex gap-4 mb-3">
-                                    <div className="w-20 h-20 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                                        <img loading="lazy" src={service.images?.[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=200'} className="w-full h-full object-cover" alt={service.title} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-sm text-gray-900">{service.title}</h4>
-                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{service.description}</p>
-                                        <p className="text-primary font-bold text-base mt-1">{amount.toLocaleString()} {t('common.currency', 'ر.ق')}</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {service.duration_minutes && (
-                                        <span className="flex items-center gap-1 text-xs bg-bglight px-2.5 py-1 rounded-lg text-gray-600">
-                                            <i className="fa-solid fa-clock text-primary"></i>
-                                            {service.duration_minutes} {t('common.minute', 'دقيقة')}
-                                        </span>
-                                    )}
-                                    {service.providers?.company_name && (
-                                        <span className="flex items-center gap-1 text-xs bg-bglight px-2.5 py-1 rounded-lg text-gray-600">
-                                            <i className="fa-solid fa-store text-primary"></i>
-                                            {service.providers.company_name}
-                                        </span>
-                                    )}
-                                    {service.providers?.city && (
-                                        <span className="flex items-center gap-1 text-xs bg-bglight px-2.5 py-1 rounded-lg text-gray-600">
-                                            <i className="fa-solid fa-location-dot text-primary"></i>
-                                            {service.providers.city}
-                                        </span>
-                                    )}
-                                    {service.providers?.is_verified && (
-                                        <span className="flex items-center gap-1 text-xs bg-green-100 px-2.5 py-1 rounded-lg text-green-700 font-bold">
-                                            <i className="fa-solid fa-circle-check"></i>
-                                            {t('common.verified', 'موثق')}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-
-                            {requireDeposit && depositAmount > 0 && (
-                                <div className="mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                    <h4 className="font-bold text-blue-900 mb-2">{t('bookings.checkout.payment_options', 'خيارات الدفع')}</h4>
-                                    <div className="space-y-2">
-                                        <label className="flex items-center gap-3 p-3 rounded-lg border bg-white cursor-pointer hover:border-primary transition-colors">
-                                            <input
-                                                type="radio"
-                                                name="paymentOption"
-                                                value="deposit"
-                                                checked={paymentOption === 'deposit'}
-                                                onChange={() => setPaymentOption('deposit')}
-                                                className="w-4 h-4 text-primary"
-                                            />
-                                            <div className="flex-1">
-                                                <span className="block font-bold">{t('bookings.checkout.deposit_only', 'دفع العربون فقط')} ({depositPercentage}%)</span>
-                                                <span className="block text-sm text-gray-500">{t('bookings.checkout.deposit_rest', 'الباقي يُدفع لاحقاً')}</span>
-                                            </div>
-                                            <span className="font-bold text-primary">{depositAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
-                                        </label>
-                                        <label className="flex items-center gap-3 p-3 rounded-lg border bg-white cursor-pointer hover:border-primary transition-colors">
-                                            <input
-                                                type="radio"
-                                                name="paymentOption"
-                                                value="full"
-                                                checked={paymentOption === 'full'}
-                                                onChange={() => setPaymentOption('full')}
-                                                className="w-4 h-4 text-primary"
-                                            />
-                                            <div className="flex-1">
-                                                <span className="block font-bold">{t('bookings.checkout.pay_full', 'دفع المبلغ كاملاً')}</span>
-                                            </div>
-                                            <span className="font-bold text-primary">{finalAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="flex gap-4 mb-4 pb-4 border-b border-gray-100">
-                            <div className="w-16 h-16 rounded-xl bg-gray-200 animate-pulse"></div>
-                            <div className="flex-1">
-                                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2 animate-pulse"></div>
-                                <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-                            </div>
-                        </div>
-                    )}
-
-                    <form onSubmit={handleBooking} className="space-y-4">
-                        {error && (
-                            <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl">{error}</div>
-                        )}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">{t('bookings.event_date', 'تاريخ المناسبة')}</label>
-                            <input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)} min={today} className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20" required />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-700 mb-1">{t('bookings.notes', 'ملاحظات إضافية')} ({t('common.optional', 'اختياري')})</label>
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} className="w-full px-4 py-3 rounded-xl bg-bglight border-none outline-none focus:ring-2 focus:ring-primary/20 h-24" placeholder={t('bookings.notes_placeholder', 'أي تفاصيل إضافية تود إخبارنا بها...')}></textarea>
-                        </div>
-
-                        <div className="bg-white/60 p-4 rounded-2xl border border-white shadow-inner">
-                            <label className="block text-sm font-bold text-gray-700 mb-2">{t('bookings.checkout.promo_code', 'كود الخصم (اختياري)')}</label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={promoCode}
-                                    onChange={e => { setPromoCode(e.target.value.toUpperCase()); setPromoResult(null); setPromoError(''); }}
-                                    placeholder={t('bookings.checkout.promo_placeholder', 'أدخل كود الخصم')}
-                                    className="flex-1 px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none focus:ring-2 focus:ring-primary/20 font-mono uppercase text-sm shadow-sm"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleValidatePromo}
-                                    disabled={promoValidating || !promoCode.trim()}
-                                    className="px-5 py-3 rounded-xl gradient-purple border border-white/20 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-                                >
-                                    {promoValidating ? (
-                                        <i className="fa-solid fa-spinner fa-spin"></i>
-                                    ) : (
-                                        t('bookings.checkout.apply', 'تطبيق')
-                                    )}
-                                </button>
-                            </div>
-                            {promoResult && (
-                                <div className="mt-2 flex items-center gap-2 text-green-600 text-sm bg-green-50 px-3 py-2 rounded-xl">
-                                    <i className="fa-solid fa-circle-check"></i>
-                                    {t('bookings.checkout.discount_applied', 'خصم {{amount}} مطبق!', { amount: promoResult.discount_type === 'percentage' ? `${promoResult.discount_value}%` : `${promoResult.discount_value} ر.ق` })}
-                                </div>
-                            )}
-                            {promoError && (
-                                <p className="mt-1 text-red-500 text-xs">{promoError}</p>
-                            )}
-                        </div>
-
-                        <div className="pt-4 border-t border-gray-100 mt-4">
-                            <div className="flex justify-between mb-2">
-                                <span className="text-sm text-gray-600">{t('bookings.checkout.subtotal', 'المجموع الفرعي')}</span>
-                                <span className="text-sm font-bold">{amount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
-                            </div>
-                            {discountAmount > 0 && (
-                                <div className="flex justify-between mb-2">
-                                    <span className="text-sm text-green-600">{t('bookings.checkout.discount', 'الخصم')} ({promoCode})</span>
-                                    <span className="text-sm font-bold text-green-600">- {discountAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between text-lg font-bold text-primary">
-                                <span>{t('bookings.checkout.total', 'الإجمالي')}</span>
-                                <span>{finalAmount.toLocaleString()} {t('common.currency', 'ر.ق')}</span>
-                            </div>
-                        </div>
-
-                        <button disabled={loading} className="w-full py-4 rounded-2xl gradient-purple text-white text-lg font-bold shadow-premium hover:shadow-lg transition-all mt-6 disabled:opacity-50">
-                            {loading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <i className="fa-solid fa-spinner fa-spin"></i>
-                                    {t('common.sending', 'جاري الإرسال...')}
-                                </span>
-                            ) : (
-                                t('bookings.checkout.confirm', 'تأكيد الحجز والدفع')
-                            )}
-                        </button>
-                    </form>
-                </div>
-            </main>
+  return (
+    <div
+      className="min-h-screen bg-[linear-gradient(180deg,#f7f7fb_0%,#ffffff_46%,#f8f9fb_100%)] px-4 py-6 pb-28 sm:px-6 lg:px-0"
+      dir={isArabic ? 'rtl' : 'ltr'}
+    >
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => void navigate(-1)}
+              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:border-primary/30 hover:text-primary"
+              aria-label={t('common.back', 'Back')}
+            >
+              <i
+                className={`fa-solid ${isArabic ? 'fa-arrow-right' : 'fa-arrow-left'}`}
+              ></i>
+            </button>
+            <div>
+              <div className="mb-1 flex items-center gap-2 text-xs font-bold text-gray-500">
+                <Link to="/services" className="hover:text-primary">
+                  {t('common.services', 'Services')}
+                </Link>
+                <i
+                  className={`fa-solid ${isArabic ? 'fa-chevron-left' : 'fa-chevron-right'} text-[10px]`}
+                ></i>
+                <span>{t('bookings.checkout.title', 'إتمام الحجز')}</span>
+              </div>
+              <h1 className="text-2xl font-black text-gray-950 sm:text-3xl">
+                {t('bookings.checkout.title', 'إتمام الحجز')}
+              </h1>
+            </div>
+          </div>
         </div>
-    );
+
+        <form
+          onSubmit={(event) => void handleBooking(event)}
+          className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]"
+        >
+          <div className="space-y-5">
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-[0_24px_80px_rgba(18,24,40,0.08)] sm:p-7">
+              <div className="mb-5 flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <i className="fa-regular fa-calendar-check text-lg"></i>
+                </div>
+                <div>
+                  <h2 className="text-lg font-black text-gray-950">
+                    {t('bookings.checkout.details', 'تفاصيل الحجز')}
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {t(
+                      'bookings.checkout.details_hint',
+                      'Confirm the event date and add any useful notes for the provider.',
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mb-5 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm font-bold text-red-600">
+                  <i className="fa-solid fa-circle-exclamation me-2"></i>
+                  {error}
+                </div>
+              )}
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                    {t('bookings.event_date', 'تاريخ المناسبة')}
+                  </label>
+                  <input
+                    type="date"
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                    min={today}
+                    className={inputClass}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-800">
+                    {t('bookings.checkout.payment_due', 'Payment due now')}
+                  </label>
+                  <div className="flex min-h-[52px] items-center rounded-2xl border border-primary/10 bg-primary/5 px-4 font-black text-primary">
+                    {amountToPay.toLocaleString()} {t('common.currency', 'ر.ق')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-2 block text-sm font-bold text-gray-800">
+                  {t('bookings.notes', 'ملاحظات إضافية')} (
+                  {t('common.optional', 'اختياري')})
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className={`${inputClass} min-h-28 resize-none`}
+                  placeholder={t(
+                    'bookings.notes_placeholder',
+                    'أي تفاصيل إضافية تود إخبارنا بها...',
+                  )}
+                ></textarea>
+              </div>
+            </section>
+
+            {requireDeposit && depositAmount > 0 && (
+              <section className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-[0_24px_80px_rgba(18,24,40,0.08)] sm:p-7">
+                <h2 className="mb-4 text-lg font-black text-gray-950">
+                  {t('bookings.checkout.payment_options', 'خيارات الدفع')}
+                </h2>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {[
+                    {
+                      value: 'deposit' as const,
+                      title: t(
+                        'bookings.checkout.deposit_only',
+                        'دفع العربون فقط',
+                      ),
+                      subtitle: t(
+                        'bookings.checkout.deposit_rest',
+                        'الباقي يُدفع لاحقاً',
+                      ),
+                      amount: depositAmount,
+                    },
+                    {
+                      value: 'full' as const,
+                      title: t(
+                        'bookings.checkout.pay_full',
+                        'دفع المبلغ كاملاً',
+                      ),
+                      subtitle: t(
+                        'bookings.checkout.pay_full_hint',
+                        'Close the payment now in one step.',
+                      ),
+                      amount: finalAmount,
+                    },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      className={`cursor-pointer rounded-2xl border p-4 transition ${
+                        paymentOption === option.value
+                          ? 'border-primary bg-primary/5 ring-4 ring-primary/10'
+                          : 'border-gray-100 bg-gray-50 hover:border-primary/30'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <input
+                          type="radio"
+                          name="paymentOption"
+                          value={option.value}
+                          checked={paymentOption === option.value}
+                          onChange={() => setPaymentOption(option.value)}
+                          className="mt-1 h-4 w-4 text-primary"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-black text-gray-950">
+                            {option.title}
+                            {option.value === 'deposit' &&
+                              ` (${depositPercentage}%)`}
+                          </p>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {option.subtitle}
+                          </p>
+                          <p className="mt-3 text-lg font-black text-primary">
+                            {option.amount.toLocaleString()}{' '}
+                            {t('common.currency', 'ر.ق')}
+                          </p>
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-[0_24px_80px_rgba(18,24,40,0.08)] sm:p-7">
+              <h2 className="mb-4 text-lg font-black text-gray-950">
+                {t('bookings.checkout.promo_code', 'كود الخصم (اختياري)')}
+              </h2>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => {
+                    setPromoCode(e.target.value.toUpperCase());
+                    setPromoResult(null);
+                    setPromoError('');
+                  }}
+                  placeholder={t(
+                    'bookings.checkout.promo_placeholder',
+                    'أدخل كود الخصم',
+                  )}
+                  className={`${inputClass} font-mono uppercase`}
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleValidatePromo()}
+                  disabled={promoValidating || !promoCode.trim()}
+                  className="rounded-2xl bg-gray-950 px-5 text-sm font-black text-white transition hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {promoValidating ? (
+                    <i className="fa-solid fa-spinner fa-spin"></i>
+                  ) : (
+                    t('bookings.checkout.apply', 'تطبيق')
+                  )}
+                </button>
+              </div>
+              {promoResult && (
+                <div className="mt-3 rounded-2xl bg-green-50 px-4 py-3 text-sm font-bold text-green-600">
+                  <i className="fa-solid fa-circle-check me-2"></i>
+                  {t(
+                    'bookings.checkout.discount_applied',
+                    'خصم {{amount}} مطبق!',
+                    {
+                      amount:
+                        promoResult.discount_type === 'percentage'
+                          ? `${promoResult.discount_value}%`
+                          : `${promoResult.discount_value} ر.ق`,
+                    },
+                  )}
+                </div>
+              )}
+              {promoError && (
+                <p className="mt-2 text-sm font-bold text-red-500">
+                  {promoError}
+                </p>
+              )}
+            </section>
+          </div>
+
+          <aside className="lg:sticky lg:top-24 lg:self-start">
+            <div className="overflow-hidden rounded-[2rem] border border-gray-100 bg-white shadow-[0_24px_80px_rgba(18,24,40,0.08)]">
+              {service ? (
+                <div className="p-5">
+                  <div className="flex gap-4">
+                    <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-100">
+                      <img
+                        loading="lazy"
+                        src={getThumbnailUrl(
+                          service.images?.[0] ||
+                            'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&q=80',
+                        )}
+                        className="h-full w-full object-cover"
+                        alt={service.title}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-black text-gray-950">
+                        {service.title}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-sm text-gray-500">
+                        {service.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {service.providers?.company_name && (
+                      <span className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600">
+                        <i className="fa-solid fa-store me-1 text-primary"></i>
+                        {service.providers.company_name}
+                      </span>
+                    )}
+                    {service.providers?.city && (
+                      <span className="rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600">
+                        <i className="fa-solid fa-location-dot me-1 text-primary"></i>
+                        {service.providers.city}
+                      </span>
+                    )}
+                    {service.providers?.is_verified && (
+                      <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-bold text-green-700">
+                        <i className="fa-solid fa-circle-check me-1"></i>
+                        {t('common.verified', 'موثق')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-5">
+                  <div className="flex gap-4">
+                    <div className="h-24 w-24 animate-pulse rounded-2xl bg-gray-200"></div>
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200"></div>
+                      <div className="h-3 w-full animate-pulse rounded bg-gray-200"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="border-t border-gray-100 p-5">
+                <h3 className="mb-4 text-lg font-black text-gray-950">
+                  {t('bookings.checkout.summary', 'Order summary')}
+                </h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-500">
+                      {t('bookings.checkout.subtotal', 'المجموع الفرعي')}
+                    </span>
+                    <span className="font-bold text-gray-900">
+                      {amount.toLocaleString()} {t('common.currency', 'ر.ق')}
+                    </span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-green-600">
+                        {t('bookings.checkout.discount', 'الخصم')} ({promoCode})
+                      </span>
+                      <span className="font-bold text-green-600">
+                        - {discountAmount.toLocaleString()}{' '}
+                        {t('common.currency', 'ر.ق')}
+                      </span>
+                    </div>
+                  )}
+                  {requireDeposit && (
+                    <div className="flex justify-between gap-4">
+                      <span className="text-gray-500">
+                        {t('bookings.checkout.payment_type', 'Payment type')}
+                      </span>
+                      <span className="font-bold text-gray-900">
+                        {effectivePaymentType === 'deposit'
+                          ? t(
+                              'bookings.checkout.deposit_only',
+                              'دفع العربون فقط',
+                            )
+                          : t(
+                              'bookings.checkout.pay_full',
+                              'دفع المبلغ كاملاً',
+                            )}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-5 rounded-2xl bg-primary/5 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="font-bold text-gray-700">
+                      {t('bookings.checkout.total', 'الإجمالي')}
+                    </span>
+                    <span className="text-2xl font-black text-primary">
+                      {amountToPay.toLocaleString()}{' '}
+                      {t('common.currency', 'ر.ق')}
+                    </span>
+                  </div>
+                  {effectivePaymentType === 'deposit' && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      {t(
+                        'bookings.checkout.balance_due_later',
+                        'The remaining balance will be handled later.',
+                      )}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  disabled={loading}
+                  className="mt-5 hidden h-13 w-full rounded-2xl bg-primary px-6 py-4 text-base font-black text-white shadow-lg shadow-primary/25 transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 lg:block"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <i className="fa-solid fa-spinner fa-spin"></i>
+                      {t('common.sending', 'جاري الإرسال...')}
+                    </span>
+                  ) : (
+                    t('bookings.checkout.confirm', 'تأكيد الحجز والدفع')
+                  )}
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-100 bg-white/95 p-4 shadow-[0_-12px_30px_rgba(18,24,40,0.08)] backdrop-blur lg:hidden">
+            <div className="mx-auto flex max-w-6xl items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-gray-500">
+                  {t('bookings.checkout.payment_due', 'Payment due now')}
+                </p>
+                <p className="truncate text-lg font-black text-primary">
+                  {amountToPay.toLocaleString()} {t('common.currency', 'ر.ق')}
+                </p>
+              </div>
+              <button
+                disabled={loading}
+                className="h-12 rounded-2xl bg-primary px-5 text-sm font-black text-white shadow-lg shadow-primary/25 disabled:opacity-50"
+              >
+                {loading ? (
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                ) : (
+                  t('bookings.checkout.confirm', 'تأكيد الحجز والدفع')
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 };
 
 export default BookingCheckoutPage;

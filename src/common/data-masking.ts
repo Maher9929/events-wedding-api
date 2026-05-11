@@ -3,8 +3,8 @@
  * for public or pre-confirmation contexts.
  */
 export function maskProviderData(
-  data: Record<string, any>,
-): Record<string, any> {
+  data: Record<string, unknown>,
+): Record<string, unknown> {
   const masked = { ...data };
 
   // Mask provider-level fields

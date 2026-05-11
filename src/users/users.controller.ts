@@ -10,10 +10,12 @@ import {
   HttpStatus,
   UseGuards,
   Request,
+  Response,
   Query,
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import type { Response as ExpressResponse } from 'express';
 import { Throttle } from '@nestjs/throttler';
 import {
   ApiTags,
@@ -24,7 +26,7 @@ import {
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserDto, UpdateUserRoleDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -37,14 +39,39 @@ import { UserRole } from './dto/create-user.dto';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /** Cookie lifetime must match JWT expiry (24 h) to avoid silent 401s. */
+  private setAuthCookie(response: ExpressResponse, token: string) {
+    response.cookie('access_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 h — aligned with JWT expiresIn
+      path: '/',
+    });
+  }
+
+  private clearAuthCookie(response: ExpressResponse) {
+    response.clearCookie('access_token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      path: '/',
+    });
+  }
+
   @Public()
   @Post('register')
   @Throttle({ default: { ttl: 60000, limit: 3 } })
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User created successfully' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
-  async register(@Body() registerDto: RegisterDto) {
-    return await this.usersService.register(registerDto);
+  async register(
+    @Body() registerDto: RegisterDto,
+    @Response({ passthrough: true }) response: ExpressResponse,
+  ) {
+    const result = await this.usersService.register(registerDto);
+    this.setAuthCookie(response, result.access_token);
+    return result;
   }
 
   @Public()
@@ -54,8 +81,13 @@ export class UsersController {
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  async login(@Body() loginDto: LoginDto) {
-    return await this.usersService.login(loginDto);
+  async login(
+    @Body() loginDto: LoginDto,
+    @Response({ passthrough: true }) response: ExpressResponse,
+  ) {
+    const result = await this.usersService.login(loginDto);
+    this.setAuthCookie(response, result.access_token);
+    return result;
   }
 
   @Post('logout')
@@ -64,8 +96,12 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Logout — invalidate the current token' })
   @ApiResponse({ status: 200, description: 'Logged out successfully' })
-  async logout(@Request() req: AuthenticatedRequest) {
+  async logout(
+    @Request() req: AuthenticatedRequest,
+    @Response({ passthrough: true }) response: ExpressResponse,
+  ) {
     await this.usersService.logout(req.user.jti, req.user.id);
+    this.clearAuthCookie(response);
     return { message: 'Logged out' };
   }
 
@@ -74,8 +110,13 @@ export class UsersController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Refresh the JWT token' })
   @ApiResponse({ status: 200, description: 'New token generated' })
-  async refresh(@Request() req: AuthenticatedRequest) {
-    return await this.usersService.refreshToken(req.user.id);
+  async refresh(
+    @Request() req: AuthenticatedRequest,
+    @Response({ passthrough: true }) response: ExpressResponse,
+  ) {
+    const result = await this.usersService.refreshToken(req.user.id);
+    this.setAuthCookie(response, result.access_token);
+    return result;
   }
 
   @Get('profile')
@@ -85,8 +126,10 @@ export class UsersController {
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getProfile(@Request() req: AuthenticatedRequest) {
-    return await this.usersService.findOne(req.user.id);
+    return await this.usersService.findPrivateProfile(req.user.id);
   }
+
+  // GET profile/private removed — use GET profile instead (identical).
 
   @Patch('profile')
   @UseGuards(JwtAuthGuard)
@@ -134,8 +177,29 @@ export class UsersController {
 
   @Get('id/:id')
   @UseGuards(JwtAuthGuard)
-  async findOne(@Param('id') id: string) {
-    return await this.usersService.findOne(id);
+  async findOne(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+    if (req.user.id === id || req.user.role === (UserRole.ADMIN as string)) {
+      return await this.usersService.findPrivateProfile(id);
+    }
+
+    return await this.usersService.findPublicProfile(id);
+  }
+
+  @Get(':id/profile/public')
+  @UseGuards(JwtAuthGuard)
+  async getPublicProfile(@Param('id') id: string) {
+    return await this.usersService.findPublicProfile(id);
+  }
+
+  @Patch(':id/role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async updateRoleById(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserRoleDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return await this.usersService.updateRole(id, dto.role, req.user.id);
   }
 
   @Patch('id/:id')

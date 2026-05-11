@@ -15,7 +15,9 @@ describe('MessagesGateway', () => {
     const chain: any = {};
     chain.from = jest.fn(() => chain);
     chain.select = jest.fn(() => chain);
+    chain.eq = jest.fn(() => chain);
     chain.contains = jest.fn(() => chain);
+    chain.maybeSingle = jest.fn();
     supabase = chain;
 
     gateway = new MessagesGateway(jwtService, supabase);
@@ -62,7 +64,9 @@ describe('MessagesGateway', () => {
     });
 
     it('should disconnect on invalid token', async () => {
-      jwtService.verify.mockImplementationOnce(() => { throw new Error('invalid'); });
+      jwtService.verify.mockImplementationOnce(() => {
+        throw new Error('invalid');
+      });
 
       const client = {
         handshake: { auth: { token: 'bad-token' }, headers: {} },
@@ -122,26 +126,46 @@ describe('MessagesGateway', () => {
   // ─── handleJoinConversation ──────────────────────────────────────────────
 
   describe('handleJoinConversation', () => {
-    it('should join the conversation room', () => {
-      const client = { join: jest.fn() } as any;
-      const result = gateway.handleJoinConversation(client, { conversationId: 'conv-1' });
+    it('should join the conversation room', async () => {
+      supabase.maybeSingle.mockResolvedValueOnce({
+        data: { id: 'conv-1' },
+        error: null,
+      });
+      const client = { userId: 'user-1', join: jest.fn() } as any;
+      const result = await gateway.handleJoinConversation(client, {
+        conversationId: 'conv-1',
+      });
 
       expect(client.join).toHaveBeenCalledWith('conversation:conv-1');
       expect(result).toEqual({ event: 'joined', conversationId: 'conv-1' });
+    });
+
+    it('should reject joining a conversation the user does not belong to', async () => {
+      supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      const client = { userId: 'user-1', join: jest.fn() } as any;
+
+      await expect(
+        gateway.handleJoinConversation(client, { conversationId: 'conv-2' }),
+      ).rejects.toThrow('Conversation access denied');
+      expect(client.join).not.toHaveBeenCalled();
     });
   });
 
   // ─── handleTyping ────────────────────────────────────────────────────────
 
   describe('handleTyping', () => {
-    it('should emit typing event to conversation', () => {
+    it('should emit typing event to conversation', async () => {
+      supabase.maybeSingle.mockResolvedValueOnce({
+        data: { id: 'conv-1' },
+        error: null,
+      });
       const emitMock = jest.fn();
       const client = {
         userId: 'user-1',
         to: jest.fn().mockReturnValue({ emit: emitMock }),
       } as any;
 
-      gateway.handleTyping(client, { conversationId: 'conv-1' });
+      await gateway.handleTyping(client, { conversationId: 'conv-1' });
       expect(client.to).toHaveBeenCalledWith('conversation:conv-1');
       expect(emitMock).toHaveBeenCalledWith('user_typing', {
         userId: 'user-1',

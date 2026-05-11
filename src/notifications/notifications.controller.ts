@@ -11,7 +11,13 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -29,11 +35,30 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get my notifications' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Max results (default 50)' })
-  @ApiQuery({ name: 'offset', required: false, description: 'Pagination offset' })
-  @ApiQuery({ name: 'unread', required: false, description: 'Filter unread only (true/false)' })
-  @ApiQuery({ name: 'type', required: false, description: 'Filter by notification type' })
-  @ApiResponse({ status: 200, description: 'Notifications list with total count' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Max results (default 50)',
+  })
+  @ApiQuery({
+    name: 'offset',
+    required: false,
+    description: 'Pagination offset',
+  })
+  @ApiQuery({
+    name: 'unread',
+    required: false,
+    description: 'Filter unread only (true/false)',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: 'Filter by notification type',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notifications list with total count',
+  })
   async getMyNotifications(
     @Request() req: AuthenticatedRequest,
     @Query('limit') limit?: string,
@@ -61,7 +86,10 @@ export class NotificationsController {
 
     const { data, error, count } = await q;
     if (error) return { data: [], total: 0 };
-    return { data: mapArray(data || [], addNotificationAliases), total: count || 0 };
+    return {
+      data: mapArray(data || [], addNotificationAliases),
+      total: count || 0,
+    };
   }
 
   @Get('unread-count')
@@ -81,7 +109,10 @@ export class NotificationsController {
   @Patch('id/:id/read')
   @ApiOperation({ summary: 'Mark a notification as read' })
   @ApiResponse({ status: 200, description: 'Notification marked as read' })
-  async markAsRead(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+  async markAsRead(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const { data, error } = await this.supabase
       .from('notifications')
       .update({ is_read: true })
@@ -128,7 +159,10 @@ export class NotificationsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a single notification' })
   @ApiResponse({ status: 204, description: 'Notification deleted' })
-  async deleteOne(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
+  async deleteOne(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     await this.supabase
       .from('notifications')
       .delete()

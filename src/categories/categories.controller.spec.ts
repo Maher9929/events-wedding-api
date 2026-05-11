@@ -63,7 +63,9 @@ describe('CategoriesController', () => {
 
     it('should propagate NotFoundException', async () => {
       service.findBySlug!.mockRejectedValue(new NotFoundException());
-      await expect(controller.findBySlug('unknown')).rejects.toThrow(NotFoundException);
+      await expect(controller.findBySlug('unknown')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -90,7 +92,9 @@ describe('CategoriesController', () => {
       const updated = { id: 'c1', name: 'Updated' };
       service.update!.mockResolvedValue(updated);
 
-      expect(await controller.update('c1', { name: 'Updated' } as any)).toEqual(updated);
+      expect(await controller.update('c1', { name: 'Updated' } as any)).toEqual(
+        updated,
+      );
       expect(service.update).toHaveBeenCalledWith('c1', { name: 'Updated' });
     });
   });

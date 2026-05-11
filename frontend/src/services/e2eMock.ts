@@ -132,7 +132,7 @@ function readState(): E2EState {
   }
 
   const users: User[] = [
-    { id: 'user-admin-1', email: 'admin@test.com', full_name: 'Admin Dousha', role: 'admin', created_at: '2026-01-01T09:00:00.000Z' },
+    { id: 'user-admin-1', email: 'admin@test.com', full_name: 'Admin Doha Events', role: 'admin', created_at: '2026-01-01T09:00:00.000Z' },
     { id: 'user-client-1', email: 'client@test.com', full_name: 'Client Demo', role: 'client', city: 'Tunis', created_at: '2026-01-04T10:00:00.000Z' },
     { id: 'user-provider-1', email: 'provider@test.com', full_name: 'Studio Amal', role: 'provider', city: 'Tunis', created_at: '2026-01-06T11:00:00.000Z' },
   ];

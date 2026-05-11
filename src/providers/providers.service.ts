@@ -246,8 +246,8 @@ export class ProvidersService {
 
     return {
       data: (data || []).map((p) =>
-        maskProviderData(p as unknown as Record<string, any>),
-      ) as Provider[],
+        maskProviderData(p as unknown as Record<string, unknown>),
+      ) as unknown as Provider[],
       total: count || 0,
     };
   }
@@ -431,7 +431,7 @@ export class ProvidersService {
           .from('user_profiles')
           .select('id, full_name, avatar_url')
           .in('id', recentClientIds)
-      : { data: [] as any[] };
+      : { data: [] as { id: string; full_name: string; avatar_url: string }[] };
 
     const clientMap = new Map(
       (recentClients || []).map((client) => [client.id, client]),
@@ -619,9 +619,9 @@ export class ProvidersService {
     return data;
   }
 
-  async findOnePublic(id: string): Promise<Record<string, any>> {
+  async findOnePublic(id: string): Promise<Record<string, unknown>> {
     const data = await this.findOne(id);
-    return maskProviderData(data as unknown as Record<string, any>);
+    return maskProviderData(data as unknown as Record<string, unknown>);
   }
 
   async findByUserId(userId: string): Promise<Provider | null> {
@@ -726,10 +726,11 @@ export class ProvidersService {
     id: string,
     userId: string,
     updateProviderDto: UpdateProviderDto,
+    role?: string,
   ): Promise<Provider> {
     // Check ownership
     const provider = await this.findOne(id);
-    if (provider.user_id !== userId) {
+    if (role !== 'admin' && provider.user_id !== userId) {
       throw new ForbiddenException(
         'You can only update your own provider profile',
       );
@@ -810,10 +811,10 @@ export class ProvidersService {
     }
   }
 
-  async remove(id: string, userId: string): Promise<void> {
+  async remove(id: string, userId: string, role?: string): Promise<void> {
     // Check ownership
     const provider = await this.findOne(id);
-    if (provider.user_id !== userId) {
+    if (role !== 'admin' && provider.user_id !== userId) {
       throw new ForbiddenException(
         'You can only delete your own provider profile',
       );

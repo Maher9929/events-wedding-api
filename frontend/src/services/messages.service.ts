@@ -20,7 +20,7 @@ export const messagesService = {
   markConversationRead: (conversationId: string) =>
     apiService.patch<void>(`/messages/conversations/id/${conversationId}/read`, {}),
 
-  subscribeToMessages: (conversationId: string, onNewMessage: (payload: Record<string, unknown>) => void) => {
+  subscribeToMessages: (conversationId: string, onNewMessage: (message: Message) => void) => {
     return supabase
       .channel(`conversation:${conversationId}`)
       .on(
@@ -31,7 +31,7 @@ export const messagesService = {
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`,
         },
-        (payload) => onNewMessage(payload.new)
+        (payload) => onNewMessage(payload.new as Message)
       )
       .subscribe();
   },

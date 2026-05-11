@@ -22,7 +22,10 @@ export class AuthCacheService implements OnModuleDestroy {
   private readonly redis: Redis | null;
 
   // ─── In-memory fallbacks ───────────────────────────────
-  private readonly memUserCache = new Map<string, CachedUser & { cachedAt: number }>();
+  private readonly memUserCache = new Map<
+    string,
+    CachedUser & { cachedAt: number }
+  >();
   private readonly memBlacklist = new Set<string>();
 
   /** Cache TTL in seconds */
@@ -50,7 +53,9 @@ export class AuthCacheService implements OnModuleDestroy {
         .connect()
         .then(() => this.logger.log('Connected to Redis'))
         .catch((err) => {
-          this.logger.warn(`Redis connection failed, falling back to in-memory cache: ${err.message}`);
+          this.logger.warn(
+            `Redis connection failed, falling back to in-memory cache: ${err.message}`,
+          );
           // Do not crash — in-memory fallback will be used
         });
     } else {
@@ -79,7 +84,11 @@ export class AuthCacheService implements OnModuleDestroy {
     return this.getMemUser(userId);
   }
 
-  async cacheUser(userId: string, role: string, providerId: string | null): Promise<void> {
+  async cacheUser(
+    userId: string,
+    role: string,
+    providerId: string | null,
+  ): Promise<void> {
     const value: CachedUser = { role, provider_id: providerId };
 
     if (this.redis && this.redis.status === 'ready') {

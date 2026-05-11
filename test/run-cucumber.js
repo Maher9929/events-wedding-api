@@ -12,11 +12,14 @@ const backendErrLog = path.join(reportsDir, 'backend-err.log');
 const frontendLog = path.join(reportsDir, 'frontend.log');
 const frontendErrLog = path.join(reportsDir, 'frontend-err.log');
 const cucumberJson = path.join(reportsDir, 'cucumber-report.json');
+const cucumberJunit = path.join(reportsDir, 'cucumber-junit.xml');
 const htmlReport = path.join(reportsDir, 'rapport-tests.html');
 const screenshotsDir = path.join(reportsDir, 'screenshots');
 const htmlDumpsDir = path.join(reportsDir, 'html-dumps');
 
-const backendUrl = process.env.TEST_API_URL || 'http://localhost:3000/api';
+const backendUrl = process.env.TEST_API_URL || 'http://localhost:3000';
+const backendHealthUrl =
+  process.env.TEST_HEALTH_URL || `${backendUrl.replace(/\/api\/?$/, '')}/health`;
 const frontendUrl = process.env.TEST_BASE_URL || 'http://localhost:5173';
 const waitTimeoutMs = Number(process.env.TEST_WAIT_TIMEOUT_MS || 120000);
 
@@ -157,7 +160,7 @@ function killProcessTree(child) {
 async function main() {
   ensureReportsDir();
   [backendLog, backendErrLog, frontendLog, frontendErrLog].forEach(resetLogFile);
-  [cucumberJson, htmlReport].forEach(removeIfExists);
+  [cucumberJson, cucumberJunit, htmlReport].forEach(removeIfExists);
   [screenshotsDir, htmlDumpsDir].forEach(emptyDirectory);
 
   const npmCmd = getNpmCommand();
@@ -174,6 +177,22 @@ async function main() {
       rootDir,
       backendLog,
       backendErrLog,
+      {
+        NODE_ENV: process.env.NODE_ENV || 'test',
+        JWT_SECRET:
+          process.env.JWT_SECRET ||
+          'test-jwt-secret-for-cucumber-e2e-only-32-chars',
+        SUPABASE_URL: process.env.SUPABASE_URL || 'http://localhost:54321',
+        SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'test-anon-key',
+        SUPABASE_SERVICE_ROLE_KEY:
+          process.env.SUPABASE_SERVICE_ROLE_KEY || 'test-service-role-key',
+        APP_BASE_URL: process.env.APP_BASE_URL || frontendUrl,
+        ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || frontendUrl,
+        STRIPE_SECRET_KEY:
+          process.env.STRIPE_SECRET_KEY || 'sk_test_e2e_placeholder',
+        STRIPE_WEBHOOK_SECRET:
+          process.env.STRIPE_WEBHOOK_SECRET || 'whsec_e2e_placeholder',
+      },
     );
 
     console.log('2. Demarrage frontend...');
@@ -189,7 +208,7 @@ async function main() {
     );
 
     console.log('3. Attente des serveurs...');
-    await waitForUrl(backendUrl, waitTimeoutMs, 'Backend');
+    await waitForUrl(backendHealthUrl, waitTimeoutMs, 'Backend');
     await waitForUrl(frontendUrl, waitTimeoutMs, 'Frontend');
 
     console.log('4. Execution Cucumber...');

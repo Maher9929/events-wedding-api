@@ -35,12 +35,9 @@ export const uploadService = {
     formData.append('file', file);
     formData.append('folder', folder);
 
-    const token = localStorage.getItem('access_token');
     const response = await fetch(`${API_BASE_URL}/storage/upload`, {
       method: 'POST',
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
+      credentials: 'include',
       body: formData,
     });
 
@@ -73,12 +70,9 @@ export const uploadService = {
     }
     formData.append('folder', folder);
 
-    const token = localStorage.getItem('access_token');
     const response = await fetch(`${API_BASE_URL}/storage/upload-multiple`, {
       method: 'POST',
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
+      credentials: 'include',
       body: formData,
     });
 
@@ -95,12 +89,9 @@ export const uploadService = {
    * Delete a file via the backend.
    */
   async deleteFile(path: string, bucket = 'attachments'): Promise<void> {
-    const token = localStorage.getItem('access_token');
     const response = await fetch(`${API_BASE_URL}/storage/${bucket}/${path}`, {
       method: 'DELETE',
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
+      credentials: 'include',
     });
 
     if (!response.ok) {

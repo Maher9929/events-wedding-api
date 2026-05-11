@@ -22,7 +22,9 @@ function createSupabaseMock() {
   chain.single = jest.fn();
   // Make the chain awaitable so double .order() works as terminal
   chain.then = jest.fn((resolve: any) => resolve(terminalResult));
-  chain._setResult = (result: any) => { terminalResult = result; };
+  chain._setResult = (result: any) => {
+    terminalResult = result;
+  };
   return chain;
 }
 
@@ -55,7 +57,12 @@ describe('CategoriesService', () => {
     });
 
     it('should create category successfully', async () => {
-      const category = { id: 'c1', name: 'Wedding', slug: 'wedding', is_active: true };
+      const category = {
+        id: 'c1',
+        name: 'Wedding',
+        slug: 'wedding',
+        is_active: true,
+      };
 
       // slug check — not found
       supabase.single
@@ -77,7 +84,10 @@ describe('CategoriesService', () => {
       supabase.single
         .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
         // insert error
-        .mockResolvedValueOnce({ data: null, error: { message: 'insert failed' } });
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: 'insert failed' },
+        });
 
       await expect(
         service.create({ name: 'Test', slug: 'test' } as any),

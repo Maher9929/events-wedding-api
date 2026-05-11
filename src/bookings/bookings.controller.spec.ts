@@ -1,5 +1,6 @@
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
+import { PaymentsService } from '../payments/payments.service';
 
 const mockUser = {
   id: 'u1',
@@ -12,6 +13,7 @@ const mockReq = { user: mockUser } as any;
 describe('BookingsController', () => {
   let controller: BookingsController;
   let service: Partial<Record<keyof BookingsService, jest.Mock>>;
+  let paymentsService: Partial<Record<keyof PaymentsService, jest.Mock>>;
 
   beforeEach(() => {
     service = {
@@ -25,7 +27,12 @@ describe('BookingsController', () => {
       getAdminStats: jest.fn(),
       getUnavailableDates: jest.fn(),
     };
-    controller = new BookingsController(service as any);
+    paymentsService = {
+      createDepositPaymentIntent: jest.fn(),
+      createBalancePaymentIntent: jest.fn(),
+      createFullPaymentIntent: jest.fn(),
+    };
+    controller = new BookingsController(service as any, paymentsService as any);
   });
 
   it('should be defined', () => {
@@ -52,7 +59,13 @@ describe('BookingsController', () => {
       const result = await controller.findAll('confirmed');
       expect(result).toEqual(data);
       expect(service.findAll).toHaveBeenCalledWith(
-        'confirmed', undefined, undefined, undefined, undefined, undefined, undefined,
+        'confirmed',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -61,7 +74,13 @@ describe('BookingsController', () => {
 
       await controller.findAll(undefined, undefined, '10', '0');
       expect(service.findAll).toHaveBeenCalledWith(
-        undefined, undefined, 10, 0, undefined, undefined, undefined,
+        undefined,
+        undefined,
+        10,
+        0,
+        undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -74,7 +93,12 @@ describe('BookingsController', () => {
       const result = await controller.findMyBookings(mockReq);
       expect(result).toEqual(data);
       expect(service.findByClient).toHaveBeenCalledWith(
-        'u1', undefined, undefined, undefined, undefined, undefined,
+        'u1',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -88,7 +112,14 @@ describe('BookingsController', () => {
 
       await controller.findByProvider('me', providerReq);
       expect(service.findByProvider).toHaveBeenCalledWith(
-        'prov-1', 'u2', undefined, undefined, undefined, undefined, undefined, undefined,
+        'prov-1',
+        'u2',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
 
@@ -97,7 +128,14 @@ describe('BookingsController', () => {
 
       await controller.findByProvider('prov-5', mockReq);
       expect(service.findByProvider).toHaveBeenCalledWith(
-        'prov-5', 'u1', undefined, undefined, undefined, undefined, undefined, undefined,
+        'prov-5',
+        'u1',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -108,6 +146,52 @@ describe('BookingsController', () => {
       service.getAdminStats!.mockResolvedValue(stats);
 
       expect(await controller.getAdminStats()).toEqual(stats);
+    });
+  });
+
+  describe('createPaymentIntent', () => {
+    it('delegates deposit payments to PaymentsService', async () => {
+      paymentsService.createDepositPaymentIntent!.mockResolvedValue({
+        clientSecret: 'secret',
+      });
+
+      const result = await controller.createPaymentIntent(
+        'b1',
+        mockReq,
+        'deposit',
+      );
+
+      expect(result).toEqual({ clientSecret: 'secret' });
+      expect(paymentsService.createDepositPaymentIntent).toHaveBeenCalledWith(
+        'b1',
+        'u1',
+      );
+    });
+
+    it('delegates balance payments to PaymentsService', async () => {
+      paymentsService.createBalancePaymentIntent!.mockResolvedValue({
+        clientSecret: 'secret',
+      });
+
+      await controller.createPaymentIntent('b1', mockReq, 'balance');
+
+      expect(paymentsService.createBalancePaymentIntent).toHaveBeenCalledWith(
+        'b1',
+        'u1',
+      );
+    });
+
+    it('defaults legacy booking pay route to full payment', async () => {
+      paymentsService.createFullPaymentIntent!.mockResolvedValue({
+        clientSecret: 'secret',
+      });
+
+      await controller.createPaymentIntent('b1', mockReq, 'full');
+
+      expect(paymentsService.createFullPaymentIntent).toHaveBeenCalledWith(
+        'b1',
+        'u1',
+      );
     });
   });
 });

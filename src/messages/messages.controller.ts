@@ -8,7 +8,12 @@ import {
   Request,
   Patch,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { MessagesService } from './messages.service';
 import { CreateMessageDto } from './dto/create-message.dto';
@@ -26,7 +31,10 @@ export class MessagesController {
   @Throttle({ default: { ttl: 60000, limit: 20 } })
   @ApiOperation({ summary: 'Send a message' })
   @ApiResponse({ status: 201, description: 'Message sent' })
-  sendMessage(@Request() req: AuthenticatedRequest, @Body() createMessageDto: CreateMessageDto) {
+  sendMessage(
+    @Request() req: AuthenticatedRequest,
+    @Body() createMessageDto: CreateMessageDto,
+  ) {
     // req.user should be populated by AuthGuard
     return this.messagesService.sendMessage(req.user.id, createMessageDto);
   }

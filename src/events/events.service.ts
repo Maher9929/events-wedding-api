@@ -24,6 +24,19 @@ import {
 } from './dto/event-features.dto';
 import { CreateGuestDto, UpdateGuestDto } from './dto/event-guests.dto';
 import { sanitizeSearch } from '../common/sanitize';
+import { DEFAULT_CURRENCY } from '../common/constants';
+
+export interface EventGuest {
+  id: string;
+  event_id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  status: 'invited' | 'confirmed' | 'declined' | 'maybe';
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
 
 @Injectable()
 export class EventsService {
@@ -75,7 +88,7 @@ export class EventsService {
       .insert({
         ...createEventDto,
         client_id: clientId,
-        currency: createEventDto.currency || 'MAD',
+        currency: createEventDto.currency || DEFAULT_CURRENCY,
         status: createEventDto.status || 'planning',
         visibility: createEventDto.visibility || 'private',
         is_template: createEventDto.is_template || false,
@@ -220,6 +233,41 @@ export class EventsService {
     return data;
   }
 
+  async findOneForUser(
+    id: string,
+    userId: string,
+    role: string,
+  ): Promise<Event> {
+    const { data, error } = await this.supabase
+      .from('events')
+      .select(
+        `
+        *,
+        user_profiles(
+          id,
+          full_name,
+          avatar_url
+        )
+      `,
+      )
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      throw new NotFoundException('Event not found');
+    }
+
+    const isOwner = data.client_id === userId;
+    const isAdmin = role === 'admin';
+    const isPublic = data.visibility === 'public' || data.is_template === true;
+
+    if (!isOwner && !isAdmin && !isPublic) {
+      throw new NotFoundException('Event not found');
+    }
+
+    return data;
+  }
+
   async findByClient(
     clientId: string,
     status?: string,
@@ -294,6 +342,7 @@ export class EventsService {
       .from('events')
       .select('*')
       .in('status', ['planning', 'confirmed'])
+      .eq('visibility', 'public')
       .gte('event_date', new Date().toISOString().split('T')[0])
       .order('event_date', { ascending: true })
       .limit(limit);
@@ -313,6 +362,7 @@ export class EventsService {
       .from('events')
       .select('*')
       .eq('event_type', eventType)
+      .eq('visibility', 'public')
       .order('event_date', { ascending: false })
       .limit(limit);
 
@@ -610,7 +660,7 @@ export class EventsService {
 
   // ─── Guest Management ─────────────────────────────────────────────────────
 
-  async getGuests(eventId: string, userId: string): Promise<any[]> {
+  async getGuests(eventId: string, userId: string): Promise<EventGuest[]> {
     await this.assertEventOwnership(eventId, userId);
 
     const { data, error } = await this.supabase
@@ -627,7 +677,7 @@ export class EventsService {
     eventId: string,
     userId: string,
     dto: CreateGuestDto,
-  ): Promise<any> {
+  ): Promise<EventGuest> {
     await this.assertEventOwnership(eventId, userId);
 
     const { data, error } = await this.supabase
@@ -644,7 +694,7 @@ export class EventsService {
     id: string,
     userId: string,
     dto: UpdateGuestDto,
-  ): Promise<any> {
+  ): Promise<EventGuest> {
     const eventId = await this.getEventIdFromChild('event_guests', id);
     await this.assertEventOwnership(eventId, userId);
 

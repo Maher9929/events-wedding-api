@@ -31,7 +31,10 @@ export class ModerationController {
 
   @Post('reports')
   @Roles(UserRole.CLIENT, UserRole.PROVIDER, UserRole.ADMIN)
-  async createReport(@Body() reportDto: CreateReportDto, @Request() req: AuthenticatedRequest) {
+  async createReport(
+    @Body() reportDto: CreateReportDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.moderationService.createReport(reportDto, req.user.id);
   }
 

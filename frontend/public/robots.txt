@@ -5,4 +5,4 @@ Disallow: /client/
 Disallow: /provider/
 Disallow: /auth/
 
-Sitemap: https://dousha.qa/sitemap.xml
+Sitemap: https://dohaevents.com/sitemap.xml

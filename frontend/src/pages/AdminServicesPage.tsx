@@ -126,7 +126,7 @@ const AdminServicesPage = () => {
                                             <div className="font-bold text-gray-800">{service.title}</div>
                                             <div className="text-xs text-gray-400">#{service.id.substring(0, 8).toUpperCase()}</div>
                                         </td>
-                                        <td className="px-6 py-4 font-bold text-primary">{service.base_price?.toLocaleString()} QR</td>
+                                        <td className="px-6 py-4 font-bold text-primary">{service.base_price?.toLocaleString()} {t('common.currency', 'QAR')}</td>
                                         <td className="px-6 py-4 text-gray-600 text-sm">
                                             {service.category?.name || service.category_id}
                                         </td>

@@ -26,7 +26,8 @@ export class NotificationsService {
     this.sendgridEnabled =
       apiKey.startsWith('SG.') && !apiKey.includes('YOUR_');
     this.appBaseUrl =
-      this.configService.get<string>('APP_BASE_URL') || 'https://dohaevents.com';
+      this.configService.get<string>('APP_BASE_URL') ||
+      'https://dohaevents.com';
     if (this.sendgridEnabled) {
       sgMail.setApiKey(apiKey);
     }

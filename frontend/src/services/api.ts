@@ -47,21 +47,25 @@ class ApiService {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('access_token');
 
     const config: RequestInit = {
       ...options,
+      credentials: 'include', // Sends HttpOnly cookie automatically
       headers: {
         'Content-Type': 'application/json',
         'Bypass-Tunnel-Reminder': 'true',
-        ...(token && { Authorization: `Bearer ${token}` }),
         ...(options.headers || {}),
       },
     };
 
     try {
-      if (!import.meta.env.PROD && E2E_MODE) {
-        const { handleE2ERequest } = await import('./e2eMock');
+      // E2E mock: only active in dev when VITE_E2E_MODE=true.
+      // The `import.meta.env.PROD` check is a build-time constant —
+      // Vite completely eliminates this branch in production bundles.
+      if (import.meta.env.DEV && E2E_MODE) {
+        const { handleE2ERequest } = await import(
+          /* @vite-ignore */ './e2eMock'
+        );
         return await handleE2ERequest<T>(endpoint, config);
       }
 
@@ -80,7 +84,6 @@ class ApiService {
 
       if (!response.ok) {
         if (response.status === 401) {
-          localStorage.removeItem('access_token');
           localStorage.removeItem('user');
           if (!window.location.pathname.startsWith('/auth/')) {
             window.location.href = '/auth/login';

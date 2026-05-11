@@ -5,10 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
-import {
-  CreateReportDto,
-  UpdateReportActionDto,
-} from './dto/moderation.dto';
+import { CreateReportDto, UpdateReportActionDto } from './dto/moderation.dto';
 
 export interface ReportDto {
   reporter_id: string;
@@ -92,7 +89,11 @@ export class ModerationService {
     return data || [];
   }
 
-  async updateReport(reportId: string, action: UpdateReportActionDto, moderatorId: string) {
+  async updateReport(
+    reportId: string,
+    action: UpdateReportActionDto,
+    moderatorId: string,
+  ) {
     // Get the report first
     const { data: report, error: reportError } = await this.supabase
       .from('moderation_reports')

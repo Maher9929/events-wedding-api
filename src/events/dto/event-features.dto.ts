@@ -30,11 +30,28 @@ export class CreateBudgetDto {
 }
 
 export class UpdateBudgetDto {
+  @IsOptional()
+  @IsString()
   category?: string;
+
+  @IsOptional()
+  @IsString()
   item_name?: string;
+
+  @IsOptional()
+  @IsNumber()
   estimated_cost?: number;
+
+  @IsOptional()
+  @IsNumber()
   actual_cost?: number;
+
+  @IsOptional()
+  @IsNumber()
   paid_amount?: number;
+
+  @IsOptional()
+  @IsString()
   notes?: string;
 }
 
@@ -60,10 +77,24 @@ export class CreateTaskDto {
 }
 
 export class UpdateTaskDto {
+  @IsOptional()
+  @IsString()
   title?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsEnum(['pending', 'in_progress', 'completed'])
   status?: 'pending' | 'in_progress' | 'completed';
+
+  @IsOptional()
+  @IsDateString()
   due_date?: Date;
+
+  @IsOptional()
+  @IsString()
   assigned_to?: string;
 }
 
@@ -88,9 +119,23 @@ export class CreateTimelineItemDto {
 }
 
 export class UpdateTimelineItemDto {
+  @IsOptional()
+  @IsString()
   start_time?: string;
+
+  @IsOptional()
+  @IsString()
   end_time?: string;
+
+  @IsOptional()
+  @IsString()
   activity?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsNumber()
   order_index?: number;
 }

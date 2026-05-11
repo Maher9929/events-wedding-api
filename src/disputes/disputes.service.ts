@@ -107,7 +107,8 @@ export class DisputesService {
         data: { dispute_id: data.id, booking_id: dto.booking_id },
       });
     } catch (e) {
-      this.logger.warn(`Failed to notify provider: ${e}`);
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`Failed to notify provider: ${message}`);
     }
 
     return data;
@@ -303,7 +304,8 @@ export class DisputesService {
           data: { dispute_id: disputeId, resolution: dto.resolution },
         });
       } catch (e) {
-        this.logger.warn(`Failed to notify user ${uid}: ${e}`);
+        const message = e instanceof Error ? e.message : String(e);
+        this.logger.warn(`Failed to notify user ${uid}: ${message}`);
       }
     }
 

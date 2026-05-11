@@ -10,7 +10,7 @@ const SignupPage = () => {
     const { register, isAuthenticated, user } = useAuth();
 
     useEffect(() => {
-        document.title = `${t('auth.signup.title')} | DOUSHA`;
+        document.title = `${t('auth.signup.title')} | Doha Events`;
     }, [t]);
 
     useEffect(() => {

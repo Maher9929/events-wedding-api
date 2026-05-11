@@ -8,8 +8,10 @@ const mockUsersService = {
   login: jest.fn(),
   findAll: jest.fn(),
   findOne: jest.fn(),
+  findPrivateProfile: jest.fn(),
+  findPublicProfile: jest.fn(),
   findByEmail: jest.fn(),
-  updateProfile: jest.fn(),
+  update: jest.fn(),
   remove: jest.fn(),
   updateRole: jest.fn(),
   refreshToken: jest.fn(),
@@ -46,8 +48,14 @@ describe('UsersController', () => {
       };
       mockUsersService.register.mockResolvedValue(expected);
 
-      const result = await controller.register(dto);
+      const response = { cookie: jest.fn() };
+      const result = await controller.register(dto, response as any);
       expect(mockUsersService.register).toHaveBeenCalledWith(dto);
+      expect(response.cookie).toHaveBeenCalledWith(
+        'access_token',
+        'jwt',
+        expect.objectContaining({ httpOnly: true }),
+      );
       expect(result).toEqual(expected);
     });
   });
@@ -58,8 +66,14 @@ describe('UsersController', () => {
       const expected = { access_token: 'jwt', user: { id: '1' } };
       mockUsersService.login.mockResolvedValue(expected);
 
-      const result = await controller.login(dto);
+      const response = { cookie: jest.fn() };
+      const result = await controller.login(dto, response as any);
       expect(mockUsersService.login).toHaveBeenCalledWith(dto);
+      expect(response.cookie).toHaveBeenCalledWith(
+        'access_token',
+        'jwt',
+        expect.objectContaining({ httpOnly: true }),
+      );
       expect(result).toEqual(expected);
     });
   });

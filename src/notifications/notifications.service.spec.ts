@@ -7,7 +7,17 @@ jest.mock('@sendgrid/mail', () => ({
   send: jest.fn().mockResolvedValue([{ statusCode: 202 }]),
 }));
 
-function createConfigService(overrides: Record<string, string> = {}): ConfigService {
+const mockedSendGrid = sgMail as unknown as {
+  send: jest.Mock;
+  setApiKey: jest.Mock;
+};
+
+const sendGridSend = () => mockedSendGrid.send;
+const sendGridSetApiKey = () => mockedSendGrid.setApiKey;
+
+function createConfigService(
+  overrides: Record<string, string> = {},
+): ConfigService {
   const defaults: Record<string, string> = {
     SENDGRID_API_KEY: '',
     SENDGRID_FROM_EMAIL: 'test@dohaevents.com',
@@ -15,7 +25,9 @@ function createConfigService(overrides: Record<string, string> = {}): ConfigServ
     APP_BASE_URL: 'https://test.dohaevents.com',
   };
   const values = { ...defaults, ...overrides };
-  return { get: jest.fn((key: string) => values[key]) } as unknown as ConfigService;
+  return {
+    get: jest.fn((key: string) => values[key]),
+  } as unknown as ConfigService;
 }
 
 describe('NotificationsService', () => {
@@ -43,7 +55,7 @@ describe('NotificationsService', () => {
         body: 'Hello',
       });
 
-      expect(sgMail.send).not.toHaveBeenCalled();
+      expect(sendGridSend()).not.toHaveBeenCalled();
     });
 
     it('notifyNewBooking should not throw', async () => {
@@ -54,7 +66,11 @@ describe('NotificationsService', () => {
 
     it('notifyBookingConfirmed should not throw', async () => {
       await expect(
-        service.notifyBookingConfirmed('client@test.com', 'Photography', '2026-06-01'),
+        service.notifyBookingConfirmed(
+          'client@test.com',
+          'Photography',
+          '2026-06-01',
+        ),
       ).resolves.not.toThrow();
     });
 
@@ -78,7 +94,12 @@ describe('NotificationsService', () => {
 
     it('notifyEventReminder should not throw', async () => {
       await expect(
-        service.notifyEventReminder('client@test.com', 'My Wedding', '2026-06-01', 7),
+        service.notifyEventReminder(
+          'client@test.com',
+          'My Wedding',
+          '2026-06-01',
+          7,
+        ),
       ).resolves.not.toThrow();
     });
   });
@@ -95,7 +116,7 @@ describe('NotificationsService', () => {
     });
 
     it('should set the API key', () => {
-      expect(sgMail.setApiKey).toHaveBeenCalledWith('SG.valid_key_here');
+      expect(sendGridSetApiKey()).toHaveBeenCalledWith('SG.valid_key_here');
     });
 
     it('sendEmail should call sgMail.send with correct params', async () => {
@@ -105,7 +126,7 @@ describe('NotificationsService', () => {
         body: 'Test Body',
       });
 
-      expect(sgMail.send).toHaveBeenCalledWith(
+      expect(sendGridSend()).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'user@test.com',
           subject: 'Test Subject',
@@ -115,9 +136,14 @@ describe('NotificationsService', () => {
     });
 
     it('notifyNewBooking should send email', async () => {
-      await service.notifyNewBooking('prov@test.com', 'Ali', 'DJ', '2026-06-01');
-      expect(sgMail.send).toHaveBeenCalledTimes(1);
-      expect(sgMail.send).toHaveBeenCalledWith(
+      await service.notifyNewBooking(
+        'prov@test.com',
+        'Ali',
+        'DJ',
+        '2026-06-01',
+      );
+      expect(sendGridSend()).toHaveBeenCalledTimes(1);
+      expect(sendGridSend()).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'prov@test.com',
         }),
@@ -125,35 +151,53 @@ describe('NotificationsService', () => {
     });
 
     it('notifyBookingConfirmed should send email', async () => {
-      await service.notifyBookingConfirmed('client@test.com', 'Photography', '2026-06-01');
-      expect(sgMail.send).toHaveBeenCalledTimes(1);
+      await service.notifyBookingConfirmed(
+        'client@test.com',
+        'Photography',
+        '2026-06-01',
+      );
+      expect(sendGridSend()).toHaveBeenCalledTimes(1);
     });
 
     it('notifyNewQuote should send email with amount', async () => {
-      await service.notifyNewQuote('client@test.com', 'Studio X', 'Video', 5000);
-      expect(sgMail.send).toHaveBeenCalledTimes(1);
+      await service.notifyNewQuote(
+        'client@test.com',
+        'Studio X',
+        'Video',
+        5000,
+      );
+      expect(sendGridSend()).toHaveBeenCalledTimes(1);
     });
 
     it('notifyNewMessage should send email', async () => {
       await service.notifyNewMessage('user@test.com', 'Ali', 'Hello there');
-      expect(sgMail.send).toHaveBeenCalledTimes(1);
+      expect(sendGridSend()).toHaveBeenCalledTimes(1);
     });
 
     it('notifyProviderVerified should send email', async () => {
       await service.notifyProviderVerified('prov@test.com', 'Studio X');
-      expect(sgMail.send).toHaveBeenCalledTimes(1);
+      expect(sendGridSend()).toHaveBeenCalledTimes(1);
     });
 
     it('notifyEventReminder should send email', async () => {
-      await service.notifyEventReminder('client@test.com', 'My Wedding', '2026-06-01', 7);
-      expect(sgMail.send).toHaveBeenCalledTimes(1);
+      await service.notifyEventReminder(
+        'client@test.com',
+        'My Wedding',
+        '2026-06-01',
+        7,
+      );
+      expect(sendGridSend()).toHaveBeenCalledTimes(1);
     });
 
     it('should silently catch send errors', async () => {
-      (sgMail.send as jest.Mock).mockRejectedValueOnce(new Error('SendGrid error'));
+      sendGridSend().mockRejectedValueOnce(new Error('SendGrid error'));
 
       await expect(
-        service.sendEmail({ to: 'user@test.com', subject: 'Test', body: 'Body' }),
+        service.sendEmail({
+          to: 'user@test.com',
+          subject: 'Test',
+          body: 'Body',
+        }),
       ).resolves.not.toThrow();
     });
   });

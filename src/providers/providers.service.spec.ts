@@ -28,7 +28,9 @@ function createSupabaseMock() {
   chain.single = jest.fn();
   chain.maybeSingle = jest.fn();
   chain.then = jest.fn((resolve: any) => resolve(terminalResult));
-  chain._setResult = (result: any) => { terminalResult = result; };
+  chain._setResult = (result: any) => {
+    terminalResult = result;
+  };
   return chain;
 }
 
@@ -78,7 +80,10 @@ describe('ProvidersService', () => {
     it('should throw BadRequestException on insert error', async () => {
       supabase.single
         .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
-        .mockResolvedValueOnce({ data: null, error: { message: 'insert failed' } });
+        .mockResolvedValueOnce({
+          data: null,
+          error: { message: 'insert failed' },
+        });
 
       await expect(
         service.create('u1', { company_name: 'Test' } as any),
@@ -263,7 +268,10 @@ describe('ProvidersService', () => {
 
   describe('updateByUserId', () => {
     it('should throw NotFoundException when provider not found', async () => {
-      supabase.single.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } });
+      supabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { code: 'PGRST116' },
+      });
 
       await expect(
         service.updateByUserId('unknown', { company_name: 'Test' } as any),

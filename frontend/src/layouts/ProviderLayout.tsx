@@ -2,6 +2,7 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../components/common/LanguageSwitcher';
+import BrandLogo from '../components/common/BrandLogo';
 
 const ProviderLayout = () => {
   const { t } = useTranslation();
@@ -28,8 +29,8 @@ const ProviderLayout = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Link to="/" className="text-2xl font-bold text-primary">
-                Dousha
+              <Link to="/" className="text-primary">
+                <BrandLogo />
               </Link>
               <span className="ms-4 text-sm text-gray-500">{t('common.provider.portal')}</span>
               <Link

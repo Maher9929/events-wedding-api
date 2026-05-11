@@ -63,7 +63,8 @@ export class AppService {
       await this.supabase.from('categories').select('id').limit(1);
       return { status: 'up', latencyMs: Date.now() - start };
     } catch (err) {
-      this.logger.warn(`Database health check failed: ${err}`);
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Database health check failed: ${message}`);
       return { status: 'down', latencyMs: Date.now() - start };
     }
   }
@@ -77,7 +78,8 @@ export class AppService {
       await this.authCache.invalidateUser(testKey);
       return { status: result ? 'up' : 'down', latencyMs: Date.now() - start };
     } catch (err) {
-      this.logger.warn(`Cache health check failed: ${err}`);
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Cache health check failed: ${message}`);
       return { status: 'down', latencyMs: Date.now() - start };
     }
   }

@@ -15,7 +15,7 @@ const SEO: React.FC<SEOProps> = ({
 }) => {
     useEffect(() => {
         // Basic Tags
-        document.title = `${title} | DOUSHA`;
+        document.title = `${title} | Doha Events`;
 
         const setMetaTag = (name: string, content: string, isProperty = false) => {
             const attr = isProperty ? 'property' : 'name';

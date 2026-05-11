@@ -26,7 +26,9 @@ const ProviderProfilePage = () => {
                     apiService.get<Provider>(`/providers/id/${id}`),
                     reviewsService.getByProvider(id)
                 ]);
-                const reviewArray = Array.isArray(reviewsData) ? reviewsData : (reviewsData as any)?.data || [];
+                const reviewArray: Review[] = Array.isArray(reviewsData)
+                    ? reviewsData
+                    : (reviewsData as { data?: Review[] })?.data || [];
                 setProvider(providerData as Provider);
                 setReviews(reviewArray);
             } catch (_error) {

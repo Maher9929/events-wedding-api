@@ -19,7 +19,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let validationErrors: string[] | undefined;
 
@@ -29,14 +29,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
-      } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        const resp = exceptionResponse as Record<string, any>;
+      } else if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null
+      ) {
+        const resp = exceptionResponse as Record<string, unknown>;
         // Handle ValidationPipe array messages
         if (Array.isArray(resp.message)) {
           message = 'Validation failed';
           validationErrors = resp.message;
         } else {
-          message = resp.message || exception.message;
+          message = (resp.message as string) || exception.message;
         }
       }
     } else if (exception instanceof Error) {
@@ -61,7 +64,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       });
     }
 
-    const body: Record<string, any> = {
+    const body: Record<string, unknown> = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,

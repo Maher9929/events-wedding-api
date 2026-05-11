@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity, entity_id
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
 
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON audit_logs FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ============================================================
 -- COMMISSIONS
@@ -50,7 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_commissions_provider ON commissions(provider_id);
 CREATE INDEX IF NOT EXISTS idx_commissions_status ON commissions(status);
 
 ALTER TABLE commissions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON commissions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON commissions FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ============================================================
 -- CANCELLATION POLICIES
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS cancellation_policies (
 CREATE INDEX IF NOT EXISTS idx_cancellation_policies_provider ON cancellation_policies(provider_id);
 
 ALTER TABLE cancellation_policies ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON cancellation_policies FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON cancellation_policies FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- Add cancellation_policy column directly on services (inline JSON for simplicity)
 ALTER TABLE services
@@ -97,7 +97,7 @@ CREATE INDEX IF NOT EXISTS idx_kyc_docs_provider ON provider_kyc_documents(provi
 CREATE INDEX IF NOT EXISTS idx_kyc_docs_status ON provider_kyc_documents(status);
 
 ALTER TABLE provider_kyc_documents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON provider_kyc_documents FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON provider_kyc_documents FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ============================================================
 -- MESSAGES — Add attachments column

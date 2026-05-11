@@ -33,7 +33,7 @@ const legalContentByLang: Record<'fr' | 'en' | 'ar', LegalContent> = {
           {
             heading: 'Objet',
             paragraphs: [
-              "La plateforme Dousha met en relation des clients et des prestataires pour l'organisation d'événements.",
+              "La plateforme Doha Events met en relation des clients et des prestataires pour l'organisation d'événements.",
               "L'utilisation du site implique l'acceptation des présentes conditions."
             ]
           },
@@ -48,7 +48,7 @@ const legalContentByLang: Record<'fr' | 'en' | 'ar', LegalContent> = {
             heading: 'Responsabilités',
             paragraphs: [
               "Les prestataires restent responsables de la qualité, du prix et de l'exécution de leurs services.",
-              "Dousha agit comme intermédiaire technologique et peut modérer les contenus ou suspendre des comptes en cas d'abus."
+              "Doha Events agit comme intermédiaire technologique et peut modérer les contenus ou suspendre des comptes en cas d'abus."
             ]
           }
         ]
@@ -170,7 +170,7 @@ const legalContentByLang: Record<'fr' | 'en' | 'ar', LegalContent> = {
           {
             heading: 'Purpose',
             paragraphs: [
-              'Dousha connects clients and service providers for event planning and booking.',
+              'Doha Events connects clients and service providers for event planning and booking.',
               'Using the platform means you accept these terms.'
             ]
           },
@@ -185,7 +185,7 @@ const legalContentByLang: Record<'fr' | 'en' | 'ar', LegalContent> = {
             heading: 'Responsibilities',
             paragraphs: [
               'Providers remain responsible for the quality, pricing, and delivery of their services.',
-              'Dousha acts as a technology intermediary and may moderate content or suspend abusive accounts.'
+              'Doha Events acts as a technology intermediary and may moderate content or suspend abusive accounts.'
             ]
           }
         ]
@@ -307,7 +307,7 @@ const legalContentByLang: Record<'fr' | 'en' | 'ar', LegalContent> = {
           {
             heading: 'الغرض',
             paragraphs: [
-              'تربط منصة Dousha بين العملاء ومقدمي الخدمات لتنظيم المناسبات والحجوزات.',
+              'تربط منصة Doha Events بين العملاء ومقدمي الخدمات لتنظيم المناسبات والحجوزات.',
               'استخدام المنصة يعني الموافقة على هذه الشروط.'
             ]
           },
@@ -322,7 +322,7 @@ const legalContentByLang: Record<'fr' | 'en' | 'ar', LegalContent> = {
             heading: 'المسؤوليات',
             paragraphs: [
               'يبقى مقدم الخدمة مسؤولاً عن الجودة والسعر والتنفيذ الخاص بخدماته.',
-              'تعمل Dousha كوسيط تقني ويمكنها الإشراف على المحتوى أو تعليق الحسابات المسيئة.'
+              'تعمل Doha Events كوسيط تقني ويمكنها الإشراف على المحتوى أو تعليق الحسابات المسيئة.'
             ]
           }
         ]

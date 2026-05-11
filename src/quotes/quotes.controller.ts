@@ -12,7 +12,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { QuotesService } from './quotes.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
@@ -88,7 +93,10 @@ export class QuotesController {
   @Throttle({ default: { ttl: 60000, limit: 10 } })
   @ApiOperation({ summary: 'Create a new quote' })
   @ApiResponse({ status: 201, description: 'Quote created' })
-  create(@Request() req: AuthenticatedRequest, @Body() createQuoteDto: CreateQuoteDto) {
+  create(
+    @Request() req: AuthenticatedRequest,
+    @Body() createQuoteDto: CreateQuoteDto,
+  ) {
     return this.quotesService.create(req.user.id, createQuoteDto);
   }
 
@@ -138,11 +146,21 @@ export class QuotesController {
 
   @Get('request')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.CLIENT, UserRole.ADMIN)
+  @Roles(UserRole.CLIENT, UserRole.PROVIDER, UserRole.ADMIN)
   @ApiOperation({ summary: 'List quote requests for current user' })
   @ApiResponse({ status: 200, description: 'Quote requests retrieved' })
-  findQuoteRequests(@Request() req: AuthenticatedRequest, @Query('status') status?: string) {
-    return this.quotesService.findQuoteRequests(req.user.id, status);
+  findQuoteRequests(
+    @Request() req: AuthenticatedRequest,
+    @Query('status') status?: string,
+  ) {
+    const scope =
+      req.user.role === (UserRole.ADMIN as string)
+        ? 'all'
+        : req.user.role === (UserRole.PROVIDER as string)
+          ? 'provider'
+          : 'client';
+
+    return this.quotesService.findQuoteRequests(req.user.id, status, scope);
   }
 
   @Get('request/all')
@@ -151,6 +169,6 @@ export class QuotesController {
   @ApiOperation({ summary: 'List all quote requests (admin)' })
   @ApiResponse({ status: 200, description: 'All quote requests retrieved' })
   findAllQuoteRequests(@Query('status') status?: string) {
-    return this.quotesService.findQuoteRequests(undefined, status);
+    return this.quotesService.findQuoteRequests(undefined, status, 'all');
   }
 }

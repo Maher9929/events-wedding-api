@@ -1,121 +1,79 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Script de déploiement professionnel pour Dousha Events & Wedding Services
-# Usage: ./deploy.sh [environment]
+set -Eeuo pipefail
 
-set -e  # Arrêter le script en cas d'erreur
-
-ENVIRONMENT=${1:-production}
-echo "🚀 Déploiement de Dousha en environnement: $ENVIRONMENT"
-
-# Vérifications pré-déploiement
-echo "📋 Vérifications pré-déploiement..."
-
-# Vérifier que Docker est installé
-if ! command -v docker &> /dev/null; then
-    echo "❌ Docker n'est pas installé. Veuillez installer Docker d'abord."
-    exit 1
+ENVIRONMENT="${1:-production}"
+DEFAULT_COMPOSE_FILE="docker-compose.yml"
+if [ "$ENVIRONMENT" = "production" ]; then
+  DEFAULT_COMPOSE_FILE="docker-compose.prod.yml"
 fi
+COMPOSE_FILE="${COMPOSE_FILE:-$DEFAULT_COMPOSE_FILE}"
+BACKEND_URL="${BACKEND_URL:-http://localhost:3000}"
+FRONTEND_URL="${FRONTEND_URL:-http://localhost}"
+RUN_PREDEPLOY_CHECK="${RUN_PREDEPLOY_CHECK:-false}"
 
-# Vérifier que Docker Compose est installé
-if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Docker Compose n'est pas installé. Veuillez installer Docker Compose d'abord."
-    exit 1
-fi
+log() {
+  printf '%s\n' "$1"
+}
 
-# Vérifier que le fichier .env existe
+fail() {
+  log "[FAIL] $1"
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || fail "$1 is required."
+}
+
+wait_for_url() {
+  local name="$1"
+  local url="$2"
+  local attempts="${3:-30}"
+
+  log "Waiting for $name at $url"
+
+  for attempt in $(seq 1 "$attempts"); do
+    if curl --fail --silent --show-error "$url" >/dev/null; then
+      log "[OK] $name is ready."
+      return 0
+    fi
+
+    log "Attempt $attempt/$attempts failed. Retrying in 5 seconds..."
+    sleep 5
+  done
+
+  fail "$name did not become ready."
+}
+
+log "Deploying Doha Events to $ENVIRONMENT"
+
+require_command docker
+docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is required."
+
 if [ ! -f ".env" ]; then
-    echo "❌ Fichier .env introuvable. Veuillez le créer avant de continuer."
-    exit 1
+  fail ".env is missing. Copy .env.example, fill real production values, then retry."
 fi
 
-# Nettoyage des anciens conteneurs et images
-echo "🧹 Nettoyage des anciens conteneurs..."
-docker-compose down --remove-orphans || true
-docker system prune -f
-
-# Construction des images
-echo "🔨 Construction des images Docker..."
-docker-compose build --no-cache
-
-# Démarrage des services
-echo "🚀 Démarrage des services..."
-docker-compose up -d
-
-# Attente que les services soient prêts
-echo "⏳ Attente que les services soient prêts..."
-sleep 30
-
-# Vérification de la santé des services
-echo "🏥 Vérification de la santé des services..."
-
-# Vérifier le backend
-echo "🔍 Vérification du backend..."
-for i in {1..10}; do
-    if curl -f http://localhost:3000/health &> /dev/null; then
-        echo "✅ Backend prêt"
-        break
-    else
-        echo "⏳ En attente du backend... ($i/10)"
-        sleep 10
-    fi
-done
-
-# Vérifier le frontend
-echo "🔍 Vérification du frontend..."
-for i in {1..10}; do
-    if curl -f http://localhost:80 &> /dev/null; then
-        echo "✅ Frontend prêt"
-        break
-    else
-        echo "⏳ En attente du frontend... ($i/10)"
-        sleep 10
-    fi
-done
-
-# Exécution des migrations Supabase si nécessaire
-echo "🗄️ Vérification des migrations Supabase..."
-if [ -n "$SUPABASE_URL" ] && [ -n "$SUPABASE_SERVICE_KEY" ]; then
-    echo "📊 Application des migrations..."
-    # Ajouter ici la logique pour appliquer les migrations Supabase
-    echo "✅ Migrations vérifiées"
+if [ "$RUN_PREDEPLOY_CHECK" = "true" ] && command -v npm >/dev/null 2>&1; then
+  log "Running predeploy checks..."
+  npm run predeploy:check -- --skip-docker
 else
-    echo "⚠️ Variables Supabase non trouvées, veuillez appliquer les migrations manuellement"
+  log "[WARN] Predeploy checks not run by deploy.sh. Run npm run predeploy:check before release."
 fi
 
-# Tests de santé finaux
-echo "🧪 Tests de santé finaux..."
-docker-compose ps
+log "Validating Docker Compose file..."
+docker compose -f "$COMPOSE_FILE" config >/dev/null
 
-# Affichage des logs
-echo "📋 Affichage des logs des services..."
-docker-compose logs --tail=50
+log "Building and starting services..."
+docker compose -f "$COMPOSE_FILE" up -d --build --remove-orphans
 
-echo ""
-echo "🎉 Déploiement terminé avec succès!"
-echo ""
-echo "📊 Services disponibles:"
-echo "   • Backend API: http://localhost:3000"
-echo "   • Frontend: http://localhost:80"
-echo "   • Monitoring Prometheus: http://localhost:9090"
-echo "   • Grafana: http://localhost:3001 (admin/admin123)"
-echo "   • Redis: localhost:6379"
-echo ""
-echo "🔍 Commandes utiles:"
-echo "   • Voir les logs: docker-compose logs -f [service]"
-echo "   • Arrêter: docker-compose down"
-echo "   • Redémarrer: docker-compose restart [service]"
-echo "   • Mettre à jour: git pull && docker-compose build && docker-compose up -d"
-echo ""
-echo "📝 Pour le monitoring:"
-echo "   • Prometheus: http://localhost:9090"
-echo "   • Grafana: http://localhost:3001"
-echo "   • Nginx: http://localhost:8080"
-echo ""
+wait_for_url "backend" "$BACKEND_URL/health"
+wait_for_url "frontend" "$FRONTEND_URL"
 
-# Sauvegarde des logs
-echo "💾 Sauvegarde des logs de déploiement..."
-mkdir -p logs/deployments
-docker-compose logs > logs/deployments/deploy-$(date +%Y%m%d-%H%M%S).log
+log "Running containers:"
+docker compose -f "$COMPOSE_FILE" ps
 
-echo "🎯 Déploiement terminé à $(date)"
+log "Recent logs:"
+docker compose -f "$COMPOSE_FILE" logs --tail=80
+
+log "Deployment finished successfully."

@@ -95,5 +95,5 @@ $$;
 -- Enable RLS on new tables
 ALTER TABLE moderation_reports ENABLE ROW LEVEL SECURITY;
 ALTER TABLE moderation_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Service role full access" ON moderation_reports FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access" ON moderation_logs FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON moderation_reports FOR ALL TO service_role USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON moderation_logs FOR ALL TO service_role USING (true) WITH CHECK (true);

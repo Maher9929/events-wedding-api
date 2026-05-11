@@ -108,14 +108,30 @@ When('je clique sur {string}', async function (text: string) {
 
 Then('je devrais voir la liste des services disponibles', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 50,
+    'La page des services devrait contenir du contenu substantiel',
+  );
+  const hasServiceContext =
+    body.toLowerCase().includes('service') ||
+    body.toLowerCase().includes('prestataire') ||
+    body.toLowerCase().includes('catégori') ||
+    body.toLowerCase().includes('provider') ||
+    body.includes('خدم');
+  assert(
+    hasServiceContext,
+    `La page devrait afficher des services, obtenu: ${body.substring(0, 200)}`,
+  );
 });
 
 Then(
   'chaque service devrait afficher un titre, un prix et une catégorie',
   async function () {
     const body = await getBodyText(this);
-    assert(body.length > 0);
+    assert(
+      body.length > 100,
+      'La liste des services devrait contenir des détails (titre, prix, catégorie)',
+    );
   },
 );
 
@@ -170,7 +186,10 @@ When('je sélectionne la catégorie {string}', async function (category: string)
 
 Then('le service devrait apparaître dans ma liste', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 50,
+    'La page devrait afficher la liste des services du prestataire',
+  );
 });
 
 Then('je devrais voir un message de succès', async function () {
@@ -195,7 +214,10 @@ When('je clique sur un service', async function () {
 
 Then('je devrais voir les détails complets du service', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 100);
+  assert(
+    body.length > 100,
+    'La page de détails devrait afficher les informations complètes du service',
+  );
 });
 
 Then(
@@ -209,5 +231,8 @@ Then(
 
 Then('je devrais voir les avis et la note moyenne', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 50,
+    'La page devrait afficher les avis et notes du service',
+  );
 });

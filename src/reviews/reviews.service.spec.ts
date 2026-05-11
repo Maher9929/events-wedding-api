@@ -45,28 +45,38 @@ describe('ReviewsService', () => {
       supabase.single.mockResolvedValueOnce({ data: null, error: null });
 
       await expect(
-        service.create('u1', { service_id: 'svc1', rating: 5, comment: 'Great' }),
+        service.create('u1', {
+          service_id: 'svc1',
+          rating: 5,
+          comment: 'Great',
+        }),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ForbiddenException when no completed booking exists', async () => {
       // service lookup
       supabase.single.mockResolvedValueOnce({
-        data: { provider_id: 'p1' },
+        data: { provider_id: 'p1', providers: { user_id: 'provider-user-1' } },
         error: null,
       });
       // pastBookings → limit() returns data
       supabase.limit.mockResolvedValueOnce({ data: [], error: null });
 
       await expect(
-        service.create('u1', { service_id: 'svc1', rating: 5, comment: 'Great' }),
+        service.create('u1', {
+          service_id: 'svc1',
+          rating: 5,
+          comment: 'Great',
+        }),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ConflictException when already reviewed', async () => {
       // service lookup
-      supabase.single
-        .mockResolvedValueOnce({ data: { provider_id: 'p1' }, error: null });
+      supabase.single.mockResolvedValueOnce({
+        data: { provider_id: 'p1', providers: { user_id: 'provider-user-1' } },
+        error: null,
+      });
       // pastBookings
       supabase.limit.mockResolvedValueOnce({
         data: [{ id: 'b1' }],
@@ -79,7 +89,11 @@ describe('ReviewsService', () => {
       });
 
       await expect(
-        service.create('u1', { service_id: 'svc1', rating: 5, comment: 'Great' }),
+        service.create('u1', {
+          service_id: 'svc1',
+          rating: 5,
+          comment: 'Great',
+        }),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -99,7 +113,13 @@ describe('ReviewsService', () => {
 
       // 1. service lookup → .single()
       supabase.single
-        .mockResolvedValueOnce({ data: { provider_id: 'p1' }, error: null })
+        .mockResolvedValueOnce({
+          data: {
+            provider_id: 'p1',
+            providers: { user_id: 'provider-user-1' },
+          },
+          error: null,
+        })
         // 3. existing review check → .single() — not found
         .mockResolvedValueOnce({ data: null, error: { code: 'PGRST116' } })
         // 4. insert → select → .single()
@@ -119,7 +139,9 @@ describe('ReviewsService', () => {
 
       expect(result.id).toBe('r1');
       expect(result.rating).toBe(5);
-      expect((service as any).updateProviderRating).toHaveBeenCalledWith('svc1');
+      expect((service as any).updateProviderRating).toHaveBeenCalledWith(
+        'svc1',
+      );
     });
   });
 
@@ -216,9 +238,9 @@ describe('ReviewsService', () => {
         error: { message: 'db error' },
       });
 
-      await expect(
-        service.reportReview('r1', 'u1', 'spam'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.reportReview('r1', 'u1', 'spam')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

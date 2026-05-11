@@ -55,6 +55,21 @@ const mockConfig = {
 const mockAuditLogService = {
   log: jest.fn(),
 };
+const mockProviderContext = {
+  getProviderContext: jest
+    .fn()
+    .mockResolvedValue({ userId: '', providerId: null }),
+  assertProviderScope: jest.fn(),
+  canAccessBooking: jest.fn().mockResolvedValue(true),
+  resolveProviderUserId: jest.fn().mockResolvedValue(''),
+};
+const mockCommissionService = { upsert: jest.fn(), cancel: jest.fn() };
+const mockNotificationService = {
+  notify: jest.fn(),
+  notifyBoth: jest.fn(),
+  notifyPayment: jest.fn(),
+  notifyStatusChange: jest.fn(),
+};
 
 describe('PaymentsService', () => {
   let service: PaymentsService;
@@ -66,6 +81,9 @@ describe('PaymentsService', () => {
       mockConfig as any,
       supabase,
       mockAuditLogService as any,
+      mockProviderContext as any,
+      mockCommissionService as any,
+      mockNotificationService as any,
     );
     jest.clearAllMocks();
   });
@@ -80,9 +98,9 @@ describe('PaymentsService', () => {
         data: null,
         error: { message: 'nf' },
       });
-      await expect(service.createPaymentIntent('x', undefined, 5000)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.createPaymentIntent('x', undefined, 5000),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException for negative amount', async () => {
@@ -96,9 +114,9 @@ describe('PaymentsService', () => {
         },
         error: null,
       });
-      await expect(service.createPaymentIntent('b1', undefined, -100)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.createPaymentIntent('b1', undefined, -100),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should create intent for valid full payment', async () => {
@@ -121,6 +139,36 @@ describe('PaymentsService', () => {
       );
       expect(result).toHaveProperty('clientSecret');
       expect(result).toHaveProperty('paymentIntentId');
+    });
+
+    it('should hide booking from provider when creating a client payment intent', async () => {
+      supabase.single.mockResolvedValueOnce({
+        data: {
+          id: 'b1',
+          amount: 5000,
+          deposit_amount: 1500,
+          balance_amount: 5000,
+          payment_status: 'pending',
+          status: 'confirmed',
+          client_id: 'client1',
+          provider_id: 'provider-record-1',
+        },
+        error: null,
+      });
+      supabase.single.mockResolvedValueOnce({
+        data: { id: 'provider-record-1' },
+        error: null,
+      });
+
+      await expect(
+        service.createPaymentIntent(
+          'b1',
+          'provider-user-1',
+          5000,
+          'mad',
+          'full',
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

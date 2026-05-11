@@ -5,7 +5,9 @@ describe('AuthCacheService (in-memory mode)', () => {
   let service: AuthCacheService;
 
   beforeEach(() => {
-    const configService = { get: jest.fn().mockReturnValue(undefined) } as unknown as ConfigService;
+    const configService = {
+      get: jest.fn().mockReturnValue(undefined),
+    } as unknown as ConfigService;
     service = new AuthCacheService(configService);
   });
 
@@ -62,7 +64,9 @@ describe('AuthCacheService (in-memory mode)', () => {
     });
 
     it('should not throw when invalidating uncached user', async () => {
-      await expect(service.invalidateUser('nonexistent')).resolves.not.toThrow();
+      await expect(
+        service.invalidateUser('nonexistent'),
+      ).resolves.not.toThrow();
     });
   });
 

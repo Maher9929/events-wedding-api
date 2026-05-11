@@ -48,7 +48,12 @@ describe('QuotesService', () => {
 
   describe('findOne', () => {
     it('should return a quote when found', async () => {
-      const quote = { id: 'q1', provider_id: 'p1', client_id: 'c1', status: 'draft' };
+      const quote = {
+        id: 'q1',
+        provider_id: 'p1',
+        client_id: 'c1',
+        status: 'draft',
+      };
       supabase.single.mockResolvedValueOnce({ data: quote, error: null });
 
       const result = await service.findOne('q1', 'p1');
@@ -61,17 +66,29 @@ describe('QuotesService', () => {
         error: { message: 'not found' },
       });
 
-      await expect(service.findOne('q1', 'p1')).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('q1', 'p1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   // ─── create ──────────────────────────────────────────────────────────────
 
   describe('create', () => {
+    it('should require a quote request', async () => {
+      await expect(
+        service.create('p1', {
+          client_id: 'c1',
+          items: [{ description: 'Test', price: 100, quantity: 1 }],
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
     it('should throw BadRequestException when provider and client are the same', async () => {
       await expect(
         service.create('u1', {
           client_id: 'u1',
+          quote_request_id: 'qr1',
           items: [{ description: 'Test', price: 100, quantity: 1 }],
         } as any),
       ).rejects.toThrow(BadRequestException);
@@ -86,6 +103,18 @@ describe('QuotesService', () => {
         status: 'draft',
       };
 
+      // quote request lookup
+      supabase.maybeSingle.mockResolvedValueOnce({
+        data: {
+          id: 'qr1',
+          client_id: 'c1',
+          provider_ids: ['p1'],
+          status: 'open',
+          deadline: null,
+        },
+        error: null,
+      });
+
       // findOrCreateConversation: existing conversation lookup
       supabase.maybeSingle.mockResolvedValueOnce({
         data: { id: 'conv-1' },
@@ -97,6 +126,7 @@ describe('QuotesService', () => {
 
       const result = await service.create('p1', {
         client_id: 'c1',
+        quote_request_id: 'qr1',
         items: [{ description: 'Photography', price: 100, quantity: 1 }],
       } as any);
 
@@ -115,6 +145,27 @@ describe('QuotesService', () => {
           items: [{ description: 'Test', price: 100, quantity: 1 }],
         } as any),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should reject a provider outside the quote request', async () => {
+      supabase.maybeSingle.mockResolvedValueOnce({
+        data: {
+          id: 'qr1',
+          client_id: 'c1',
+          provider_ids: ['other-provider'],
+          status: 'open',
+          deadline: null,
+        },
+        error: null,
+      });
+
+      await expect(
+        service.create('p1', {
+          client_id: 'c1',
+          quote_request_id: 'qr1',
+          items: [{ description: 'Test', price: 100, quantity: 1 }],
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -155,7 +206,9 @@ describe('QuotesService', () => {
         error: { message: 'db error' },
       });
 
-      await expect(service.findByUser('u1')).rejects.toThrow(BadRequestException);
+      await expect(service.findByUser('u1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -170,11 +223,18 @@ describe('QuotesService', () => {
 
     it('should throw BadRequestException when quote is not a draft', async () => {
       supabase.maybeSingle.mockResolvedValueOnce({
-        data: { id: 'q1', provider_id: 'p1', status: 'sent', valid_until: null },
+        data: {
+          id: 'q1',
+          provider_id: 'p1',
+          status: 'sent',
+          valid_until: null,
+        },
         error: null,
       });
 
-      await expect(service.send('q1', 'p1')).rejects.toThrow(BadRequestException);
+      await expect(service.send('q1', 'p1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when quote is expired', async () => {
@@ -188,7 +248,9 @@ describe('QuotesService', () => {
         error: null,
       });
 
-      await expect(service.send('q1', 'p1')).rejects.toThrow(BadRequestException);
+      await expect(service.send('q1', 'p1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should send quote successfully', async () => {
@@ -202,7 +264,12 @@ describe('QuotesService', () => {
       };
 
       supabase.maybeSingle.mockResolvedValueOnce({
-        data: { id: 'q1', provider_id: 'p1', status: 'draft', valid_until: null },
+        data: {
+          id: 'q1',
+          provider_id: 'p1',
+          status: 'draft',
+          valid_until: null,
+        },
         error: null,
       });
       supabase.single.mockResolvedValueOnce({ data: sentQuote, error: null });
@@ -276,7 +343,9 @@ describe('QuotesService', () => {
         error: { message: 'not found' },
       });
 
-      await expect(service.remove('q1', 'u1')).rejects.toThrow(NotFoundException);
+      await expect(service.remove('q1', 'u1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

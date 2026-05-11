@@ -24,6 +24,7 @@ import { QueryCategoryDto } from './dto/query-category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
 
 @ApiTags('categories')
@@ -44,30 +45,41 @@ export class CategoriesController {
   }
 
   @Get()
+  @Public()
   @ApiOperation({ summary: 'List all categories' })
-  @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+  })
   async findAll(@Query() query: QueryCategoryDto) {
     return await this.categoriesService.findAll(query);
   }
 
   @Get('root')
+  @Public()
   @ApiOperation({ summary: 'List root categories' })
-  @ApiResponse({ status: 200, description: 'Root categories retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Root categories retrieved successfully',
+  })
   async findRootCategories() {
     return await this.categoriesService.findRootCategories();
   }
 
   @Get('slug/:slug')
+  @Public()
   async findBySlug(@Param('slug') slug: string) {
     return await this.categoriesService.findBySlug(slug);
   }
 
   @Get('id/:id/children')
+  @Public()
   async findChildren(@Param('id') id: string) {
     return await this.categoriesService.findChildren(id);
   }
 
   @Get('id/:id')
+  @Public()
   async findOne(@Param('id') id: string) {
     return await this.categoriesService.findOne(id);
   }

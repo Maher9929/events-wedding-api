@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { apiService } from '../services/api';
@@ -22,7 +22,7 @@ const FavoritesPage = () => {
 
     return (
         <div className="min-h-screen bg-bglight font-tajawal pb-24">
-            <header className="bg-white sticky top-0 z-50 shadow-sm px-5 py-4">
+            <header className="bg-white sticky top-0 z-50 shadow-sm px-5 py-4 lg:hidden">
                 <h1 className="text-xl font-bold text-gray-900">{t('favorites.title', 'المفضلة')}</h1>
                 <p className="text-xs text-gray-500">{t('favorites.subtitle', 'الخدمات التي أعجبتك')}</p>
             </header>

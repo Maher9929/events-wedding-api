@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   InternalServerErrorException,
+  ForbiddenException,
 } from '@nestjs/common';
 
 function createSupabaseMock() {
@@ -17,8 +18,8 @@ function createSupabaseMock() {
   chain.insert = jest.fn(() => chain);
   chain.update = jest.fn(() => chain);
   chain.order = jest.fn(() => chain);
-  chain.single = jest.fn();
-  chain.maybeSingle = jest.fn();
+  chain.single = jest.fn().mockResolvedValue({ data: null, error: null });
+  chain.maybeSingle = jest.fn().mockResolvedValue({ data: null, error: null });
   return chain;
 }
 
@@ -118,13 +119,19 @@ describe('MessagesService', () => {
   describe('sendMessage', () => {
     it('should throw BadRequestException when senderId is empty', async () => {
       await expect(
-        service.sendMessage('', { content: 'hello', conversation_id: 'c1' } as any),
+        service.sendMessage('', {
+          content: 'hello',
+          conversation_id: 'c1',
+        } as any),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when content is empty', async () => {
       await expect(
-        service.sendMessage('u1', { content: '   ', conversation_id: 'c1' } as any),
+        service.sendMessage('u1', {
+          content: '   ',
+          conversation_id: 'c1',
+        } as any),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -132,6 +139,144 @@ describe('MessagesService', () => {
       await expect(
         service.sendMessage('u1', { content: 'hello' } as any),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject direct conversations with yourself', async () => {
+      supabase.maybeSingle.mockResolvedValueOnce({
+        data: { id: 'u1' },
+        error: null,
+      });
+
+      await expect(
+        service.sendMessage('u1', {
+          content: 'hello',
+          recipient_id: 'u1',
+        } as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject direct conversations outside client-provider pairs', async () => {
+      supabase.maybeSingle.mockResolvedValueOnce({
+        data: { id: 'u2' },
+        error: null,
+      });
+      supabase.in.mockResolvedValueOnce({
+        data: [
+          { id: 'u1', role: 'client' },
+          { id: 'u2', role: 'client' },
+        ],
+        error: null,
+      });
+
+      await expect(
+        service.sendMessage('u1', {
+          content: 'hello',
+          recipient_id: 'u2',
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should allow client-provider direct conversations', async () => {
+      supabase.maybeSingle.mockResolvedValueOnce({
+        data: { id: 'provider1' },
+        error: null,
+      });
+      supabase.in.mockResolvedValueOnce({
+        data: [
+          { id: 'client1', role: 'client' },
+          { id: 'provider1', role: 'provider' },
+        ],
+        error: null,
+      });
+      supabase.maybeSingle
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'conv-1',
+            participant_ids: ['client1', 'provider1'],
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { id: 'conv-1', participant_ids: ['client1', 'provider1'] },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'msg-1',
+            conversation_id: 'conv-1',
+            sender_id: 'client1',
+            content: 'hello',
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { participant_ids: ['client1', 'provider1'] },
+          error: null,
+        });
+      const result = await service.sendMessage('client1', {
+        content: 'hello',
+        recipient_id: 'provider1',
+      } as any);
+
+      expect(result.id).toBe('msg-1');
+    });
+
+    it('should resolve provider profile ids before creating direct conversations', async () => {
+      supabase.maybeSingle
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({
+          data: { user_id: 'provider-user-1' },
+          error: null,
+        });
+      supabase.in.mockResolvedValueOnce({
+        data: [
+          { id: 'client1', role: 'client' },
+          { id: 'provider-user-1', role: 'provider' },
+        ],
+        error: null,
+      });
+      supabase.maybeSingle
+        .mockResolvedValueOnce({ data: null, error: null })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'conv-1',
+            participant_ids: ['client1', 'provider-user-1'],
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'conv-1',
+            participant_ids: ['client1', 'provider-user-1'],
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: {
+            id: 'msg-1',
+            conversation_id: 'conv-1',
+            sender_id: 'client1',
+            content: 'hello',
+          },
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: { participant_ids: ['client1', 'provider-user-1'] },
+          error: null,
+        });
+
+      const result = await service.sendMessage('client1', {
+        content: 'hello',
+        recipient_id: 'provider-profile-1',
+      } as any);
+
+      expect(result.id).toBe('msg-1');
+      expect(supabase.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          participant_ids: ['client1', 'provider-user-1'],
+        }),
+      );
     });
   });
 

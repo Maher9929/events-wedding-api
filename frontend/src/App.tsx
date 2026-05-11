@@ -4,13 +4,25 @@ import 'react-toastify/dist/ReactToastify.css';
 import { Suspense, lazy } from 'react';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingSpinner from './components/common/LoadingSpinner';
-
+import { authService } from './services/auth.service';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 import ClientLayout from './layouts/ClientLayout';
 import ProviderLayout from './layouts/ProviderLayout';
 import AdminLayout from './layouts/AdminLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
+
+const DohaEventsChatbot = lazy(() => import('./chatbot/DohaEventsChatbot'));
+
+function ClientOnlyChatbot() {
+  const user = authService.getCurrentUser();
+  if (user && user.role !== 'client') return null;
+  return (
+    <Suspense fallback={null}>
+      <DohaEventsChatbot />
+    </Suspense>
+  );
+}
 
 const HomePage = lazy(() => import('./pages/HomePage'));
 const CategoriesPage = lazy(() => import('./pages/CategoriesPage'));
@@ -156,6 +168,7 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
+        <ClientOnlyChatbot />
       </BrowserRouter>
     </ErrorBoundary>
   );

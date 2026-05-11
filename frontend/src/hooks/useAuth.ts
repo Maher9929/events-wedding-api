@@ -27,9 +27,9 @@ export const useAuth = () => {
         .catch(() => { }); // Silently fail - use cached data
     }
 
-    // Listen for localStorage changes (e.g. token removed by 401 handler or another tab)
+    // Listen for localStorage changes (e.g. user removed by 401 handler or another tab)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'access_token' || e.key === 'user' || e.key === null) {
+      if (e.key === 'user' || e.key === null) {
         const updatedUser = authService.getCurrentUser();
         const updatedAuth = authService.isAuthenticated();
         setUser(updatedUser);

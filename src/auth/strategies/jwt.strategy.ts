@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { AuthCacheService } from '../auth-cache.service';
+import { Request } from 'express';
 
 /** Shape of the decoded JWT token payload */
 interface JwtPayload {
@@ -29,10 +30,32 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (request: Request) => JwtStrategy.extractJwtFromCookie(request),
+      ]),
       ignoreExpiration: false,
       secretOrKey,
     });
+  }
+
+  private static extractJwtFromCookie(request: Request): string | null {
+    const cookieHeader = request?.headers?.cookie;
+
+    if (!cookieHeader) {
+      return null;
+    }
+
+    const cookies = cookieHeader.split(';').map((cookie) => cookie.trim());
+    const accessTokenCookie = cookies.find((cookie) =>
+      cookie.startsWith('access_token='),
+    );
+
+    if (!accessTokenCookie) {
+      return null;
+    }
+
+    return decodeURIComponent(accessTokenCookie.split('=').slice(1).join('='));
   }
 
   async validate(payload: JwtPayload) {

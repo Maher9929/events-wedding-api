@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { sanitizeSearch } from '../common/sanitize';
-import { addReviewAliases, normalizeReview, mapArray } from '../common/response-compat';
+import {
+  addReviewAliases,
+  normalizeReview,
+  mapArray,
+} from '../common/response-compat';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { Review } from './entities/review.entity';
 
@@ -18,23 +22,59 @@ export class ReviewsService {
     private readonly supabase: SupabaseClient,
   ) {}
 
+  private getProviderUserIdFromService(service: {
+    providers?: { user_id?: string } | { user_id?: string }[];
+  }): string | null {
+    const nestedProvider = Array.isArray(service.providers)
+      ? service.providers[0]
+      : service.providers;
+
+    return nestedProvider?.user_id || null;
+  }
+
+  private async resolveProviderProfileId(providerId: string): Promise<string> {
+    const { data: providerById } = await this.supabase
+      .from('providers')
+      .select('id')
+      .eq('id', providerId)
+      .maybeSingle();
+
+    if (providerById?.id) {
+      return providerById.id;
+    }
+
+    const { data: providerByUserId } = await this.supabase
+      .from('providers')
+      .select('id')
+      .eq('user_id', providerId)
+      .maybeSingle();
+
+    return providerByUserId?.id || providerId;
+  }
+
   async create(clientId: string, dto: CreateReviewDto): Promise<Review> {
     // 1. Check if user actually has a COMPLETED booking for this provider's service
     const { data: service } = await this.supabase
       .from('services')
-      .select('provider_id')
+      .select('provider_id, providers!inner(user_id)')
       .eq('id', dto.service_id)
       .single();
 
     if (!service) {
       throw new ForbiddenException('Service not found');
     }
+    const providerUserId = this.getProviderUserIdFromService(service);
+
+    if (!providerUserId) {
+      throw new ForbiddenException('Service provider not found');
+    }
 
     const { data: pastBookings } = await this.supabase
       .from('bookings')
       .select('id')
       .eq('client_id', clientId)
-      .eq('provider_id', service.provider_id)
+      .eq('provider_id', providerUserId)
+      .eq('service_id', dto.service_id)
       .eq('status', 'completed')
       .limit(1);
 
@@ -156,11 +196,13 @@ export class ReviewsService {
     sortBy?: string,
     sortOrder?: string,
   ): Promise<{ data: Review[]; total: number }> {
+    const providerProfileId = await this.resolveProviderProfileId(providerId);
+
     // Get all service IDs for this provider
     const { data: services } = await this.supabase
       .from('services')
       .select('id')
-      .eq('provider_id', providerId);
+      .eq('provider_id', providerProfileId);
 
     if (!services || services.length === 0) return { data: [], total: 0 };
     const serviceIds = services.map((s) => s.id);
@@ -193,14 +235,14 @@ export class ReviewsService {
     return { data: mapArray(data || [], normalizeReview), total: count || 0 };
   }
 
-  async remove(id: string, clientId: string): Promise<void> {
+  async remove(id: string, clientId: string, role?: string): Promise<void> {
     const { data: review } = await this.supabase
       .from('reviews')
       .select('client_id, service_id')
       .eq('id', id)
       .single();
 
-    if (!review || review.client_id !== clientId) {
+    if (!review || (role !== 'admin' && review.client_id !== clientId)) {
       throw new ForbiddenException('You can only delete your own reviews');
     }
 

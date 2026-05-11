@@ -28,7 +28,7 @@ export const notificationsService = {
     deleteAllRead: () =>
         apiService.delete<void>('/notifications'),
 
-    subscribeToNotifications: (userId: string, onNewNotification: (payload: Record<string, unknown>) => void) => {
+    subscribeToNotifications: (userId: string, onNewNotification: (notification: Notification) => void) => {
         return supabase
             .channel(`user_notifications:${userId}`)
             .on(
@@ -39,7 +39,7 @@ export const notificationsService = {
                     table: 'notifications',
                     filter: `user_id=eq.${userId}`,
                 },
-                (payload) => onNewNotification(payload.new)
+                (payload) => onNewNotification(payload.new as Notification)
             )
             .subscribe();
     },

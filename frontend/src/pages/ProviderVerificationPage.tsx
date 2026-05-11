@@ -45,7 +45,7 @@ const ProviderVerificationPage = () => {
     }, [t]);
 
     useEffect(() => {
-        document.title = `${t('kyc.page_title', 'التحقق')} | DOUSHA`;
+        document.title = `${t('kyc.page_title', 'التحقق')} | Doha Events`;
         void loadDocuments();
     }, [t, loadDocuments]);
 

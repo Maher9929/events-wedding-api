@@ -13,6 +13,7 @@ import { QueryServiceDto } from './dto/query-service.dto';
 import { Service } from './entities/service.entity';
 import { filterContactInfo } from '../common/content-filter';
 import { sanitizeSearch } from '../common/sanitize';
+import { DEFAULT_CURRENCY } from '../common/constants';
 
 @Injectable()
 export class ServicesService {
@@ -22,6 +23,21 @@ export class ServicesService {
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
   ) {}
+
+  private withDisplayMetrics<T extends Record<string, unknown>>(service: T): T {
+    const provider = service.providers as
+      | { rating_avg?: unknown; review_count?: unknown }
+      | undefined;
+    if (!provider || typeof provider !== 'object') {
+      return service;
+    }
+
+    return {
+      ...service,
+      rating: service.rating ?? provider.rating_avg ?? 0,
+      review_count: service.review_count ?? provider.review_count ?? 0,
+    };
+  }
 
   async create(
     providerId: string,
@@ -51,7 +67,7 @@ export class ServicesService {
         title: sanitizedTitle,
         description: sanitizedDesc,
         provider_id: providerId,
-        currency: createServiceDto.currency || 'MAD',
+        currency: createServiceDto.currency || DEFAULT_CURRENCY,
         is_active: createServiceDto.is_active ?? true,
         is_featured: createServiceDto.is_featured ?? false,
       })
@@ -63,6 +79,7 @@ export class ServicesService {
           company_name,
           user_id,
           rating_avg,
+          review_count,
           is_verified
         ),
         categories(
@@ -81,7 +98,7 @@ export class ServicesService {
       throw new BadRequestException(error.message);
     }
 
-    return data;
+    return this.withDisplayMetrics(data);
   }
 
   async findAll(
@@ -97,6 +114,7 @@ export class ServicesService {
           company_name,
           user_id,
           rating_avg,
+          review_count,
           is_verified,
           city,
           region
@@ -264,7 +282,7 @@ export class ServicesService {
     }
 
     return {
-      data: services,
+      data: services.map((service) => this.withDisplayMetrics(service)),
       total: services.length || count || 0,
     };
   }
@@ -280,6 +298,7 @@ export class ServicesService {
           company_name,
           user_id,
           rating_avg,
+          review_count,
           is_verified,
           city,
           region,
@@ -301,7 +320,7 @@ export class ServicesService {
       throw new NotFoundException('Service not found');
     }
 
-    return data;
+    return this.withDisplayMetrics(data);
   }
 
   async createByUserId(
@@ -452,6 +471,7 @@ export class ServicesService {
           id,
           company_name,
           rating_avg,
+          review_count,
           is_verified,
           city
         ),
@@ -473,7 +493,7 @@ export class ServicesService {
       throw new BadRequestException(error.message);
     }
 
-    return data || [];
+    return (data || []).map((service) => this.withDisplayMetrics(service));
   }
 
   async findFeatured(limit: number = 10): Promise<Service[]> {
@@ -487,6 +507,7 @@ export class ServicesService {
           id,
           company_name,
           rating_avg,
+          review_count,
           is_verified,
           city
         ),
@@ -512,7 +533,7 @@ export class ServicesService {
 
     // If we have featured services, return them
     if (featured && featured.length > 0) {
-      return featured;
+      return featured.map((service) => this.withDisplayMetrics(service));
     }
 
     // Fallback: return the latest active services so the home page is never empty
@@ -525,6 +546,7 @@ export class ServicesService {
           id,
           company_name,
           rating_avg,
+          review_count,
           is_verified,
           city
         ),
@@ -544,13 +566,14 @@ export class ServicesService {
       throw new BadRequestException(latestError.message);
     }
 
-    return latest || [];
+    return (latest || []).map((service) => this.withDisplayMetrics(service));
   }
 
   async update(
     id: string,
     userId: string,
     updateServiceDto: UpdateServiceDto,
+    role?: string,
   ): Promise<Service> {
     // Get service to verify ownership
     const { data: service } = await this.supabase
@@ -569,7 +592,7 @@ export class ServicesService {
     const providerData = service?.providers as unknown as
       | { user_id: string }
       | undefined;
-    if (!service || providerData?.user_id !== userId) {
+    if (!service || (role !== 'admin' && providerData?.user_id !== userId)) {
       throw new ForbiddenException('You can only update your own services');
     }
 
@@ -594,6 +617,7 @@ export class ServicesService {
           company_name,
           user_id,
           rating_avg,
+          review_count,
           is_verified
         ),
         categories!inner(
@@ -609,7 +633,7 @@ export class ServicesService {
       throw new NotFoundException('Service not found');
     }
 
-    return data;
+    return this.withDisplayMetrics(data);
   }
 
   async updateFeatured(
@@ -635,7 +659,7 @@ export class ServicesService {
     return data;
   }
 
-  async remove(id: string, userId: string): Promise<void> {
+  async remove(id: string, userId: string, role?: string): Promise<void> {
     // Get service to verify ownership
     const { data: service } = await this.supabase
       .from('services')
@@ -653,7 +677,7 @@ export class ServicesService {
     const providerData = service?.providers as unknown as
       | { user_id: string }
       | undefined;
-    if (!service || providerData?.user_id !== userId) {
+    if (!service || (role !== 'admin' && providerData?.user_id !== userId)) {
       throw new ForbiddenException('You can only delete your own services');
     }
 

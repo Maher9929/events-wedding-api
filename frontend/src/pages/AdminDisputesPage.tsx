@@ -125,7 +125,7 @@ const AdminDisputesPage = () => {
                                     </p>
                                 </div>
                                 {d.bookings?.amount && (
-                                    <span className="text-lg font-bold text-primary">{d.bookings.amount} {t('common.currency', 'MAD')}</span>
+                                    <span className="text-lg font-bold text-primary">{d.bookings.amount} {t('common.currency', 'QAR')}</span>
                                 )}
                             </div>
 

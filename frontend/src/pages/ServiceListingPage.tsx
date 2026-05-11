@@ -83,8 +83,8 @@ const ServiceListingPage = () => {
     useEffect(() => {
         const catName = selectedCategory === 'all' ? '' : categories.find(c => c.id === selectedCategory)?.name;
         document.title = catName
-            ? `${catName} | ${t('service.listing.title', 'الخدمات')} | DOUSHA`
-            : `${t('service.listing.title', 'الخدمات')} | DOUSHA`;
+            ? `${catName} | ${t('service.listing.title', 'الخدمات')} | Doha Events`
+            : `${t('service.listing.title', 'الخدمات')} | Doha Events`;
     }, [selectedCategory, categories, t]);
 
     useEffect(() => {
@@ -178,7 +178,7 @@ const ServiceListingPage = () => {
     return (
         <div className="min-h-screen bg-bglight font-tajawal pb-20" dir={i18n.language === 'en' ? 'ltr' : 'rtl'}>
             {/* Header */}
-            <header id="header" className="bg-white sticky top-0 z-50 shadow-sm">
+            <header id="header" className="bg-white sticky top-0 z-50 shadow-sm lg:hidden">
                 <div className="px-5 py-4">
                     <div className="flex items-center gap-3 mb-4">
                         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center card-hover">
@@ -215,7 +215,7 @@ const ServiceListingPage = () => {
             </header>
 
             {/* Category Tabs */}
-            <section id="category-tabs" className="bg-white px-5 py-4 sticky top-[136px] z-40 shadow-sm">
+            <section id="category-tabs" className="bg-white px-5 py-4 sticky top-[136px] lg:top-[64px] z-40 shadow-sm">
                 <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                     <button
                         onClick={() => handleCategoryChange('all')}
@@ -256,7 +256,7 @@ const ServiceListingPage = () => {
                         {(appliedFilters.minPrice || appliedFilters.maxPrice) && (
                             <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
                                 <i className="fa-solid fa-coins"></i>
-                                {appliedFilters.minPrice || '0'} - {appliedFilters.maxPrice || '∞'} {t('common.currency', 'QR')}
+                                {appliedFilters.minPrice || '0'} - {appliedFilters.maxPrice || '∞'} {t('common.currency', 'QAR')}
                             </span>
                         )}
                         {appliedFilters.minRating && (
@@ -392,7 +392,7 @@ const ServiceListingPage = () => {
                                             <div className="flex items-center justify-between mt-auto">
                                                 <div>
                                                     <p className="text-xs text-gray-500">{t('service.details.price_from', 'تبدأ من')}</p>
-                                                    <p className="text-base font-bold text-primary">{service.base_price} {t('common.currency', 'QR')}</p>
+                                                    <p className="text-base font-bold text-primary">{service.base_price} {t('common.currency', 'QAR')}</p>
                                                 </div>
                                                 <button
                                                     onClick={(e) => { e.stopPropagation(); navigate(`/services/${service.id}`); }}
@@ -455,7 +455,7 @@ const ServiceListingPage = () => {
                                                     </span>
                                                 )}
                                             </div>
-                                            <p className="font-bold text-primary text-sm">{service.base_price} {t('common.currency', 'QR')}</p>
+                                            <p className="font-bold text-primary text-sm">{service.base_price} {t('common.currency', 'QAR')}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -527,7 +527,7 @@ const ServiceListingPage = () => {
 
                             {/* Price Range */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.price_range', 'نطاق السعر')} ({t('common.currency', 'QR')})</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.price_range', 'نطاق السعر')} ({t('common.currency', 'QAR')})</label>
                                 <div className="grid grid-cols-2 gap-3">
                                     <input
                                         type="number"
@@ -561,7 +561,7 @@ const ServiceListingPage = () => {
 
                             {/* Max Budget */}
                             <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.max_budget', 'الميزانية القصوى')} ({t('common.currency', 'QR')})</label>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">{t('service.listing.filters.max_budget', 'الميزانية القصوى')} ({t('common.currency', 'QAR')})</label>
                                 <input
                                     type="number"
                                     placeholder={t('service.listing.filters.max_budget', 'الميزانية القصوى')}

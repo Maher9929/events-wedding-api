@@ -2,7 +2,9 @@ import { EventsController } from './events.controller';
 import { EventsService } from './events.service';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
-const mockReq = { user: { id: 'u1', role: 'client', provider_id: null } } as any;
+const mockReq = {
+  user: { id: 'u1', role: 'client', provider_id: null },
+} as any;
 
 describe('EventsController', () => {
   let controller: EventsController;
@@ -13,6 +15,7 @@ describe('EventsController', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
+      findOneForUser: jest.fn(),
       findByClient: jest.fn(),
       findUpcoming: jest.fn(),
       findTemplates: jest.fn(),
@@ -89,7 +92,12 @@ describe('EventsController', () => {
       const result = await controller.findMyEvents(mockReq);
       expect(result).toEqual(data);
       expect(service.findByClient).toHaveBeenCalledWith(
-        'u1', undefined, undefined, undefined, undefined, undefined,
+        'u1',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -97,15 +105,18 @@ describe('EventsController', () => {
   describe('findOne', () => {
     it('should return a single event', async () => {
       const event = { id: 'e1', title: 'Wedding' };
-      service.findOne!.mockResolvedValue(event);
+      service.findOneForUser!.mockResolvedValue(event);
 
-      const result = await controller.findOne('e1');
+      const result = await controller.findOne('e1', mockReq);
       expect(result).toEqual(event);
+      expect(service.findOneForUser).toHaveBeenCalledWith('e1', 'u1', 'client');
     });
 
     it('should propagate NotFoundException', async () => {
-      service.findOne!.mockRejectedValue(new NotFoundException());
-      await expect(controller.findOne('bad')).rejects.toThrow(NotFoundException);
+      service.findOneForUser!.mockRejectedValue(new NotFoundException());
+      await expect(controller.findOne('bad', mockReq)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -118,7 +129,9 @@ describe('EventsController', () => {
 
     it('should propagate ForbiddenException', async () => {
       service.remove!.mockRejectedValue(new ForbiddenException());
-      await expect(controller.remove('e1', mockReq)).rejects.toThrow(ForbiddenException);
+      await expect(controller.remove('e1', mockReq)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

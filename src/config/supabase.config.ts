@@ -7,7 +7,15 @@ export const getSupabaseClient = (configService: ConfigService) => {
   const supabaseKey =
     configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') ||
     configService.get<string>('SUPABASE_ANON_KEY') ||
-    'placeholder-key';
+    (configService.get<string>('NODE_ENV') === 'test'
+      ? 'test-service-role-key'
+      : undefined);
+
+  if (!supabaseKey) {
+    throw new Error(
+      'SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY is required.',
+    );
+  }
 
   return createClient(supabaseUrl, supabaseKey, {
     auth: {

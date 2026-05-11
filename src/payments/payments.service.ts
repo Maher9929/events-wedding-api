@@ -10,6 +10,9 @@ import { ConfigService } from '@nestjs/config';
 import { SupabaseClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { AuditLogService } from '../common/audit-log.service';
+import { ProviderContextService } from '../common/provider-context.service';
+import { CommissionService } from '../common/commission.service';
+import { BookingNotificationService } from '../common/booking-notification.service';
 import { COMMISSION_RATE, DEFAULT_CURRENCY } from '../common/constants';
 
 /** Fields used by the payment helpers — keeps the service free of `any`. */
@@ -40,20 +43,28 @@ export class PaymentsService {
   private readonly commissionRate = COMMISSION_RATE;
   private readonly defaultCurrency = DEFAULT_CURRENCY;
 
-  private async getProviderContext(userId: string): Promise<{
-    userId: string;
-    providerId: string | null;
-  }> {
-    const { data: provider, error } = await this.supabase
-      .from('providers')
-      .select('id')
-      .eq('user_id', userId)
-      .single();
-
-    return { userId, providerId: error ? null : provider?.id || null };
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
+    private readonly auditLogService: AuditLogService,
+    private readonly providerContext: ProviderContextService,
+    private readonly commissionService: CommissionService,
+    private readonly notificationService: BookingNotificationService,
+  ) {
+    this.stripe = new Stripe(
+      this.configService.get<string>('STRIPE_SECRET_KEY') || '',
+      {
+        apiVersion: '2026-01-28.clover',
+      },
+    );
   }
 
-  async assertBookingAccess(bookingId: string, userId?: string): Promise<BookingRecord> {
+  // getProviderContext → delegated to this.providerContext
+
+  async assertBookingAccess(
+    bookingId: string,
+    userId?: string,
+  ): Promise<BookingRecord> {
     const { data: booking, error } = await this.supabase
       .from('bookings')
       .select('*')
@@ -68,14 +79,25 @@ export class PaymentsService {
       return booking;
     }
 
-    const context = await this.getProviderContext(userId);
-    const hasAccess =
-      booking.client_id === context.userId ||
-      booking.provider_id === context.userId ||
-      (context.providerId !== null &&
-        booking.provider_id === context.providerId);
+    const hasAccess = await this.providerContext.canAccessBooking(
+      booking,
+      userId,
+    );
 
     if (!hasAccess) {
+      throw new NotFoundException('Booking not found');
+    }
+
+    return booking;
+  }
+
+  private async assertBookingClientAccess(
+    bookingId: string,
+    userId?: string,
+  ): Promise<BookingRecord> {
+    const booking = await this.assertBookingAccess(bookingId, userId);
+
+    if (userId && booking.client_id !== userId) {
       throw new NotFoundException('Booking not found');
     }
 
@@ -188,7 +210,9 @@ export class PaymentsService {
     };
   }
 
-  private async resolveRefundAllowance(booking: BookingRecord): Promise<number> {
+  private async resolveRefundAllowance(
+    booking: BookingRecord,
+  ): Promise<number> {
     const { totalPaid, totalRefunded } = await this.getCompletedPaymentTotals(
       booking.id,
     );
@@ -299,6 +323,7 @@ export class PaymentsService {
     if (existingPaymentIds.includes(paymentIntentId)) {
       return;
     }
+    this.assertPaymentEligibility(booking, paymentType, paidAmount);
 
     const totalAmount = Number(booking.amount);
     const depositAmount = Number(booking.deposit_amount || 0);
@@ -348,10 +373,20 @@ export class PaymentsService {
       created_at: new Date().toISOString(),
     });
 
-    await this.syncCommissionForBooking(booking, newPaymentStatus, {
-      payment_type: paymentType,
-      payment_intent_id: paymentIntentId,
-      amount: paidAmount,
+    const providerUserId = await this.providerContext.resolveProviderUserId(
+      booking.provider_id,
+    );
+    await this.commissionService.upsert({
+      bookingId,
+      providerUserId,
+      grossAmount: Number(booking.amount || 0),
+      paymentStatus: newPaymentStatus,
+      platformFee: Number(booking.platform_fee || 0),
+      metadata: {
+        payment_type: paymentType,
+        payment_intent_id: paymentIntentId,
+        amount: paidAmount,
+      },
     });
 
     await this.auditLogService.log(
@@ -366,77 +401,19 @@ export class PaymentsService {
         payment_status: newPaymentStatus,
       },
     );
-  }
 
-  constructor(
-    private readonly configService: ConfigService,
-    @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
-    private readonly auditLogService: AuditLogService,
-  ) {
-    this.stripe = new Stripe(
-      this.configService.get<string>('STRIPE_SECRET_KEY') || '',
-      {
-        apiVersion: '2026-01-28.clover',
-      },
+    await this.notificationService.notifyPayment(
+      booking,
+      paidAmount,
+      paymentType,
+      newPaymentStatus,
+      this.defaultCurrency,
     );
   }
 
-  private async resolveCommissionProviderId(
-    providerId: string,
-  ): Promise<string> {
-    const { data: provider } = await this.supabase
-      .from('providers')
-      .select('user_id')
-      .eq('id', providerId)
-      .maybeSingle();
-
-    return provider?.user_id || providerId;
-  }
-
-  private async syncCommissionForBooking(
-    booking: BookingRecord,
-    paymentStatus: string,
-    metadata?: Record<string, unknown>,
-    grossAmountOverride?: number,
-  ): Promise<void> {
-    try {
-      const grossAmount = Number(grossAmountOverride ?? booking.amount ?? 0);
-      const explicitFee = Number(booking.platform_fee || 0);
-      const commissionAmount =
-        explicitFee > 0
-          ? explicitFee
-          : Number((grossAmount * this.commissionRate).toFixed(2));
-      const providerUserId = await this.resolveCommissionProviderId(
-        booking.provider_id,
-      );
-      const status =
-        paymentStatus === 'fully_paid'
-          ? 'paid'
-          : paymentStatus === 'refunded'
-            ? 'cancelled'
-            : 'pending';
-
-      await this.supabase.from('commissions').upsert(
-        {
-          booking_id: booking.id,
-          provider_id: providerUserId,
-          gross_amount: grossAmount,
-          commission_rate:
-            grossAmount > 0
-              ? Number((commissionAmount / grossAmount).toFixed(4))
-              : this.commissionRate,
-          commission_amount: commissionAmount,
-          net_payout: Number((grossAmount - commissionAmount).toFixed(2)),
-          status,
-          paid_at: status === 'paid' ? new Date().toISOString() : null,
-          notes: metadata ? JSON.stringify(metadata) : null,
-        },
-        { onConflict: 'booking_id' },
-      );
-    } catch {
-      // Non-critical: payment flow should not fail because commission sync failed
-    }
-  }
+  // createPaymentNotifications → delegated to this.notificationService.notifyPayment
+  // syncCommissionForBooking → delegated to this.commissionService.upsert
+  // resolveCommissionProviderId → delegated to this.providerContext.resolveProviderUserId
 
   async createPaymentIntent(
     bookingId: string,
@@ -445,8 +422,7 @@ export class PaymentsService {
     currency?: string,
     paymentType: 'deposit' | 'balance' | 'full' = 'full',
   ): Promise<{ clientSecret: string; paymentIntentId: string }> {
-
-    const booking = await this.assertBookingAccess(bookingId, userId);
+    const booking = await this.assertBookingClientAccess(bookingId, userId);
     const { totalAmount, depositAmount } = this.getBookingAmounts(booking);
     this.assertPaymentEligibility(booking, paymentType, amount);
 
@@ -464,19 +440,25 @@ export class PaymentsService {
       };
     }
 
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount: Math.round(amount * 100),
-      currency: this.normalizeCurrency(currency),
-      metadata: {
-        booking_id: bookingId,
-        payment_type: paymentType,
-        total_amount: totalAmount.toString(),
-        deposit_amount: depositAmount.toString(),
+    const stripeAmount = Math.round(amount * 100);
+    const paymentIntent = await this.stripe.paymentIntents.create(
+      {
+        amount: stripeAmount,
+        currency: this.normalizeCurrency(currency),
+        metadata: {
+          booking_id: bookingId,
+          payment_type: paymentType,
+          total_amount: totalAmount.toString(),
+          deposit_amount: depositAmount.toString(),
+        },
+        automatic_payment_methods: {
+          enabled: true,
+        },
       },
-      automatic_payment_methods: {
-        enabled: true,
+      {
+        idempotencyKey: `booking:${bookingId}:${paymentType}:${stripeAmount}`,
       },
-    });
+    );
 
     await this.auditLogService.log(
       userId || booking.client_id || null,
@@ -501,7 +483,7 @@ export class PaymentsService {
     bookingId: string,
     userId?: string,
   ): Promise<{ clientSecret: string; paymentIntentId: string }> {
-    const booking = await this.assertBookingAccess(bookingId, userId);
+    const booking = await this.assertBookingClientAccess(bookingId, userId);
 
     if (booking.payment_status !== 'pending') {
       throw new BadRequestException('Deposit payment already processed');
@@ -525,7 +507,7 @@ export class PaymentsService {
     bookingId: string,
     userId?: string,
   ): Promise<{ clientSecret: string; paymentIntentId: string }> {
-    const booking = await this.assertBookingAccess(bookingId, userId);
+    const booking = await this.assertBookingClientAccess(bookingId, userId);
 
     if (booking.payment_status !== 'deposit_paid') {
       throw new BadRequestException('Deposit must be paid first');
@@ -545,9 +527,28 @@ export class PaymentsService {
     );
   }
 
+  async createFullPaymentIntent(
+    bookingId: string,
+    userId?: string,
+  ): Promise<{ clientSecret: string; paymentIntentId: string }> {
+    const booking = await this.assertBookingClientAccess(bookingId, userId);
+    const amount = Number(booking.amount || 0);
+
+    return this.createPaymentIntent(
+      bookingId,
+      userId,
+      amount,
+      this.defaultCurrency,
+      'full',
+    );
+  }
+
   async handleWebhook(payload: Buffer, signature: string): Promise<void> {
     const webhookSecret =
       this.configService.get<string>('STRIPE_WEBHOOK_SECRET') || '';
+    if (!webhookSecret) {
+      throw new BadRequestException('Stripe webhook secret is not configured');
+    }
     let event: Stripe.Event;
 
     try {
@@ -585,7 +586,7 @@ export class PaymentsService {
           const latestChargeId =
             typeof intent.latest_charge === 'string'
               ? intent.latest_charge
-              : (intent.latest_charge as Stripe.Charge | null)?.id;
+              : intent.latest_charge?.id;
           if (latestChargeId) {
             const charge = await this.stripe.charges.retrieve(latestChargeId);
             if (charge.receipt_url) {
@@ -621,28 +622,23 @@ export class PaymentsService {
     const userId = maybePaymentIntentId ? userIdOrPaymentIntentId : undefined;
     const paymentIntentId = maybePaymentIntentId || userIdOrPaymentIntentId;
 
-    await this.assertBookingAccess(bookingId, userId);
+    const booking = await this.assertBookingClientAccess(bookingId, userId);
 
     const intent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
     if (
-      intent.status === 'succeeded' &&
-      intent.metadata?.booking_id === bookingId
+      intent.status !== 'succeeded' ||
+      intent.metadata?.booking_id !== bookingId
     ) {
-      const paidAmount = Number(
-        (intent.amount_received || intent.amount || 0) / 100,
-      );
-      const paymentType =
-        (intent.metadata?.payment_type as 'deposit' | 'balance' | 'full') ||
-        'full';
-      await this.applyPaymentToBooking(
-        bookingId,
-        paidAmount,
-        paymentIntentId,
-        paymentType,
-      );
-    } else {
       throw new BadRequestException('Payment not confirmed');
     }
+
+    const paidAmount = Number(
+      (intent.amount_received || intent.amount || 0) / 100,
+    );
+    const paymentType =
+      (intent.metadata?.payment_type as 'deposit' | 'balance' | 'full') ||
+      'full';
+    this.assertPaymentEligibility(booking, paymentType, paidAmount);
   }
 
   async getPaymentStatus(
@@ -651,6 +647,7 @@ export class PaymentsService {
   ): Promise<{
     payment_status: string;
     payment_intent_id: string | null;
+    deposit_amount?: number;
     balance_amount?: number;
     amount?: number;
   }> {
@@ -665,6 +662,7 @@ export class PaymentsService {
           booking.payment_intent_id ||
           paymentIntentIds[paymentIntentIds.length - 1] ||
           null,
+        deposit_amount: booking.deposit_amount || 0,
         balance_amount: booking.balance_amount || 0,
         amount: booking.amount || 0,
       };
@@ -673,6 +671,7 @@ export class PaymentsService {
         return {
           payment_status: 'pending',
           payment_intent_id: null,
+          deposit_amount: 0,
           balance_amount: 0,
           amount: 0,
         };
@@ -753,7 +752,7 @@ export class PaymentsService {
     const latestChargeId =
       typeof intent.latest_charge === 'string'
         ? intent.latest_charge
-        : (intent.latest_charge as Stripe.Charge | null)?.id;
+        : intent.latest_charge?.id;
 
     if (!latestChargeId) {
       throw new BadRequestException('No charge found for this payment');
@@ -762,7 +761,8 @@ export class PaymentsService {
     const refund = await this.stripe.refunds.create({
       charge: latestChargeId,
       amount: Math.round(refundAmount * 100),
-      reason: (reason as Stripe.RefundCreateParams.Reason) || 'requested_by_customer',
+      reason:
+        (reason as Stripe.RefundCreateParams.Reason) || 'requested_by_customer',
     });
 
     const { totalPaid, totalRefunded } =
@@ -797,17 +797,22 @@ export class PaymentsService {
       totalPaid - totalRefunded - refundAmount,
       0,
     );
-    await this.syncCommissionForBooking(
-      booking,
-      fullyRefunded ? 'refunded' : booking.payment_status,
-      {
+    const refundProviderUserId =
+      await this.providerContext.resolveProviderUserId(booking.provider_id);
+    await this.commissionService.upsert({
+      bookingId,
+      providerUserId: refundProviderUserId,
+      grossAmount: Number(booking.amount || 0),
+      paymentStatus: fullyRefunded ? 'refunded' : booking.payment_status,
+      platformFee: Number(booking.platform_fee || 0),
+      grossAmountOverride: retainedRevenue,
+      metadata: {
         refund_id: refund.id,
         reason: reason || null,
         refund_amount: refundAmount,
         retained_revenue: retainedRevenue,
       },
-      retainedRevenue,
-    );
+    });
 
     await this.auditLogService.log(
       booking.client_id || userId || null,
@@ -824,5 +829,33 @@ export class PaymentsService {
     );
 
     return { refundId: refund.id, status: refund.status ?? 'pending' };
+  }
+
+  async refundPaymentAsAdmin(
+    bookingId: string,
+    adminId: string,
+    reason?: string,
+    amount?: number,
+  ): Promise<{ refundId: string; status: string }> {
+    const result = await this.refundPayment(
+      bookingId,
+      undefined,
+      reason,
+      amount,
+    );
+
+    await this.auditLogService.log(
+      adminId,
+      'booking_refund',
+      'payments',
+      result.refundId,
+      {
+        booking_id: bookingId,
+        reason: reason || null,
+        actor_role: 'admin',
+      },
+    );
+
+    return result;
   }
 }

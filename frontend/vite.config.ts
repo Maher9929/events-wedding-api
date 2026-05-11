@@ -19,13 +19,14 @@ export default defineConfig({
       compress: {
         drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.debug', 'console.info'],
+        pure_funcs: ['console.log', 'console.debug', 'console.info', 'console.warn'],
       },
     },
     // Manual chunk splitting for better caching
     rollupOptions: {
       output: {
         manualChunks: {
+          'react-vendor': ['react', 'react-dom'],
           'router-vendor': ['react-router-dom'],
           'i18n-vendor': ['i18next', 'react-i18next', 'i18next-browser-languagedetector'],
           'ui-vendor': ['react-toastify'],

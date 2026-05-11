@@ -1,14 +1,17 @@
 import { validate } from 'class-validator';
 import { plainToInstance } from 'class-transformer';
 import { CreateUserDto, UserRole } from '../users/dto/create-user.dto';
-import { CreateBookingDto, UpdateBookingStatusDto } from '../bookings/dto/create-booking.dto';
+import {
+  CreateBookingDto,
+  UpdateBookingStatusDto,
+} from '../bookings/dto/create-booking.dto';
 import { CreateReviewDto } from '../reviews/dto/create-review.dto';
 import { CreateMessageDto } from '../messages/dto/create-message.dto';
 
 // Helper: convert plain object to DTO instance and validate
 async function validateDto<T extends object>(
   DtoClass: new () => T,
-  plain: Record<string, any>,
+  plain: Record<string, unknown>,
 ): Promise<string[]> {
   const instance = plainToInstance(DtoClass, plain);
   const errors = await validate(instance);
@@ -93,8 +96,10 @@ describe('CreateBookingDto validation', () => {
   });
 
   it('should fail when provider_id is missing', async () => {
-    const { provider_id, ...rest } = validBooking;
-    const errors = await validateDto(CreateBookingDto, rest);
+    const errors = await validateDto(CreateBookingDto, {
+      booking_date: validBooking.booking_date,
+      amount: validBooking.amount,
+    });
     expect(errors.length).toBeGreaterThan(0);
   });
 
@@ -115,8 +120,10 @@ describe('CreateBookingDto validation', () => {
   });
 
   it('should fail when amount is missing', async () => {
-    const { amount, ...rest } = validBooking;
-    const errors = await validateDto(CreateBookingDto, rest);
+    const errors = await validateDto(CreateBookingDto, {
+      provider_id: validBooking.provider_id,
+      booking_date: validBooking.booking_date,
+    });
     expect(errors.length).toBeGreaterThan(0);
   });
 

@@ -23,7 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(user_id, is_r
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Service role full access" ON notifications;
-CREATE POLICY "Service role full access" ON notifications FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON notifications FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- Trigger updated_at
 DROP TRIGGER IF EXISTS set_updated_at_notifications ON notifications;
@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_favorites_service ON favorites(service_id);
 
 ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Service role full access" ON favorites;
-CREATE POLICY "Service role full access" ON favorites FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON favorites FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- 3. PROMO CODES (Codes promotionnels)
 -- Permet aux prestataires de créer des codes de réduction
@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_promo_codes_provider ON promo_codes(provider_id);
 
 ALTER TABLE promo_codes ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Service role full access" ON promo_codes;
-CREATE POLICY "Service role full access" ON promo_codes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Service role full access" ON promo_codes FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- Trigger updated_at
 DROP TRIGGER IF EXISTS set_updated_at_promo_codes ON promo_codes;

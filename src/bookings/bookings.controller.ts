@@ -9,8 +9,14 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
+import { PaymentsService } from '../payments/payments.service';
 import {
   CreateBookingDto,
   UpdateBookingStatusDto,
@@ -19,12 +25,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
 
 @ApiTags('bookings')
 @Controller('bookings')
 export class BookingsController {
-  constructor(private readonly bookingsService: BookingsService) {}
+  constructor(
+    private readonly bookingsService: BookingsService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,7 +44,10 @@ export class BookingsController {
   @ApiResponse({ status: 201, description: 'Booking created successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async create(@Body() dto: CreateBookingDto, @Request() req: AuthenticatedRequest) {
+  async create(
+    @Body() dto: CreateBookingDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return await this.bookingsService.create(req.user.id, dto);
   }
 
@@ -68,7 +81,10 @@ export class BookingsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List current user bookings' })
-  @ApiResponse({ status: 200, description: 'User bookings retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'User bookings retrieved successfully',
+  })
   async findMyBookings(
     @Request() req: AuthenticatedRequest,
     @Query('status') status?: string,
@@ -107,7 +123,7 @@ export class BookingsController {
       providerId === 'me' ? (req.user.provider_id ?? req.user.id) : providerId;
     return await this.bookingsService.findByProvider(
       targetProviderId,
-      req.user.id,
+      req.user.role === (UserRole.ADMIN as string) ? undefined : req.user.id,
       status,
       paymentStatus,
       limit ? parseInt(limit) : undefined,
@@ -120,10 +136,16 @@ export class BookingsController {
   @Get('stats/:providerId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
-  async getStats(@Param('providerId') providerId: string, @Request() req: AuthenticatedRequest) {
+  async getStats(
+    @Param('providerId') providerId: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
     const targetProviderId =
       providerId === 'me' ? (req.user.provider_id ?? req.user.id) : providerId;
-    return await this.bookingsService.getStats(targetProviderId, req.user.id);
+    return await this.bookingsService.getStats(
+      targetProviderId,
+      req.user.role === (UserRole.ADMIN as string) ? undefined : req.user.id,
+    );
   }
 
   @Get('admin/stats')
@@ -134,6 +156,7 @@ export class BookingsController {
   }
 
   @Get('unavailable-dates/:providerId')
+  @Public()
   async getUnavailableDates(
     @Param('providerId') providerId: string,
     @Query('start') start: string,
@@ -180,11 +203,15 @@ export class BookingsController {
     @Request() req: AuthenticatedRequest,
     @Body('paymentType') paymentType: 'deposit' | 'balance' | 'full',
   ) {
-    return await this.bookingsService.createPaymentIntent(
-      id,
-      req.user.id,
-      paymentType,
-    );
+    if (paymentType === 'deposit') {
+      return this.paymentsService.createDepositPaymentIntent(id, req.user.id);
+    }
+
+    if (paymentType === 'balance') {
+      return this.paymentsService.createBalancePaymentIntent(id, req.user.id);
+    }
+
+    return this.paymentsService.createFullPaymentIntent(id, req.user.id);
   }
 
   @Post('id/:id/mock-confirm')

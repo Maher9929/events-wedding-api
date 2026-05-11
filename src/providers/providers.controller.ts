@@ -25,8 +25,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('providers')
 @Controller('providers')
@@ -36,16 +37,21 @@ export class ProvidersController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
-  async create(@Body() createProviderDto: CreateProviderDto, @Request() req: AuthenticatedRequest) {
+  async create(
+    @Body() createProviderDto: CreateProviderDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return await this.providersService.create(req.user.id, createProviderDto);
   }
 
   @Get()
+  @Public()
   async findAll(@Query() query: QueryProviderDto) {
     return await this.providersService.findAll(query);
   }
 
   @Get('top-rated')
+  @Public()
   async findTopRated(@Query('limit') limit?: string) {
     return await this.providersService.findTopRated(
       limit ? parseInt(limit) : 10,
@@ -53,6 +59,7 @@ export class ProvidersController {
   }
 
   @Get('nearby')
+  @Public()
   async findNearby(
     @Query('lat') latitude: string,
     @Query('lng') longitude: string,
@@ -71,8 +78,11 @@ export class ProvidersController {
   @Get('stats')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.PROVIDER)
-  async getStats(@Request() req: AuthenticatedRequest, @Query('period') period?: string) {
-    if (req.user.role === UserRole.PROVIDER) {
+  async getStats(
+    @Request() req: AuthenticatedRequest,
+    @Query('period') period?: string,
+  ) {
+    if (req.user.role === (UserRole.PROVIDER as string)) {
       // Return provider-specific stats if not admin
       return await this.providersService.getProviderStats(req.user.id, period);
     }
@@ -105,6 +115,7 @@ export class ProvidersController {
   }
 
   @Get('id/:id')
+  @Public()
   async findOne(@Param('id') id: string) {
     return await this.providersService.findOnePublic(id);
   }
@@ -112,6 +123,7 @@ export class ProvidersController {
   // --- Availabilities ---
 
   @Get('id/:id/availabilities')
+  @Public()
   async getAvailabilities(
     @Param('id') id: string,
     @Query('start_date') startDate?: string,
@@ -182,6 +194,7 @@ export class ProvidersController {
       id,
       req.user.id,
       updateProviderDto,
+      req.user.role,
     );
   }
 
@@ -200,7 +213,7 @@ export class ProvidersController {
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
-    await this.providersService.remove(id, req.user.id);
+    await this.providersService.remove(id, req.user.id, req.user.role);
   }
 
   // --- KYC Document Endpoints ---

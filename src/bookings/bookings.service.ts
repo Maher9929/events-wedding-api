@@ -13,9 +13,10 @@ import {
   UpdateBookingStatusDto,
 } from './dto/create-booking.dto';
 import { Booking } from './entities/booking.entity';
-import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
 import { AuditLogService } from '../common/audit-log.service';
+import { ProviderContextService } from '../common/provider-context.service';
+import { CommissionService } from '../common/commission.service';
+import { BookingNotificationService } from '../common/booking-notification.service';
 import { sanitizeSearch } from '../common/sanitize';
 import { COMMISSION_RATE } from '../common/constants';
 import { addBookingAliases, mapArray } from '../common/response-compat';
@@ -25,73 +26,55 @@ export class BookingsService {
   private readonly logger = new Logger(BookingsService.name);
   private readonly commissionRate = COMMISSION_RATE;
 
-  private stripe: Stripe;
-
   constructor(
     @Inject('SUPABASE_CLIENT')
     private readonly supabase: SupabaseClient,
-    private configService: ConfigService,
     private readonly auditLogService: AuditLogService,
-  ) {
-    this.stripe = new Stripe(
-      this.configService.get<string>('STRIPE_SECRET_KEY') || '',
-      {
-        apiVersion: '2026-01-28.clover',
-      },
+    private readonly providerContext: ProviderContextService,
+    private readonly commissionService: CommissionService,
+    private readonly notificationService: BookingNotificationService,
+  ) {}
+
+  // Provider context, commission, and notification logic
+  // is now delegated to shared services injected in the constructor.
+
+  private isUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
     );
   }
 
-  private async getProviderContext(userId: string): Promise<{
-    userId: string;
-    providerId: string | null;
-  }> {
-    const { data: provider } = await this.supabase
-      .from('providers')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    return {
-      userId,
-      providerId: provider?.id || null,
-    };
-  }
-
-  private async assertProviderScope(
+  private async resolveProviderIdentity(
     providerId: string,
-    userId: string,
-  ): Promise<void> {
-    const context = await this.getProviderContext(userId);
-    if (providerId !== context.userId && providerId !== context.providerId) {
-      throw new ForbiddenException(
-        'You can only access bookings for your own provider profile',
-      );
+  ): Promise<{ id: string; user_id: string }> {
+    if (!providerId || !this.isUuid(providerId)) {
+      throw new BadRequestException('Invalid provider id');
     }
-  }
 
-  private async canAccessBooking(
-    booking: Booking,
-    userId: string,
-  ): Promise<boolean> {
-    const context = await this.getProviderContext(userId);
-    return (
-      booking.client_id === context.userId ||
-      booking.provider_id === context.userId ||
-      (context.providerId !== null &&
-        booking.provider_id === context.providerId)
-    );
-  }
-
-  private async resolveProviderAndService(dto: CreateBookingDto) {
-    const { data: providerRecord } = await this.supabase
+    let { data: providerRecord } = await this.supabase
       .from('providers')
       .select('id, user_id')
-      .eq('id', dto.provider_id)
+      .eq('id', providerId)
       .maybeSingle();
+
+    if (!providerRecord) {
+      const { data } = await this.supabase
+        .from('providers')
+        .select('id, user_id')
+        .eq('user_id', providerId)
+        .maybeSingle();
+      providerRecord = data;
+    }
 
     if (!providerRecord) {
       throw new NotFoundException('Provider not found');
     }
+
+    return providerRecord;
+  }
+
+  private async resolveProviderAndService(dto: CreateBookingDto) {
+    const providerRecord = await this.resolveProviderIdentity(dto.provider_id);
 
     let serviceRecord: {
       id: string;
@@ -244,7 +227,8 @@ export class BookingsService {
   }
 
   private async assertProviderAvailability(
-    providerId: string,
+    providerProfileId: string,
+    providerUserId: string,
     bookingDate: string,
     startTime?: string,
     endTime?: string,
@@ -276,7 +260,7 @@ export class BookingsService {
       await this.supabase
         .from('provider_availabilities')
         .select('start_time, end_time, is_blocked, reason')
-        .eq('provider_id', providerId)
+        .eq('provider_id', providerProfileId)
         .eq('date', dayKey);
 
     if (availabilityError) {
@@ -306,7 +290,7 @@ export class BookingsService {
     const { data: existingBookings, error: bookingError } = await this.supabase
       .from('bookings')
       .select('id, start_time, end_time, status')
-      .eq('provider_id', providerId)
+      .eq('provider_id', providerUserId)
       .gte('booking_date', startIso)
       .lt('booking_date', endIso)
       .in('status', ['pending', 'confirmed', 'completed']);
@@ -344,6 +328,7 @@ export class BookingsService {
     );
     await this.assertProviderAvailability(
       providerTableId,
+      providerNotificationUserId,
       dto.booking_date,
       dto.start_time,
       dto.end_time,
@@ -421,6 +406,8 @@ export class BookingsService {
       .insert({
         client_id: clientId,
         provider_id: resolvedProviderId,
+        event_id: dto.event_id,
+        quote_id: dto.quote_id,
         service_id: dto.service_id,
         amount: finalAmount,
         locked_price: lockedPrice,
@@ -454,7 +441,7 @@ export class BookingsService {
       throw new BadRequestException(error.message);
     }
 
-    await this.upsertCommissionRecord({
+    await this.commissionService.upsert({
       bookingId: data.id,
       providerUserId: providerNotificationUserId,
       grossAmount: finalAmount,
@@ -474,90 +461,30 @@ export class BookingsService {
       },
     );
 
-    // Create in-app notification for provider
-    await this.createNotification(
-      providerNotificationUserId,
-      'booking_request',
-      'New booking request',
-      'You have a new booking request awaiting your approval',
-      data.id,
-    );
-    // Create in-app notification for client
-    await this.createNotification(
-      clientId,
-      'booking_created',
-      'Booking request sent',
-      'Your booking request has been sent successfully and is under review',
-      data.id,
+    // Notify both parties via the shared notification service
+    await this.notificationService.notifyBoth(
+      {
+        userId: clientId,
+        type: 'booking_created',
+        title: 'Booking request sent',
+        message:
+          'Your booking request has been sent successfully and is under review',
+        data: { booking_id: data.id },
+      },
+      {
+        userId: providerNotificationUserId,
+        type: 'booking_request',
+        title: 'New booking request',
+        message: 'You have a new booking request awaiting your approval',
+        data: { booking_id: data.id },
+      },
     );
 
     return addBookingAliases(data);
   }
 
-  private async createNotification(
-    userId: string,
-    type: string,
-    title: string,
-    message: string,
-    bookingId?: string,
-  ): Promise<void> {
-    const { error } = await this.supabase.from('notifications').insert({
-      user_id: userId,
-      type,
-      title,
-      message,
-      data: { booking_id: bookingId },
-      is_read: false,
-    });
-
-    if (error) {
-      this.logger.warn(
-        `Failed to create notification for user ${userId}: ${error.message}`,
-      );
-    }
-  }
-
-  private async upsertCommissionRecord(params: {
-    bookingId: string;
-    providerUserId: string;
-    grossAmount: number;
-    paymentStatus?: string;
-    notes?: string;
-  }): Promise<void> {
-    const commissionAmount = Number(
-      (params.grossAmount * this.commissionRate).toFixed(2),
-    );
-    const netPayout = Number(
-      (params.grossAmount - commissionAmount).toFixed(2),
-    );
-    const status =
-      params.paymentStatus === 'fully_paid'
-        ? 'paid'
-        : params.paymentStatus === 'refunded'
-          ? 'cancelled'
-          : 'pending';
-
-    try {
-      await this.supabase.from('commissions').upsert(
-        {
-          booking_id: params.bookingId,
-          provider_id: params.providerUserId,
-          gross_amount: params.grossAmount,
-          commission_rate: this.commissionRate,
-          commission_amount: commissionAmount,
-          net_payout: netPayout,
-          status,
-          paid_at: status === 'paid' ? new Date().toISOString() : null,
-          notes: params.notes || null,
-        },
-        { onConflict: 'booking_id' },
-      );
-    } catch (error) {
-      this.logger.warn(
-        `Failed to upsert commission for booking ${params.bookingId}: ${error instanceof Error ? error.message : 'unknown error'}`,
-      );
-    }
-  }
+  // createNotification → now handled by this.notificationService
+  // upsertCommissionRecord → now handled by this.commissionService
 
   async findOne(id: string, userId?: string): Promise<Booking> {
     const { data, error } = await this.supabase
@@ -570,7 +497,10 @@ export class BookingsService {
       throw new NotFoundException('Booking not found');
     }
 
-    if (userId && !(await this.canAccessBooking(data, userId))) {
+    if (
+      userId &&
+      !(await this.providerContext.canAccessBooking(data, userId))
+    ) {
       throw new NotFoundException('Booking not found');
     }
 
@@ -584,11 +514,11 @@ export class BookingsService {
   ): Promise<Booking> {
     const booking = await this.findOne(id, userId);
 
-    const providerContext = await this.getProviderContext(userId);
+    const providerCtx = await this.providerContext.getProviderContext(userId);
     const isClient = booking.client_id === userId;
     const isProvider =
       booking.provider_id === userId ||
-      booking.provider_id === providerContext.providerId;
+      booking.provider_id === providerCtx.providerId;
 
     // Only provider can confirm/reject booking
     if (['confirmed', 'rejected'].includes(dto.status) && !isProvider) {
@@ -715,36 +645,20 @@ export class BookingsService {
 
     // Notify the other party about status change
     const notifyUserId = isClient ? booking.provider_id : booking.client_id;
-    const statusMessages: Record<string, { title: string; message: string }> = {
-      confirmed: {
-        title: 'Booking confirmed',
-        message: 'The booking request has been confirmed successfully',
-      },
-      rejected: { title: 'Booking rejected', message: 'The booking request has been rejected' },
-      cancelled: {
-        title: 'Booking cancelled',
-        message: updateData.refund_amount
-          ? `Booking cancelled — refund ${Number(updateData.refund_percentage)}% (${Number(updateData.refund_amount)} MAD)`
-          : 'Booking cancelled — no refund',
-      },
-      completed: { title: 'Booking completed', message: 'The service has been completed successfully' },
-    };
-    const notif = statusMessages[dto.status];
-    if (notif && notifyUserId) {
-      await this.createNotification(
+    if (notifyUserId) {
+      await this.notificationService.notifyStatusChange(
         notifyUserId,
-        `booking_${dto.status}`,
-        notif.title,
-        notif.message,
         id,
+        dto.status,
+        {
+          refundAmount: updateData.refund_amount as number | undefined,
+          refundPercentage: updateData.refund_percentage as number | undefined,
+        },
       );
     }
 
     if (dto.status === 'cancelled') {
-      await this.supabase
-        .from('commissions')
-        .update({ status: 'cancelled', notes: dto.cancellation_reason || null })
-        .eq('booking_id', id);
+      await this.commissionService.cancel(id, dto.cancellation_reason);
     }
 
     const auditAction =
@@ -773,7 +687,7 @@ export class BookingsService {
         const { data: provider } = await this.supabase
           .from('providers')
           .select('total_requests, total_responses, avg_response_minutes')
-          .eq('id', booking.provider_id)
+          .eq('user_id', booking.provider_id)
           .maybeSingle();
 
         if (provider) {
@@ -799,10 +713,11 @@ export class BookingsService {
               response_rate: rate,
               avg_response_minutes: newAvg,
             })
-            .eq('id', booking.provider_id);
+            .eq('user_id', booking.provider_id);
         }
       } catch (e) {
-        this.logger.warn(`Failed to update response stats: ${e}`);
+        const message = e instanceof Error ? e.message : String(e);
+        this.logger.warn(`Failed to update response stats: ${message}`);
       }
     }
 
@@ -876,24 +791,22 @@ export class BookingsService {
       throw new BadRequestException('Failed to update booking payment status');
     }
 
-    // Create notification
-    await this.createNotification(
-      booking.client_id,
-      'payment_received',
-      'Payment received',
-      `${paymentType === 'deposit' ? 'Deposit' : paymentType === 'balance' ? 'Balance' : 'Full'} payment received successfully`,
-      bookingId,
+    // Notify client via shared service
+    await this.notificationService.notify({
+      userId: booking.client_id,
+      type: 'payment_received',
+      title: 'Payment received',
+      message: `${paymentType === 'deposit' ? 'Deposit' : paymentType === 'balance' ? 'Balance' : 'Full'} payment received successfully`,
+      data: { booking_id: bookingId },
+    });
+
+    const providerUserId = await this.providerContext.resolveProviderUserId(
+      booking.provider_id,
     );
 
-    const { data: providerRecord } = await this.supabase
-      .from('providers')
-      .select('user_id')
-      .eq('id', booking.provider_id)
-      .maybeSingle();
-
-    await this.upsertCommissionRecord({
+    await this.commissionService.upsert({
       bookingId,
-      providerUserId: providerRecord?.user_id || booking.provider_id,
+      providerUserId,
       grossAmount: Number(booking.amount || 0),
       paymentStatus: newPaymentStatus,
       notes: `Updated after ${paymentType} payment`,
@@ -913,55 +826,6 @@ export class BookingsService {
     );
 
     return updatedBooking;
-  }
-
-  async createPaymentIntent(
-    bookingId: string,
-    userId: string,
-    paymentType: 'deposit' | 'balance' | 'full',
-  ): Promise<{ client_secret: string; payment_intent_id: string }> {
-    const booking = await this.findOne(bookingId, userId);
-
-    if (booking.client_id !== userId) {
-      throw new ForbiddenException(
-        'Only client can create payment for booking',
-      );
-    }
-
-    let amount = booking.amount;
-    if (paymentType === 'deposit') {
-      amount = Math.round(amount * 0.3); // 30% deposit
-    } else if (paymentType === 'balance') {
-      amount = Math.round(amount * 0.7); // 70% balance
-    }
-
-    const isMock =
-      !this.configService.get<string>('STRIPE_SECRET_KEY') ||
-      this.configService
-        .get<string>('STRIPE_SECRET_KEY')
-        ?.includes('YOUR_STRIPE_SECRET_KEY');
-
-    if (isMock) {
-      this.logger.log(`Creating MOCK payment intent for booking ${bookingId}`);
-      return {
-        client_secret: `pi_mock_${bookingId}_secret_${Date.now()}`,
-        payment_intent_id: `pi_mock_${bookingId}`,
-      };
-    }
-
-    const paymentIntent = await this.stripe.paymentIntents.create({
-      amount: amount * 100, // Convert to cents
-      currency: 'qar',
-      metadata: {
-        booking_id: bookingId,
-        payment_type: paymentType,
-      },
-    });
-
-    return {
-      client_secret: paymentIntent.client_secret || '',
-      payment_intent_id: paymentIntent.id,
-    };
   }
 
   async confirmMockPayment(
@@ -984,29 +848,6 @@ export class BookingsService {
     );
   }
 
-  async confirmPayment(paymentIntentId: string): Promise<void> {
-    const paymentIntent =
-      await this.stripe.paymentIntents.retrieve(paymentIntentId);
-
-    if (paymentIntent.status !== 'succeeded') {
-      throw new BadRequestException('Payment not successful');
-    }
-
-    const bookingId = paymentIntent.metadata.booking_id;
-    const paymentType = paymentIntent.metadata.payment_type as
-      | 'deposit'
-      | 'balance'
-      | 'full';
-    const amount = paymentIntent.amount / 100;
-
-    await this.applyPaymentToBooking(
-      bookingId,
-      paymentIntentId,
-      amount,
-      paymentType,
-    );
-  }
-
   // Additional methods for controller
   async findAll(
     status?: string,
@@ -1026,9 +867,8 @@ export class BookingsService {
       query = query.eq('payment_status', paymentStatus);
     }
     if (search) {
-      query = query.or(
-        `notes.ilike.%${search}%,requirements.ilike.%${search}%`,
-      );
+      const term = sanitizeSearch(search);
+      query = query.or(`notes.ilike.%${term}%,requirements.ilike.%${term}%`);
     }
     if (limit) {
       query = query.limit(limit);
@@ -1067,9 +907,7 @@ export class BookingsService {
     }
     if (search) {
       const term = sanitizeSearch(search);
-      query = query.or(
-        `notes.ilike.%${term}%,requirements.ilike.%${term}%`,
-      );
+      query = query.or(`notes.ilike.%${term}%,requirements.ilike.%${term}%`);
     }
     if (limit) {
       query = query.limit(limit);
@@ -1097,13 +935,15 @@ export class BookingsService {
     sortOrder?: string,
   ): Promise<{ data: Booking[]; total: number }> {
     if (userId) {
-      await this.assertProviderScope(providerId, userId);
+      await this.providerContext.assertProviderScope(providerId, userId);
     }
+    const providerUserId =
+      await this.providerContext.resolveProviderUserId(providerId);
 
     let query = this.supabase
       .from('bookings')
       .select('*', { count: 'exact' })
-      .eq('provider_id', providerId);
+      .eq('provider_id', providerUserId);
 
     if (status) {
       query = query.eq('status', status);
@@ -1113,9 +953,7 @@ export class BookingsService {
     }
     if (search) {
       const term = sanitizeSearch(search);
-      query = query.or(
-        `notes.ilike.%${term}%,requirements.ilike.%${term}%`,
-      );
+      query = query.or(`notes.ilike.%${term}%,requirements.ilike.%${term}%`);
     }
     if (limit) {
       query = query.limit(limit);
@@ -1144,13 +982,15 @@ export class BookingsService {
     total_revenue: number;
   }> {
     if (userId) {
-      await this.assertProviderScope(providerId, userId);
+      await this.providerContext.assertProviderScope(providerId, userId);
     }
+    const providerUserId =
+      await this.providerContext.resolveProviderUserId(providerId);
 
     const { data, error } = await this.supabase
       .from('bookings')
       .select('*')
-      .eq('provider_id', providerId);
+      .eq('provider_id', providerUserId);
 
     if (error) {
       throw new BadRequestException(error.message);
@@ -1243,11 +1083,13 @@ export class BookingsService {
     startDate: string,
     endDate: string,
   ): Promise<{ unavailable_dates: string[]; partial_dates: string[] }> {
+    const provider = await this.resolveProviderIdentity(providerId);
+
     // Dates with confirmed/pending bookings
     const { data: bookings } = await this.supabase
       .from('bookings')
       .select('booking_date, start_time, end_time')
-      .eq('provider_id', providerId)
+      .eq('provider_id', provider.user_id)
       .gte('booking_date', startDate)
       .lte('booking_date', endDate)
       .in('status', ['pending', 'confirmed']);
@@ -1256,7 +1098,7 @@ export class BookingsService {
     const { data: blocked } = await this.supabase
       .from('provider_availabilities')
       .select('date, start_time, end_time, is_blocked')
-      .eq('provider_id', providerId)
+      .eq('provider_id', provider.id)
       .eq('is_blocked', true)
       .gte('date', startDate)
       .lte('date', endDate);

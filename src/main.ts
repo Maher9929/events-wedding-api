@@ -18,9 +18,30 @@ if (process.env.SENTRY_DSN) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // Security: HTTP headers (XSS, clickjacking, MIME sniffing)
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: isProduction
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              baseUri: ["'self'"],
+              frameAncestors: ["'none'"],
+              objectSrc: ["'none'"],
+              scriptSrc: ["'self'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", 'data:', 'https:'],
+              connectSrc: ["'self'", 'https:', 'wss:'],
+              formAction: ["'self'"],
+              upgradeInsecureRequests: [],
+            },
+          }
+        : false,
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // CORS: only allow known origins (localhost dev + configured domains)
   const extraOrigins = (process.env.ALLOWED_ORIGINS || '')
@@ -38,7 +59,10 @@ async function bootstrap() {
   ];
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       // Allow requests with no origin (server-to-server, mobile apps, curl)
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
@@ -70,9 +94,7 @@ async function bootstrap() {
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
       .setTitle('Doha Events — Wedding & Events Marketplace API')
-      .setDescription(
-        'Full API for the events & wedding marketplace',
-      )
+      .setDescription('Full API for the events & wedding marketplace')
       .setVersion('1.0')
       .addTag('users')
       .addTag('categories')
@@ -100,4 +122,4 @@ async function bootstrap() {
   // Listen on all network interfaces
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
-bootstrap();
+void bootstrap();

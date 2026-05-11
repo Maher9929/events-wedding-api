@@ -5,8 +5,8 @@ export type { User };
 export const authService = {
   async register(data: { email: string; password: string; full_name: string; role: string }): Promise<AuthResponse> {
     const res = await apiService.post<AuthResponse>('/users/register', data);
-    if (res.access_token) {
-      localStorage.setItem('access_token', res.access_token);
+    // Token is stored as HttpOnly cookie by the backend — never in localStorage
+    if (res.user) {
       localStorage.setItem('user', JSON.stringify(res.user));
     }
     return res;
@@ -14,20 +14,16 @@ export const authService = {
 
   async login(data: { email: string; password: string }): Promise<AuthResponse> {
     const res = await apiService.post<AuthResponse>('/users/login', data);
-    if (res.access_token) {
-      localStorage.setItem('access_token', res.access_token);
+    // Token is stored as HttpOnly cookie by the backend — never in localStorage
+    if (res.user) {
       localStorage.setItem('user', JSON.stringify(res.user));
     }
     return res;
   },
 
   logout(): void {
-    // Notify backend to blacklist the token (fire-and-forget)
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      apiService.post('/users/logout', {}).catch(() => { /* non-critical */ });
-    }
-    localStorage.removeItem('access_token');
+    // Notify backend to blacklist token & clear HttpOnly cookie
+    apiService.post('/users/logout', {}).catch(() => { /* non-critical */ });
     localStorage.removeItem('user');
     window.location.href = '/';
   },
@@ -47,7 +43,8 @@ export const authService = {
   },
 
   isAuthenticated(): boolean {
-    return !!(localStorage.getItem('access_token') && localStorage.getItem('user'));
+    // Token lives in HttpOnly cookie (JS can't read it) — check user profile instead
+    return !!localStorage.getItem('user');
   },
 
   getCurrentUser(): User | null {
@@ -56,7 +53,8 @@ export const authService = {
   },
 
   getToken(): string | null {
-    return localStorage.getItem('access_token');
+    // Token is in HttpOnly cookie — not accessible from JS (secure by design)
+    return null;
   },
 
   hasRole(role: string): boolean {

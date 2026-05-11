@@ -35,7 +35,7 @@ const MessagesPage = () => {
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        document.title = `${t('common.messages')} | DOUSHA`;
+        document.title = `${t('common.messages')} | Doha Events`;
     }, [t]);
 
     useEffect(() => {

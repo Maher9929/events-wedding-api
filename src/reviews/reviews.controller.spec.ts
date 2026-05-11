@@ -2,7 +2,9 @@ import { ReviewsController } from './reviews.controller';
 import { ReviewsService } from './reviews.service';
 import { ForbiddenException } from '@nestjs/common';
 
-const mockReq = { user: { id: 'u1', role: 'client', provider_id: null } } as any;
+const mockReq = {
+  user: { id: 'u1', role: 'client', provider_id: null },
+} as any;
 
 describe('ReviewsController', () => {
   let controller: ReviewsController;
@@ -42,8 +44,22 @@ describe('ReviewsController', () => {
       const data = { data: [{ id: 'r1' }], total: 1 };
       service.findAll!.mockResolvedValue(data);
 
-      const result = await controller.findAll('5', '10', '0', 'good', 'rating', 'desc');
-      expect(service.findAll).toHaveBeenCalledWith(5, 10, 0, 'good', 'rating', 'desc');
+      const result = await controller.findAll(
+        '5',
+        '10',
+        '0',
+        'good',
+        'rating',
+        'desc',
+      );
+      expect(service.findAll).toHaveBeenCalledWith(
+        5,
+        10,
+        0,
+        'good',
+        'rating',
+        'desc',
+      );
       expect(result).toEqual(data);
     });
 
@@ -52,7 +68,12 @@ describe('ReviewsController', () => {
 
       await controller.findAll();
       expect(service.findAll).toHaveBeenCalledWith(
-        undefined, undefined, undefined, undefined, undefined, undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -73,7 +94,12 @@ describe('ReviewsController', () => {
 
       await controller.findByProvider('prov1');
       expect(service.findByProvider).toHaveBeenCalledWith(
-        'prov1', undefined, undefined, undefined, undefined, undefined,
+        'prov1',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
   });
@@ -102,12 +128,14 @@ describe('ReviewsController', () => {
     it('should delete a review', async () => {
       service.remove!.mockResolvedValue(undefined);
       await controller.remove('r1', mockReq);
-      expect(service.remove).toHaveBeenCalledWith('r1', 'u1');
+      expect(service.remove).toHaveBeenCalledWith('r1', 'u1', 'client');
     });
 
     it('should propagate ForbiddenException', async () => {
       service.remove!.mockRejectedValue(new ForbiddenException());
-      await expect(controller.remove('r1', mockReq)).rejects.toThrow(ForbiddenException);
+      await expect(controller.remove('r1', mockReq)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

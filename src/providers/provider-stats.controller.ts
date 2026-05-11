@@ -1,4 +1,11 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Query,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { ProviderStatsService } from './provider-stats.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,10 +28,7 @@ export class ProviderStatsController {
     @Request() req: AuthenticatedRequest & { query: Record<string, string> },
     @Query('period') period?: 'week' | 'month' | 'year',
   ) {
-    const providerId =
-      req.user.role === UserRole.ADMIN
-        ? (req.query.providerId as string)
-        : req.user.id;
+    const providerId = this.resolveProviderStatsUserId(req);
 
     return this.providerStatsService.getProviderStats(providerId, period);
   }
@@ -32,12 +36,28 @@ export class ProviderStatsController {
   @Get('performance')
   @UseGuards(RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
-  async getPerformance(@Request() req: AuthenticatedRequest & { query: Record<string, string> }) {
-    const providerId =
-      req.user.role === UserRole.ADMIN
-        ? (req.query.providerId as string)
-        : req.user.id;
+  async getPerformance(
+    @Request() req: AuthenticatedRequest & { query: Record<string, string> },
+  ) {
+    const providerId = this.resolveProviderStatsUserId(req);
 
     return this.providerStatsService.getPerformanceMetrics(providerId);
+  }
+
+  private resolveProviderStatsUserId(
+    req: AuthenticatedRequest & { query: Record<string, string> },
+  ): string {
+    if (req.user.role !== (UserRole.ADMIN as string)) {
+      return req.user.id;
+    }
+
+    const providerUserId = req.query.providerUserId || req.query.providerId;
+    if (!providerUserId) {
+      throw new BadRequestException(
+        'providerUserId query parameter is required for admin analytics',
+      );
+    }
+
+    return providerUserId;
   }
 }

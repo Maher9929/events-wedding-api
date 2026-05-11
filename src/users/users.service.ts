@@ -6,8 +6,10 @@ import {
   BadRequestException,
   Inject,
   Logger,
+  InternalServerErrorException,
 } from '@nestjs/common';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { ConfigService } from '@nestjs/config';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { sanitizeSearch } from '../common/sanitize';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
@@ -16,6 +18,35 @@ import { LoginDto, RegisterDto, AuthResponseDto } from './dto/auth.dto';
 import { UserProfile } from './entities/user.entity';
 import { AuditLogService } from '../common/audit-log.service';
 import { AuthCacheService } from '../auth/auth-cache.service';
+
+export type PublicUserProfile = Pick<
+  UserProfile,
+  'id' | 'full_name' | 'avatar_url' | 'role' | 'city'
+>;
+
+export type PrivateUserProfile = Pick<
+  UserProfile,
+  | 'id'
+  | 'email'
+  | 'full_name'
+  | 'phone'
+  | 'avatar_url'
+  | 'bio'
+  | 'role'
+  | 'city'
+  | 'preferences'
+  | 'history'
+  | 'created_at'
+  | 'updated_at'
+>;
+
+const PRIVATE_PROFILE_FIELDS =
+  'id, email, full_name, phone, avatar_url, bio, role, city, preferences, history, created_at, updated_at';
+
+const ADMIN_PROFILE_FIELDS =
+  'id, email, full_name, phone, avatar_url, bio, role, city, is_banned, ban_until, ban_reason, created_at, updated_at';
+
+const PUBLIC_PROFILE_FIELDS = 'id, full_name, avatar_url, role, city';
 
 @Injectable()
 export class UsersService {
@@ -27,6 +58,7 @@ export class UsersService {
     private readonly jwtService: JwtService,
     private readonly auditLogService: AuditLogService,
     private readonly authCache: AuthCacheService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -46,11 +78,12 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
-    // Create user with Supabase Auth
+    // Create user with admin API (preserves service_role context for DB ops)
     const { data: authData, error: authError } =
-      await this.supabase.auth.signUp({
+      await this.supabase.auth.admin.createUser({
         email: registerDto.email,
         password: registerDto.password,
+        email_confirm: true,
       });
 
     if (authError) {
@@ -66,9 +99,6 @@ export class UsersService {
     // Upsert profile — handles both cases:
     // 1. DB trigger already created it → update with full_name/phone/role
     // 2. Trigger hasn't fired yet → insert it directly
-    // Small delay to let the trigger fire first (avoids conflict)
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
     const { data: profile, error: profileError } = await this.supabase
       .from('user_profiles')
       .upsert(
@@ -81,7 +111,7 @@ export class UsersService {
         },
         { onConflict: 'id' },
       )
-      .select()
+      .select(PRIVATE_PROFILE_FIELDS)
       .single();
 
     if (profileError || !profile) {
@@ -118,9 +148,9 @@ export class UsersService {
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    // Authenticate with Supabase Auth
+    const authClient = this.createPasswordAuthClient();
     const { data: authData, error: authError } =
-      await this.supabase.auth.signInWithPassword({
+      await authClient.auth.signInWithPassword({
         email: loginDto.email,
         password: loginDto.password,
       });
@@ -129,16 +159,46 @@ export class UsersService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Get user profile
+    // Get user profile using the injected service client.
     const authId = authData.user?.id;
+    const authEmail = authData.user?.email;
 
-    const { data: profile, error: profileError } = await this.supabase
+    let { data: profile, error: profileError } = await this.supabase
       .from('user_profiles')
-      .select('*')
+      .select(PRIVATE_PROFILE_FIELDS)
       .eq('id', authId)
       .single();
 
-    if (profileError || !profile) {
+    // Self-healing: if auth succeeded but profile is missing, create it
+    if ((profileError || !profile) && authId && authEmail) {
+      this.logger.warn(
+        `User ${authId} exists in auth but missing from user_profiles — auto-creating`,
+      );
+      const { data: newProfile, error: createError } = await this.supabase
+        .from('user_profiles')
+        .upsert(
+          {
+            id: authId,
+            email: authEmail,
+            full_name: authData.user?.user_metadata?.full_name || null,
+            role: 'client',
+          },
+          { onConflict: 'id' },
+        )
+        .select(PRIVATE_PROFILE_FIELDS)
+        .single();
+
+      if (createError || !newProfile) {
+        this.logger.error(
+          `Failed to auto-create profile: ${createError?.message}`,
+        );
+        throw new NotFoundException('User profile not found');
+      }
+      profile = newProfile;
+      profileError = null;
+    }
+
+    if (!profile) {
       throw new NotFoundException('User profile not found');
     }
 
@@ -188,11 +248,12 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
-    // Create user with Supabase Auth
+    // Create user with admin API (preserves service_role context)
     const { data: authData, error: authError } =
-      await this.supabase.auth.signUp({
+      await this.supabase.auth.admin.createUser({
         email: createUserDto.email,
         password: createUserDto.password,
+        email_confirm: true,
       });
 
     if (authError) {
@@ -209,7 +270,7 @@ export class UsersService {
         phone: createUserDto.phone,
         role: createUserDto.role || UserRole.CLIENT,
       })
-      .select()
+      .select(PRIVATE_PROFILE_FIELDS)
       .single();
 
     if (error) {
@@ -228,7 +289,7 @@ export class UsersService {
   ): Promise<{ data: UserProfile[]; total: number }> {
     let queryBuilder = this.supabase
       .from('user_profiles')
-      .select('*', { count: 'exact' })
+      .select(ADMIN_PROFILE_FIELDS, { count: 'exact' })
       .order('created_at', { ascending: sortOrder === 'asc' });
 
     if (search) {
@@ -272,7 +333,9 @@ export class UsersService {
       .select('id, full_name, email, avatar_url, role')
       .neq('id', requesterId)
       .neq('role', UserRole.ADMIN)
-      .or(`full_name.ilike.%${sanitizeSearch(searchTerm)}%,email.ilike.%${sanitizeSearch(searchTerm)}%`)
+      .or(
+        `full_name.ilike.%${sanitizeSearch(searchTerm)}%,email.ilike.%${sanitizeSearch(searchTerm)}%`,
+      )
       .order('full_name', { ascending: true })
       .limit(Math.min(limit, 20));
 
@@ -283,10 +346,28 @@ export class UsersService {
     return data || [];
   }
 
-  async findOne(id: string): Promise<UserProfile> {
+  async findOne(id: string): Promise<PrivateUserProfile> {
+    return this.findPrivateProfile(id);
+  }
+
+  async findPrivateProfile(id: string): Promise<PrivateUserProfile> {
     const { data, error } = await this.supabase
       .from('user_profiles')
-      .select('*')
+      .select(PRIVATE_PROFILE_FIELDS)
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      throw new NotFoundException('User not found');
+    }
+
+    return data;
+  }
+
+  async findPublicProfile(id: string): Promise<PublicUserProfile> {
+    const { data, error } = await this.supabase
+      .from('user_profiles')
+      .select(PUBLIC_PROFILE_FIELDS)
       .eq('id', id)
       .single();
 
@@ -300,7 +381,7 @@ export class UsersService {
   async findByEmail(email: string): Promise<UserProfile | null> {
     const { data, error } = await this.supabase
       .from('user_profiles')
-      .select('*')
+      .select(PRIVATE_PROFILE_FIELDS)
       .eq('email', email)
       .single();
 
@@ -339,12 +420,36 @@ export class UsersService {
       .from('user_profiles')
       .update(safeData)
       .eq('id', id)
-      .select()
+      .select(PRIVATE_PROFILE_FIELDS)
       .single();
 
     if (error) {
       throw new NotFoundException('User not found');
     }
+
+    return data;
+  }
+
+  async updateRole(
+    id: string,
+    role: UserRole,
+    adminId: string,
+  ): Promise<UserProfile> {
+    const { data, error } = await this.supabase
+      .from('user_profiles')
+      .update({ role })
+      .eq('id', id)
+      .select(PRIVATE_PROFILE_FIELDS)
+      .single();
+
+    if (error) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.authCache.invalidateUser(id);
+    await this.auditLogService.log(adminId, 'user_role_update', 'users', id, {
+      role,
+    });
 
     return data;
   }
@@ -416,5 +521,31 @@ export class UsersService {
     }
 
     return this.jwtService.signAsync(payload);
+  }
+
+  private createPasswordAuthClient(): SupabaseClient {
+    const supabaseUrl =
+      this.configService.get<string>('SUPABASE_URL') ||
+      'http://localhost:54321';
+    const supabaseKey =
+      this.configService.get<string>('SUPABASE_ANON_KEY') ||
+      this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY') ||
+      (this.configService.get<string>('NODE_ENV') === 'test'
+        ? 'test-anon-key'
+        : undefined);
+
+    if (!supabaseKey) {
+      throw new InternalServerErrorException(
+        'Supabase auth key is not configured',
+      );
+    }
+
+    return createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    });
   }
 }

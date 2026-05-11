@@ -49,8 +49,10 @@ const HomePage = () => {
 
     return (
         <>
-            <header id="header" className="glass-effect sticky top-0 z-50 shadow-sm">
-                <div className="px-5 py-4">
+            <header id="header" className="sticky top-0 z-50 overflow-hidden">
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-xl"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-[2px] gradient-purple opacity-60"></div>
+                <div className="relative px-5 py-3">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center">
@@ -87,10 +89,10 @@ const HomePage = () => {
                             {isAuthenticated ? (
                                 <Link
                                     to={user?.role === 'provider' ? '/provider/dashboard' : user?.role === 'admin' ? '/admin/dashboard' : '/client/dashboard'}
-                                    className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center"
+                                    className="w-10 h-10 rounded-xl gradient-purple flex items-center justify-center shadow-sm"
                                     aria-label={t('common.profile')}
                                 >
-                                    <i className="fa-solid fa-user text-primary"></i>
+                                    <i className="fa-solid fa-user text-white text-sm"></i>
                                 </Link>
                             ) : (
                                 <Link to="/auth/login" className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center" aria-label={t('common.profile')}>
@@ -103,7 +105,7 @@ const HomePage = () => {
             </header>
 
             {/* Premium Hero Section */}
-            <section className="relative w-full overflow-hidden bg-gray-900 rounded-b-[40px] mb-6 shadow-2xl animate-scale-in">
+            <section className="relative w-full overflow-hidden bg-gray-900 rounded-b-[40px] mb-6 shadow-2xl animate-scale-in particles-container">
                 <div className="absolute inset-0">
                     <img 
                         src="https://images.unsplash.com/photo-1519741497674-611481863552?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=40&fm=webp" 
@@ -115,13 +117,18 @@ const HomePage = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent"></div>
                 </div>
                 
+                {/* Floating Particles */}
+                <div className="hero-particles">
+                    <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+
                 <div className="relative z-10 px-5 pt-12 pb-16 text-center">
                     <span className="inline-block py-1 px-3 rounded-full bg-accent/20 text-accent text-xs font-bold mb-4 backdrop-blur-sm animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                         <i className="fa-solid fa-star me-1"></i>
                         {t('home.hero.badge')}
                     </span>
-                    <h2 className="text-3xl font-bold text-white mb-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                        {t('home.hero.main_title')} <span className="text-accent text-transparent bg-clip-text bg-gradient-to-r from-accent to-yellow-200">{t('home.hero.main_title_highlight')}</span>
+                    <h2 className="text-3xl lg:text-5xl font-bold text-white mb-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        {t('home.hero.main_title')} <span className="text-gradient-animated">{t('home.hero.main_title_highlight')}</span>
                     </h2>
                     <p className="text-gray-300 text-sm mb-8 max-w-md mx-auto animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                         {t('home.hero.description')}
@@ -137,7 +144,7 @@ const HomePage = () => {
                                 onFocus={() => navigate('/services')} 
                                 readOnly 
                             />
-                            <button onClick={() => navigate('/services')} className="h-10 px-5 rounded-xl gradient-purple text-white text-sm font-bold shadow-lg hover-scale" aria-label={t('home.hero.search_button')}>
+                            <button onClick={() => navigate('/services')} className="h-10 px-5 rounded-xl gradient-animated glow-button text-white text-sm font-bold shadow-lg" aria-label={t('home.hero.search_button')}>
                                 {t('home.hero.search_button')}
                             </button>
                         </div>
@@ -153,7 +160,7 @@ const HomePage = () => {
                         { value: stats.services || '200+', label: t('home.stats.services'), icon: 'fa-box', color: 'text-green-600' },
                         { value: categories.length || '10+', label: t('home.stats.categories'), icon: 'fa-border-all', color: 'text-amber-600' },
                     ].map((s, i) => (
-                        <div key={i} className="glass-effect rounded-2xl p-3 shadow-premium text-center card-hover">
+                        <div key={i} className="glass-effect rounded-2xl lg:rounded-3xl p-3 lg:p-6 shadow-premium text-center card-premium">
                             <i className={`fa-solid ${s.icon} ${s.color} text-lg mb-1`}></i>
                             <p className="text-lg font-bold text-gray-900">{s.value}</p>
                             <p className="text-xs text-gray-500">{s.label}</p>

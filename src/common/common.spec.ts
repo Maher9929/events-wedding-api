@@ -69,9 +69,13 @@ describe('maskProviderData', () => {
     };
 
     const masked = maskProviderData(data);
-    expect(masked.user_profiles.email).not.toBe('ahmed@test.com');
-    expect(masked.user_profiles.email).toContain('@test.com');
-    expect(masked.user_profiles.full_name).toBe('Ahmed');
+    const profile = masked.user_profiles as {
+      email: string;
+      full_name: string;
+    };
+    expect(profile.email).not.toBe('ahmed@test.com');
+    expect(profile.email).toContain('@test.com');
+    expect(profile.full_name).toBe('Ahmed');
   });
 
   it('should not mutate original object', () => {

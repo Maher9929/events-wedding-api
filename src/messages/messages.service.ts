@@ -4,6 +4,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   BadRequestException,
+  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -41,7 +42,8 @@ export class MessagesService {
         },
       });
     } catch (e) {
-      this.logger.warn(`Failed to log filter violation: ${e}`);
+      const message = e instanceof Error ? e.message : String(e);
+      this.logger.warn(`Failed to log filter violation: ${message}`);
     }
   }
 
@@ -61,6 +63,42 @@ export class MessagesService {
     }
 
     return data;
+  }
+
+  private async resolveDirectRecipientUserId(
+    recipientId: string,
+  ): Promise<string> {
+    const { data: profile } = await this.supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('id', recipientId)
+      .maybeSingle();
+
+    if (profile?.id) {
+      return profile.id;
+    }
+
+    const { data: providerById } = await this.supabase
+      .from('providers')
+      .select('user_id')
+      .eq('id', recipientId)
+      .maybeSingle();
+
+    if (providerById?.user_id) {
+      return providerById.user_id;
+    }
+
+    const { data: providerByUserId } = await this.supabase
+      .from('providers')
+      .select('user_id')
+      .eq('user_id', recipientId)
+      .maybeSingle();
+
+    if (providerByUserId?.user_id) {
+      return providerByUserId.user_id;
+    }
+
+    throw new NotFoundException('Recipient not found');
   }
 
   async createConversation(participantIds: string[]): Promise<Conversation> {
@@ -89,7 +127,46 @@ export class MessagesService {
     return data;
   }
 
-  async getConversations(userId: string): Promise<any[]> {
+  private async assertCanStartDirectConversation(
+    senderId: string,
+    recipientId: string,
+  ): Promise<void> {
+    if (senderId === recipientId) {
+      throw new BadRequestException(
+        'Cannot start a conversation with yourself',
+      );
+    }
+
+    const { data: profiles, error } = await this.supabase
+      .from('user_profiles')
+      .select('id, role')
+      .in('id', [senderId, recipientId]);
+
+    if (error || !profiles || profiles.length !== 2) {
+      throw new NotFoundException('Recipient not found');
+    }
+
+    const roles = profiles.map((profile) => profile.role).sort();
+    const allowedPair =
+      roles.length === 2 && roles[0] === 'client' && roles[1] === 'provider';
+
+    if (!allowedPair) {
+      throw new ForbiddenException(
+        'Direct conversations are limited to client-provider marketplace interactions',
+      );
+    }
+  }
+
+  async getConversations(userId: string): Promise<
+    Array<
+      Conversation & {
+        unread_count: number;
+        recipient_name: string;
+        recipient_avatar?: string | null;
+        recipient_role?: string;
+      }
+    >
+  > {
     if (!userId) return [];
 
     const { data: convos, error } = await this.supabase
@@ -129,7 +206,8 @@ export class MessagesService {
             recipient_role: otherParticipant?.role,
           };
         } catch (e) {
-          this.logger.warn(`Error enriching conversation ${c.id}: ${e}`);
+          const message = e instanceof Error ? e.message : String(e);
+          this.logger.warn(`Error enriching conversation ${c.id}: ${message}`);
           return { ...c, unread_count: 0, recipient_name: 'مستخدم' };
         }
       }),
@@ -137,7 +215,12 @@ export class MessagesService {
     return enrichedConversations;
   }
 
-  async getMessages(conversationId: string, userId: string): Promise<any[]> {
+  async getMessages(
+    conversationId: string,
+    userId: string,
+  ): Promise<
+    Array<Message & { sender?: { full_name?: string; avatar_url?: string } }>
+  > {
     if (!conversationId) return [];
     await this.getConversationForUser(conversationId, userId);
 
@@ -193,16 +276,22 @@ export class MessagesService {
     let conversationId = createMessageDto.conversation_id;
 
     if (!conversationId && createMessageDto.recipient_id) {
+      const recipientUserId = await this.resolveDirectRecipientUserId(
+        createMessageDto.recipient_id,
+      );
+
+      await this.assertCanStartDirectConversation(senderId, recipientUserId);
+
       const existing = await this.findExistingConversation(
         senderId,
-        createMessageDto.recipient_id,
+        recipientUserId,
       );
       if (existing) {
         conversationId = existing.id;
       } else {
         const convo = await this.createConversation([
           senderId,
-          createMessageDto.recipient_id,
+          recipientUserId,
         ]);
         conversationId = convo.id;
       }
@@ -224,7 +313,7 @@ export class MessagesService {
     } = filterContactInfo(createMessageDto.content);
 
     if (wasFiltered) {
-      this.logFilterViolation(
+      void this.logFilterViolation(
         senderId,
         conversationId,
         createMessageDto.content,
@@ -284,7 +373,8 @@ export class MessagesService {
             data: { conversation_id: conversationId, sender_id: senderId },
           });
         } catch (e) {
-          this.logger.warn(`Error creating notification: ${e}`);
+          const message = e instanceof Error ? e.message : String(e);
+          this.logger.warn(`Error creating notification: ${message}`);
         }
       }
     }

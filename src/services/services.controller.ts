@@ -20,8 +20,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { UserRole } from '../users/dto/create-user.dto';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 
 @ApiTags('services')
 @Controller('services')
@@ -31,7 +32,10 @@ export class ServicesController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
-  async create(@Body() createServiceDto: CreateServiceDto, @Request() req: AuthenticatedRequest) {
+  async create(
+    @Body() createServiceDto: CreateServiceDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return await this.servicesService.createByUserId(
       req.user.id,
       createServiceDto,
@@ -39,11 +43,13 @@ export class ServicesController {
   }
 
   @Get()
+  @Public()
   async findAll(@Query() query: QueryServiceDto) {
     return await this.servicesService.findAll(query);
   }
 
   @Get('featured')
+  @Public()
   async findFeatured(@Query('limit') limit?: string) {
     return await this.servicesService.findFeatured(
       limit ? parseInt(limit) : 10,
@@ -51,6 +57,7 @@ export class ServicesController {
   }
 
   @Get('category/:categoryId')
+  @Public()
   async findByCategory(
     @Param('categoryId') categoryId: string,
     @Query() query: QueryServiceDto,
@@ -76,6 +83,7 @@ export class ServicesController {
   }
 
   @Get('id/:id')
+  @Public()
   async findOne(@Param('id') id: string) {
     return await this.servicesService.findOne(id);
   }
@@ -88,7 +96,12 @@ export class ServicesController {
     @Body() updateServiceDto: UpdateServiceDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return await this.servicesService.update(id, req.user.id, updateServiceDto);
+    return await this.servicesService.update(
+      id,
+      req.user.id,
+      updateServiceDto,
+      req.user.role,
+    );
   }
 
   @Patch('id/:id/featured')
@@ -111,6 +124,6 @@ export class ServicesController {
   @Roles(UserRole.PROVIDER, UserRole.ADMIN)
   @HttpCode(HttpStatus.NO_CONTENT)
   async remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
-    await this.servicesService.remove(id, req.user.id);
+    await this.servicesService.remove(id, req.user.id, req.user.role);
   }
 }

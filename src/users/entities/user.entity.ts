@@ -8,6 +8,9 @@ export class User {
   role: UserRole;
   avatar_url?: string;
   bio?: string;
+  city?: string;
+  preferences?: Record<string, unknown>;
+  history?: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
 }
@@ -20,6 +23,9 @@ export class UserProfile {
   role: UserRole;
   avatar_url?: string;
   bio?: string;
+  city?: string;
+  preferences?: Record<string, unknown>;
+  history?: Record<string, unknown>;
   created_at: Date;
   updated_at: Date;
 }

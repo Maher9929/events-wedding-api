@@ -14,7 +14,9 @@ function createSupabaseMock() {
   chain.delete = jest.fn(() => chain);
   chain.single = jest.fn();
   chain.then = jest.fn((resolve: any) => resolve(terminalResult));
-  chain._setResult = (r: any) => { terminalResult = r; };
+  chain._setResult = (r: any) => {
+    terminalResult = r;
+  };
   return chain;
 }
 
@@ -64,7 +66,13 @@ describe('NotificationsController', () => {
     it('should pass type filter', async () => {
       supabase._setResult({ data: [], error: null, count: 0 });
 
-      await controller.getMyNotifications(req, undefined, undefined, undefined, 'message');
+      await controller.getMyNotifications(
+        req,
+        undefined,
+        undefined,
+        undefined,
+        'message',
+      );
       expect(supabase.eq).toHaveBeenCalledWith('type', 'message');
     });
   });
@@ -99,7 +107,10 @@ describe('NotificationsController', () => {
     });
 
     it('should return success false on error', async () => {
-      supabase.single.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
+      supabase.single.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'fail' },
+      });
 
       const result = await controller.markAsRead('n1', req);
       expect(result).toEqual({ success: false });

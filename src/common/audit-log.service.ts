@@ -8,6 +8,7 @@ export type AuditAction =
   | 'user_delete'
   | 'user_ban'
   | 'user_unban'
+  | 'user_role_update'
   | 'booking_create'
   | 'booking_confirm'
   | 'booking_cancel'
@@ -24,7 +25,7 @@ type AuditLogRow = {
   action: string;
   entity: string;
   entity_id: string | null;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
   user?: { full_name?: string; email?: string }[];
 };
@@ -41,7 +42,7 @@ export class AuditLogService {
     action: AuditAction,
     entityType: string,
     entityId?: string,
-    details?: Record<string, any>,
+    details?: Record<string, unknown>,
   ): Promise<void> {
     try {
       await this.supabase.from('audit_logs').insert({
@@ -126,6 +127,7 @@ export class AuditLogService {
       booking_complete: 'booking_completed',
       payment_confirmed: 'payment_received',
       user_register: 'user_created',
+      user_role_update: 'user_role_updated',
       review_delete: 'review_deleted',
       review_reported: 'review_reported',
       provider_delete: 'provider_deleted',
@@ -174,7 +176,7 @@ export class AuditLogService {
   private buildDetails(
     action: string,
     entity: string,
-    metadata: Record<string, any>,
+    metadata: Record<string, unknown>,
   ): string {
     const parts: string[] = [];
 

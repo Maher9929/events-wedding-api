@@ -12,6 +12,7 @@ import { Quote } from './entities/quote.entity';
 import { QuoteRequest } from './entities/quote-request.entity';
 import { MessagesService } from '../messages/messages.service';
 import { sanitizeSearch } from '../common/sanitize';
+import { DEFAULT_CURRENCY } from '../common/constants';
 
 @Injectable()
 export class QuotesService {
@@ -39,6 +40,45 @@ export class QuotesService {
     const conversation =
       await this.messagesService.createConversation(sortedIds);
     return conversation.id;
+  }
+
+  private async createInAppNotification(notification: {
+    user_id: string;
+    type: string;
+    title: string;
+    message: string;
+    data?: Record<string, unknown>;
+  }): Promise<void> {
+    try {
+      await this.supabase.from('notifications').insert({
+        ...notification,
+        is_read: false,
+      });
+    } catch {
+      /* silent - notifications must not block quote workflows */
+    }
+  }
+
+  private async createInAppNotifications(
+    notifications: Array<{
+      user_id: string;
+      type: string;
+      title: string;
+      message: string;
+      data?: Record<string, unknown>;
+    }>,
+  ): Promise<void> {
+    if (notifications.length === 0) return;
+    try {
+      await this.supabase.from('notifications').insert(
+        notifications.map((notification) => ({
+          ...notification,
+          is_read: false,
+        })),
+      );
+    } catch {
+      /* silent - notifications must not block quote workflows */
+    }
   }
 
   async findByUser(
@@ -87,47 +127,51 @@ export class QuotesService {
     providerId: string,
     createQuoteDto: CreateQuoteDto,
   ): Promise<Quote> {
+    if (!createQuoteDto.quote_request_id) {
+      throw new BadRequestException(
+        'Quotes must be created from an open quote request',
+      );
+    }
+
     if (providerId === createQuoteDto.client_id) {
       throw new BadRequestException(
         'Provider and client must be different users',
       );
     }
 
-    if (createQuoteDto.quote_request_id) {
-      const { data: quoteRequest } = await this.supabase
-        .from('quote_requests')
-        .select('id, client_id, provider_ids, status, deadline')
-        .eq('id', createQuoteDto.quote_request_id)
-        .maybeSingle();
+    const { data: quoteRequest } = await this.supabase
+      .from('quote_requests')
+      .select('id, client_id, provider_ids, status, deadline')
+      .eq('id', createQuoteDto.quote_request_id)
+      .maybeSingle();
 
-      if (!quoteRequest) {
-        throw new NotFoundException('Quote request not found');
-      }
+    if (!quoteRequest) {
+      throw new NotFoundException('Quote request not found');
+    }
 
-      if (quoteRequest.client_id !== createQuoteDto.client_id) {
-        throw new BadRequestException(
-          'Quote request client does not match the quote client',
-        );
-      }
+    if (quoteRequest.client_id !== createQuoteDto.client_id) {
+      throw new BadRequestException(
+        'Quote request client does not match the quote client',
+      );
+    }
 
-      if (!quoteRequest.provider_ids?.includes(providerId)) {
-        throw new ForbiddenException(
-          'Provider is not part of this quote request',
-        );
-      }
+    if (!quoteRequest.provider_ids?.includes(providerId)) {
+      throw new ForbiddenException(
+        'Provider is not part of this quote request',
+      );
+    }
 
-      if (quoteRequest.status !== 'open') {
-        throw new BadRequestException(
-          'Quotes can only be created for open quote requests',
-        );
-      }
+    if (quoteRequest.status !== 'open') {
+      throw new BadRequestException(
+        'Quotes can only be created for open quote requests',
+      );
+    }
 
-      if (
-        quoteRequest.deadline &&
-        new Date(quoteRequest.deadline).getTime() < Date.now()
-      ) {
-        throw new BadRequestException('Quote request deadline has expired');
-      }
+    if (
+      quoteRequest.deadline &&
+      new Date(quoteRequest.deadline).getTime() < Date.now()
+    ) {
+      throw new BadRequestException('Quote request deadline has expired');
     }
 
     const conversationId = await this.findOrCreateConversation(
@@ -170,6 +214,7 @@ export class QuotesService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
+
     return data;
   }
 
@@ -206,20 +251,40 @@ export class QuotesService {
       .single();
 
     if (error) throw new BadRequestException(error.message);
+
+    await this.createInAppNotifications(
+      uniqueProviderIds.map((providerId) => ({
+        user_id: providerId,
+        type: 'quote_request',
+        title: 'New quote request',
+        message: `A client requested a quote: ${data.title}`,
+        data: {
+          quote_request_id: data.id,
+          event_id: data.event_id,
+          client_id: clientId,
+        },
+      })),
+    );
+
     return data;
   }
 
   async findQuoteRequests(
-    clientId?: string,
+    userId?: string,
     status?: string,
+    scope: 'client' | 'provider' | 'all' = 'client',
   ): Promise<QuoteRequest[]> {
     let query = this.supabase
       .from('quote_requests')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (clientId) {
-      query = query.eq('client_id', clientId);
+    if (userId && scope === 'client') {
+      query = query.eq('client_id', userId);
+    }
+
+    if (userId && scope === 'provider') {
+      query = query.contains('provider_ids', [userId]);
     }
 
     if (status && status !== 'all') {
@@ -306,24 +371,23 @@ export class QuotesService {
     // Trigger message in conversation
     await this.messagesService.sendMessage(providerId, {
       conversation_id: quote.conversation_id,
-      content: `I have sent you a quote for ${quote.total_amount} MAD`,
+      content: `I have sent you a quote for ${quote.total_amount} ${DEFAULT_CURRENCY}`,
       type: 'quote_offer',
       metadata: { quote_id: quote.id },
     });
 
     // Notify client about new quote
-    try {
-      await this.supabase.from('notifications').insert({
-        user_id: quote.client_id,
-        type: 'quote',
-        title: 'New quote',
-        message: `You have a new quote for ${quote.total_amount} MAD`,
-        is_read: false,
-        data: { quote_id: quote.id },
-      });
-    } catch {
-      /* silent */
-    }
+    await this.createInAppNotification({
+      user_id: quote.client_id,
+      type: 'quote',
+      title: 'New quote',
+      message: `You have a new quote for ${quote.total_amount} ${DEFAULT_CURRENCY}`,
+      data: {
+        quote_id: quote.id,
+        quote_request_id: quote.quote_request_id,
+        provider_id: quote.provider_id,
+      },
+    });
 
     return quote;
   }
@@ -403,24 +467,23 @@ export class QuotesService {
     });
 
     // Notify provider about quote status change
-    try {
-      const statusTitle =
-        status === 'accepted' ? 'Quote accepted' : 'Quote rejected';
-      const statusMsg =
-        status === 'accepted'
-          ? 'The client has accepted your quote'
-          : 'The client has rejected your quote';
-      await this.supabase.from('notifications').insert({
-        user_id: quote.provider_id,
-        type: `quote_${status}`,
-        title: statusTitle,
-        message: statusMsg,
-        is_read: false,
-        data: { quote_id: quote.id, status },
-      });
-    } catch {
-      /* silent */
-    }
+    const statusTitle =
+      status === 'accepted' ? 'Quote accepted' : 'Quote rejected';
+    const statusMsg =
+      status === 'accepted'
+        ? 'The client has accepted your quote'
+        : 'The client has rejected your quote';
+    await this.createInAppNotification({
+      user_id: quote.provider_id,
+      type: `quote_${status}`,
+      title: statusTitle,
+      message: statusMsg,
+      data: {
+        quote_id: quote.id,
+        quote_request_id: quote.quote_request_id,
+        status,
+      },
+    });
 
     return quote;
   }

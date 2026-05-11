@@ -7,15 +7,20 @@ import {
   UseGuards,
   Inject,
   BadRequestException,
+  ForbiddenException,
   UseInterceptors,
   UploadedFile,
   UploadedFiles,
   Logger,
+  Request,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
+import { AuthenticatedRequest } from './interfaces/authenticated-request.interface';
+import { UserRole } from '../users/dto/create-user.dto';
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -24,6 +29,13 @@ const ALLOWED_MIME_TYPES = [
   'image/gif',
 ];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILES_PER_REQUEST = 5;
+const MIME_EXTENSION: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
 
 /**
  * Storage controller — server-side proxy for Supabase Storage operations.
@@ -64,6 +76,7 @@ export class StorageController {
     }),
   )
   async uploadFile(
+    @Request() req: AuthenticatedRequest,
     @UploadedFile() file: Express.Multer.File,
     @Body('folder') folder?: string,
   ) {
@@ -74,7 +87,7 @@ export class StorageController {
       throw new BadRequestException('No file provided');
     }
 
-    return this.uploadToSupabase(file, folder || 'general');
+    return this.uploadToSupabase(file, req.user.id, folder || 'general');
   }
 
   /**
@@ -82,7 +95,7 @@ export class StorageController {
    */
   @Post('upload-multiple')
   @UseInterceptors(
-    FilesInterceptor('files', 5, {
+    FilesInterceptor('files', MAX_FILES_PER_REQUEST, {
       limits: { fileSize: MAX_FILE_SIZE },
       fileFilter: (_req, file, cb) => {
         if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
@@ -98,6 +111,7 @@ export class StorageController {
     }),
   )
   async uploadMultipleFiles(
+    @Request() req: AuthenticatedRequest,
     @UploadedFiles() files: Express.Multer.File[],
     @Body('folder') folder?: string,
   ) {
@@ -107,9 +121,16 @@ export class StorageController {
     if (!files || files.length === 0) {
       throw new BadRequestException('No files provided');
     }
+    if (files.length > MAX_FILES_PER_REQUEST) {
+      throw new BadRequestException(
+        `Too many files. Maximum is ${MAX_FILES_PER_REQUEST}`,
+      );
+    }
 
     const results = await Promise.all(
-      files.map((file) => this.uploadToSupabase(file, folder || 'general')),
+      files.map((file) =>
+        this.uploadToSupabase(file, req.user.id, folder || 'general'),
+      ),
     );
 
     return results;
@@ -120,16 +141,22 @@ export class StorageController {
    */
   @Post('signed-url')
   async getSignedUploadUrl(
+    @Request() req: AuthenticatedRequest,
     @Body('bucket') bucket: string,
     @Body('path') path: string,
   ) {
     if (!bucket || !path) {
       throw new BadRequestException('bucket and path are required');
     }
+    if (bucket !== 'attachments') {
+      throw new BadRequestException('Only attachments bucket is allowed');
+    }
+
+    const safePath = this.buildUserStoragePath(req.user.id, 'signed', path);
 
     const { data, error } = await this.supabase.storage
       .from(bucket)
-      .createSignedUploadUrl(path);
+      .createSignedUploadUrl(safePath);
 
     if (error) {
       throw new BadRequestException(error.message);
@@ -153,6 +180,9 @@ export class StorageController {
     if (!bucket || !path) {
       throw new BadRequestException('bucket and path are required');
     }
+    if (bucket !== 'attachments') {
+      throw new BadRequestException('Only attachments bucket is allowed');
+    }
 
     const { data } = this.supabase.storage.from(bucket).getPublicUrl(path);
 
@@ -163,9 +193,19 @@ export class StorageController {
    * Delete a file from Supabase Storage.
    */
   @Delete(':bucket/*')
-  async deleteFile(@Param('bucket') bucket: string, @Param('*') path: string) {
+  async deleteFile(
+    @Request() req: AuthenticatedRequest,
+    @Param('bucket') bucket: string,
+    @Param('*') path: string,
+  ) {
     if (!bucket || !path) {
       throw new BadRequestException('bucket and path are required');
+    }
+    if (bucket !== 'attachments') {
+      throw new BadRequestException('Only attachments bucket is allowed');
+    }
+    if (!this.canManagePath(req.user.id, req.user.role, path)) {
+      throw new ForbiddenException('You can only delete your own files');
     }
 
     const { error } = await this.supabase.storage.from(bucket).remove([path]);
@@ -180,12 +220,24 @@ export class StorageController {
   /**
    * Internal helper — uploads a file buffer to Supabase Storage and returns metadata.
    */
-  private async uploadToSupabase(file: Express.Multer.File, folder: string) {
+  private async uploadToSupabase(
+    file: Express.Multer.File,
+    userId: string,
+    folder: string,
+  ) {
     const bucket = 'attachments';
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 12);
-    const ext = file.originalname.split('.').pop() || 'bin';
-    const filePath = `${folder}/${timestamp}_${random}.${ext}`;
+    this.validateOriginalFilename(file.originalname);
+
+    const ext = MIME_EXTENSION[file.mimetype];
+    if (!ext) {
+      throw new BadRequestException('Unsupported file type');
+    }
+
+    const filePath = this.buildUserStoragePath(
+      userId,
+      folder,
+      `${Date.now()}_${randomUUID()}.${ext}`,
+    );
 
     const { error } = await this.supabase.storage
       .from(bucket)
@@ -211,5 +263,61 @@ export class StorageController {
       size: file.size,
       type: file.mimetype,
     };
+  }
+
+  private validateOriginalFilename(filename: string) {
+    if (!filename || filename.length > 180) {
+      throw new BadRequestException('Invalid file name');
+    }
+
+    if (
+      filename.includes('..') ||
+      filename.includes('/') ||
+      filename.includes('\\') ||
+      this.hasControlCharacters(filename)
+    ) {
+      throw new BadRequestException('Invalid file name');
+    }
+  }
+
+  private hasControlCharacters(value: string) {
+    return [...value].some((char) => {
+      const code = char.charCodeAt(0);
+      return code < 32 || code === 127;
+    });
+  }
+
+  private buildUserStoragePath(
+    userId: string,
+    folder: string,
+    filename: string,
+  ) {
+    const safeFolder = this.sanitizePathSegment(folder || 'general');
+    const safeFilename = this.sanitizePathSegment(filename);
+
+    return `users/${userId}/${safeFolder}/${safeFilename}`;
+  }
+
+  private sanitizePathSegment(value: string) {
+    const sanitized = value
+      .trim()
+      .replace(/[^a-zA-Z0-9._-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^\.+/, '')
+      .slice(0, 120);
+
+    if (!sanitized || sanitized === '.' || sanitized === '..') {
+      throw new BadRequestException('Invalid storage path');
+    }
+
+    return sanitized;
+  }
+
+  private canManagePath(userId: string, role: string, path: string) {
+    if (role === (UserRole.ADMIN as string)) {
+      return true;
+    }
+
+    return path.startsWith(`users/${userId}/`);
   }
 }

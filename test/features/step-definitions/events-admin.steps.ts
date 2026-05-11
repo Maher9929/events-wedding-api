@@ -62,7 +62,10 @@ When("je remplis le nombre d'invités {string}", async function (count: string) 
 
 Then("l'événement devrait être créé avec succès", async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 50,
+    "La page devrait afficher les détails de l'événement créé",
+  );
 });
 
 Then(
@@ -87,7 +90,7 @@ When("j'ajoute une tâche {string}", async function (taskName: string) {
 
 Then('la tâche devrait apparaître dans la liste', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(body.length > 0, 'La page devrait afficher la liste des tâches');
 });
 
 When('je marque la tâche comme complétée', async function () {
@@ -98,7 +101,10 @@ When('je marque la tâche comme complétée', async function () {
 
 Then('la progression devrait se mettre à jour', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 0,
+    'La page devrait afficher la progression mise à jour',
+  );
 });
 
 When(
@@ -157,17 +163,35 @@ When('je vais sur le dashboard admin', async function () {
 
 Then('je devrais voir les statistiques globales', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 50,
+    'Le dashboard admin devrait afficher des statistiques',
+  );
+  const hasStats =
+    body.toLowerCase().includes('dashboard') ||
+    body.toLowerCase().includes('statistiq') ||
+    body.toLowerCase().includes('total') ||
+    body.includes('لوحة');
+  assert(
+    hasStats,
+    `Le dashboard devrait contenir des statistiques, obtenu: ${body.substring(0, 200)}`,
+  );
 });
 
 Then("je devrais voir le nombre total d'utilisateurs", async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 50,
+    "Le dashboard devrait afficher le nombre d'utilisateurs",
+  );
 });
 
 Then('je devrais voir le nombre de réservations', async function () {
   const body = await getBodyText(this);
-  assert(body.length > 0);
+  assert(
+    body.length > 50,
+    'Le dashboard devrait afficher le nombre de réservations',
+  );
 });
 
 Then('je devrais voir la liste de tous les utilisateurs', async function () {

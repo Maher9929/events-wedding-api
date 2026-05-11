@@ -1,0 +1,53 @@
+name: UI E2E - Selenium Cucumber
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+jobs:
+  ui-e2e:
+    name: Selenium Cucumber Acceptance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run Selenium/Cucumber acceptance suite
+        env:
+          SELENIUM_HEADLESS: 'true'
+          TEST_WAIT_TIMEOUT_MS: '180000'
+        run: npm run test:acceptance
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-cucumber-reports
+          path: |
+            test/reports/cucumber-report.json
+            test/reports/cucumber-junit.xml
+            test/reports/rapport-tests.html
+            test/reports/screenshots
+            test/reports/html-dumps
+            test/reports/backend.log
+            test/reports/backend-err.log
+            test/reports/frontend.log
+            test/reports/frontend-err.log
+          if-no-files-found: ignore

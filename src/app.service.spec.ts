@@ -13,7 +13,9 @@ describe('AppService', () => {
     };
     authCache = {
       cacheUser: jest.fn().mockResolvedValue(undefined),
-      getCachedUser: jest.fn().mockResolvedValue({ role: 'health', provider_id: null }),
+      getCachedUser: jest
+        .fn()
+        .mockResolvedValue({ role: 'health', provider_id: null }),
       invalidateUser: jest.fn().mockResolvedValue(undefined),
     };
     service = new AppService(supabase, authCache);

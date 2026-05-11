@@ -10,7 +10,7 @@ const LoginPage = () => {
     const { login, isAuthenticated, user } = useAuth();
 
     useEffect(() => {
-        document.title = `${t('auth.login.title')} | DOUSHA`;
+        document.title = `${t('auth.login.title')} | Doha Events`;
     }, [t]);
 
     useEffect(() => {

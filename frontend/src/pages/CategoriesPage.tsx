@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { categoriesService } from '../services/categories.service';
 import { servicesService } from '../services/services.service';
-import type { Category } from '../services/api';
+import type { Category, ServiceItem } from '../services/api';
 
 const KEYWORD_ICONS: Array<{ keywords: string[]; icon: string; iconColor: string; bgClass: string }> = [
     { keywords: ['زفاف', 'عرس', 'خطوبة', 'wedding'], icon: 'fa-solid fa-ring', iconColor: 'text-white', bgClass: 'gradient-purple' },
@@ -35,6 +35,34 @@ const getIconForCategory = (name: string, index: number) => {
     return FALLBACK_ICONS[index % FALLBACK_ICONS.length];
 };
 
+type ServiceWithCategory = ServiceItem & {
+    category?: Partial<Category> | null;
+    categories?: Partial<Category> | null;
+};
+
+const deriveCategoriesFromServices = (services: ServiceWithCategory[]): Category[] => {
+    const byId = new Map<string, Category>();
+
+    services.forEach((service) => {
+        const embedded = service.category || service.categories;
+        const id = embedded?.id || service.category_id;
+        const name = embedded?.name;
+
+        if (!id || !name || byId.has(id)) return;
+
+        byId.set(id, {
+            id,
+            name,
+            description: embedded.description || '',
+            icon: embedded.icon,
+            slug: embedded.slug || id,
+            created_at: service.created_at,
+        });
+    });
+
+    return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+};
+
 const CategoriesPage = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -45,27 +73,32 @@ const CategoriesPage = () => {
 
     useEffect(() => {
         Promise.allSettled([
-            categoriesService.getAll().then((data) => {
-                setCategories(Array.isArray(data) ? data : []);
-            }),
-            servicesService.getAll().then((data) => {
-                const list = Array.isArray(data) ? data : [];
-                const counts: Record<string, number> = {};
-                list.forEach((s) => {
-                    if (s.category_id) counts[s.category_id] = (counts[s.category_id] || 0) + 1;
-                });
-                setServiceCounts(counts);
-            }),
-        ]).finally(() => setLoading(false));
+            categoriesService.getAll(),
+            servicesService.getAll(),
+        ]).then(([categoriesResult, servicesResult]) => {
+            const categoryList = categoriesResult.status === 'fulfilled' ? categoriesResult.value : [];
+            const serviceList = servicesResult.status === 'fulfilled' ? servicesResult.value : [];
+            const counts: Record<string, number> = {};
+
+            serviceList.forEach((service) => {
+                if (service.category_id) {
+                    counts[service.category_id] = (counts[service.category_id] || 0) + 1;
+                }
+            });
+
+            setServiceCounts(counts);
+            setCategories(categoryList.length > 0 ? categoryList : deriveCategoriesFromServices(serviceList));
+        }).finally(() => setLoading(false));
     }, []);
 
     const filtered = search
         ? categories.filter(c => c.name.includes(search) || c.description?.includes(search))
         : categories;
+    const totalServices = Object.values(serviceCounts).reduce((sum, count) => sum + count, 0);
 
     return (
         <div className="min-h-screen bg-bglight">
-            <header id="header" className="bg-white sticky top-0 z-50 shadow-sm">
+            <header id="header" className="bg-white sticky top-0 z-50 shadow-sm lg:hidden">
                 <div className="px-5 py-4">
                     <div className="flex items-center justify-between mb-4">
                         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-bglight flex items-center justify-center">
@@ -102,7 +135,15 @@ const CategoriesPage = () => {
                 </div>
 
                 {loading ? (
-                    <p className="text-center text-gray-400 py-8">{t('common.loading')}</p>
+                    <div className="grid grid-cols-3 gap-3">
+                        {Array.from({ length: 9 }).map((_, idx) => (
+                            <div key={idx} className="bg-white rounded-2xl p-4 shadow-sm animate-pulse">
+                                <div className="w-14 h-14 rounded-xl bg-gray-200 mx-auto mb-3"></div>
+                                <div className="h-3 bg-gray-200 rounded mx-auto mb-2 w-16"></div>
+                                <div className="h-3 bg-gray-100 rounded mx-auto w-12"></div>
+                            </div>
+                        ))}
+                    </div>
                 ) : filtered.length === 0 ? (
                     <p className="text-center text-gray-400 py-8">{t('common.no_results')}</p>
                 ) : (
@@ -151,7 +192,7 @@ const CategoriesPage = () => {
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
-                                <p className="text-white text-sm">156 {t('common.services')}</p>
+                                <p className="text-white text-sm">{totalServices} {t('common.services')}</p>
                                 <button className="px-4 py-2 rounded-xl bg-white text-purple-900 text-xs font-bold">
                                     {t('common.footer.about')}
                                 </button>
@@ -170,7 +211,10 @@ const CategoriesPage = () => {
                         <div>
                             <h3 className="font-bold text-gray-900 mb-1">{t('common.footer.about')}?</h3>
                             <p className="text-sm text-gray-600 mb-3">{t('home.hero.subtitle')}</p>
-                            <button className="px-5 py-2.5 rounded-xl gradient-purple text-white text-sm font-bold card-hover">
+                            <button
+                                onClick={() => window.open('https://wa.me/97400000000', '_blank', 'noopener,noreferrer')}
+                                className="px-5 py-2.5 rounded-xl gradient-purple text-white text-sm font-bold card-hover"
+                            >
                                 <i className="fa-brands fa-whatsapp ms-1"></i>
                                 WhatsApp
                             </button>
